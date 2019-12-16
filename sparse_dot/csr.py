@@ -2,7 +2,7 @@ import ctypes as _ctypes
 from sparse_dot import (MKL_INT, MKL_INT_NUMPY, RETURN_CODES, sparse_matrix_t,
                         _mkl_sparse_d_create_csr, _mkl_sparse_d_export_csr,
                         _mkl_sparse_s_create_csr, _mkl_sparse_s_export_csr)
-from sparse_dot._common import _matmul_mkl, _destroy_mkl_handle, _check_mkl_typing
+from sparse_dot._common import _matmul_mkl, _destroy_mkl_handle, _check_mkl_typing, _order_mkl_handle, _check_alignment
 import numpy as np
 import scipy.sparse as _spsparse
 from numpy.ctypeslib import as_array
@@ -20,6 +20,7 @@ def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b):
     :rtype: scipy.sparse.csr_matrix
     """
 
+    _check_alignment(csr_matrix_a, csr_matrix_b)
     mkl_double_precision = _check_mkl_typing(csr_matrix_a, csr_matrix_b)
 
     # Create intel MKL objects
@@ -28,6 +29,9 @@ def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b):
 
     # Dot product
     csr_mkl_c = _matmul_mkl(csr_mkl_a, csr_mkl_b)
+
+    # Reorder
+    _order_mkl_handle(csr_mkl_c)
 
     # Extract
     csr_python_c = _export_csr_mkl(csr_mkl_c)
@@ -104,6 +108,7 @@ def _create_mkl_csr(csr_data, double_precision=True, copy=False):
 def _export_csr_mkl(csr_mkl_handle, double_precision=True):
     """
     Export a MKL sparse handle in CSR format
+    https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-csr
 
     :param csr_mkl_handle: Handle for the MKL internal representation
     :type csr_mkl_handle: sparse_matrix_t
@@ -128,7 +133,7 @@ def _export_csr_mkl(csr_mkl_handle, double_precision=True):
     else:
         data = _ctypes.POINTER(_ctypes.c_float)()
         csr_func = _mkl_sparse_s_export_csr
-        final_dtype = np.float64
+        final_dtype = np.float32
 
     ret_val = csr_func(csr_mkl_handle,
                        _ctypes.byref(ordering),

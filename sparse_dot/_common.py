@@ -1,6 +1,7 @@
 import ctypes as _ctypes
 import numpy as np
-from sparse_dot import sparse_matrix_t, _mkl_sparse_spmm, _mkl_sparse_destroy, RETURN_CODES, NUMPY_FLOAT_DTYPES
+from sparse_dot import (sparse_matrix_t, RETURN_CODES, NUMPY_FLOAT_DTYPES,
+                        _mkl_sparse_spmm, _mkl_sparse_destroy, _mkl_sparse_order)
 import warnings
 
 
@@ -44,6 +45,21 @@ def _destroy_mkl_handle(ref_handle):
         raise ValueError("mkl_sparse_destroy returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
 
 
+def _order_mkl_handle(ref_handle):
+    """
+    Reorder indexes in a MKL sparse handle
+
+    :param ref_handle:
+    :type ref_handle: sparse_matrix_t
+    :return:
+    """
+
+    ret_val = _mkl_sparse_order(ref_handle)
+
+    if ret_val != 0:
+        raise ValueError("mkl_sparse_order returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
+
+
 def _check_mkl_typing(mat_a, mat_b):
     """
     Check the data type for sparse arrays to be multiplied.
@@ -73,3 +89,18 @@ def _check_mkl_typing(mat_a, mat_b):
         warnings.warn("Matrix dtypes are not float32 or float64. All data will be coerced to float64.")
 
     return mkl_double_precision
+
+
+def _check_alignment(mat_a, mat_b):
+    """
+    Make sure these matrices can be multiplied
+
+    :param mat_a: Sparse matrix A in any format
+    :type mat_a: scipy.sparse.spmatrix
+    :param mat_b: Sparse matrix B in any format
+    :type mat_b: scipy.sparse.spmatrix
+    """
+
+    if mat_a.shape[1] != mat_b.shape[0]:
+        err = "Matrix alignment error: {m1} * {m2}".format(m1=mat_a.shape, m2=mat_b.shape)
+        raise ValueError(err)

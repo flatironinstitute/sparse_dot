@@ -96,3 +96,10 @@ _mkl_sparse_spmm.restypes = _ctypes.c_int
 # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-destroy
 _mkl_sparse_destroy = _libmkl.mkl_sparse_destroy
 _mkl_sparse_destroy.argtypes = [sparse_matrix_t]
+_mkl_sparse_destroy.restypes = _ctypes.c_int
+
+# Import function for ordering MKL objects
+# https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-order
+_mkl_sparse_order = _libmkl.mkl_sparse_order
+_mkl_sparse_order.argtypes = [sparse_matrix_t]
+_mkl_sparse_order.restypes = _ctypes.c_int
