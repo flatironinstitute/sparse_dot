@@ -8,7 +8,7 @@ import scipy.sparse as _spsparse
 from numpy.ctypeslib import as_array
 
 
-def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b):
+def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False):
     """
     Multiply together two scipy CSR matrixes using the intel Math Kernel Library
 
@@ -16,6 +16,11 @@ def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b):
     :type csr_matrix_a: scipy.sparse.csr_matrix
     :param csr_matrix_b: Sparse matrix B in CSR format
     :type csr_matrix_b: scipy.sparse.csr_matrix
+    :param copy: Should the MKL arrays get copied and then explicitly deallocated.
+    If set to True, there is a copy, but there is less risk of memory leaking.
+    If set to False, numpy arrays will be created from C pointers without a copy.
+    I don't know if these arrays will be garbage collected correctly by python.
+    :type copy: bool
     :return: Sparse matrix that is the result of A * B in CSR format
     :rtype: scipy.sparse.csr_matrix
     """
@@ -34,10 +39,11 @@ def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b):
     _order_mkl_handle(csr_mkl_c)
 
     # Extract
-    csr_python_c = _export_csr_mkl(csr_mkl_c)
+    csr_python_c = _export_csr_mkl(csr_mkl_c, copy=copy)
 
     # Destroy
-    _destroy_mkl_handle(csr_mkl_c)
+    if copy:
+        _destroy_mkl_handle(csr_mkl_c)
 
     return csr_python_c
 
@@ -105,7 +111,7 @@ def _create_mkl_csr(csr_data, double_precision=True, copy=False):
     return ref
 
 
-def _export_csr_mkl(csr_mkl_handle, double_precision=True):
+def _export_csr_mkl(csr_mkl_handle, double_precision=True, copy=False):
     """
     Export a MKL sparse handle in CSR format
     https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-csr
@@ -176,8 +182,8 @@ def _export_csr_mkl(csr_mkl_handle, double_precision=True):
         raise ValueError("Matrix ({m} x {n}) is attempting to index {z} elements".format(m=nrows, n=ncols, z=nnz))
 
     # Construct numpy arrays from data pointer and from column indicies pointer
-    data = np.array(as_array(data, shape=(nnz,)), copy=True)
-    indices = np.array(as_array(indices, shape=(nnz,)), copy=True)
+    data = np.array(as_array(data, shape=(nnz,)), copy=copy)
+    indices = np.array(as_array(indices, shape=(nnz,)), copy=copy)
 
     # Pack and return the CSR matrix
     return _spsparse.csr_matrix((data, indices, indptren), shape=(nrows, ncols))

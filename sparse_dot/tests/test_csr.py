@@ -8,8 +8,8 @@ from sparse_dot.csr import _create_mkl_csr, _export_csr_mkl, csr_dot_product_mkl
 
 SEED = 86
 
-MATRIX_1 = _spsparse.random(20, 30, density=0.5, format="csr", dtype=np.float64, random_state=SEED)
-MATRIX_2 = _spsparse.random(30, 10, density=0.5, format="csr", dtype=np.float64, random_state=SEED + 1)
+MATRIX_1 = _spsparse.random(2000, 3000, density=0.05, format="csr", dtype=np.float64, random_state=SEED)
+MATRIX_2 = _spsparse.random(3000, 1000, density=0.05, format="csr", dtype=np.float64, random_state=SEED + 1)
 
 
 class TestCSR(unittest.TestCase):
