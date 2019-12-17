@@ -25,6 +25,9 @@ def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False):
     :rtype: scipy.sparse.csr_matrix
     """
 
+    if not _spsparse.isspmatrix_csr(csr_matrix_a) or not _spsparse.isspmatrix_csr(csr_matrix_b):
+        raise ValueError("Both input matrices to csr_dot_product_mkl must be CSR format")
+
     _check_alignment(csr_matrix_a, csr_matrix_b)
     mkl_double_precision = _check_mkl_typing(csr_matrix_a, csr_matrix_b)
 

@@ -8,8 +8,14 @@ from sparse_dot.csr import _create_mkl_csr, _export_csr_mkl, csr_dot_product_mkl
 
 SEED = 86
 
-MATRIX_1 = _spsparse.random(2000, 3000, density=0.05, format="csr", dtype=np.float64, random_state=SEED)
-MATRIX_2 = _spsparse.random(3000, 1000, density=0.05, format="csr", dtype=np.float64, random_state=SEED + 1)
+
+def make_matrixes(a, b, n, density):
+    m1 = _spsparse.random(a, n, density=density, format="csr", dtype=np.float64, random_state=SEED)
+    m2 = _spsparse.random(n, b, density=density, format="csr", dtype=np.float64, random_state=SEED + 1)
+    return m1, m2
+
+
+MATRIX_1, MATRIX_2 = make_matrixes(2000, 1000, 3000, 0.05)
 
 
 class TestCSR(unittest.TestCase):
@@ -86,4 +92,34 @@ class TestCSR(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             mat3 = csr_dot_product_mkl(self.mat1.transpose(), self.mat2)
+
+    def test_csr_all_zeros(self):
+
+        zero_mat_1 = _spsparse.csr_matrix((50,100))
+        zero_mat_2 = _spsparse.csr_matrix((100,20))
+
+        zm_sp = zero_mat_1.dot(zero_mat_2)
+        zm_mkl = csr_dot_product_mkl(zero_mat_1, zero_mat_2)
+
+        self.assertTupleEqual(zm_sp.shape, zm_mkl.shape)
+        self.assertEqual(len(zm_mkl.data), 0)
+
+    def test_not_csr(self):
+
+        with self.assertRaises(ValueError):
+            csr_dot_product_mkl(self.mat1.tocsc(), self.mat2)
+
+    def test_highly_sparse(self):
+        hsp1, hsp2 = make_matrixes(2000, 1000, 3000, 0.0005)
+        hsp3_sp = hsp1.dot(hsp2)
+        hsp3 = csr_dot_product_mkl(hsp1, hsp2)
+
+        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+
+    def test_dense_CSR(self):
+        d1, d2 = make_matrixes(10, 20, 50, 1)
+        hsp3_sp = d1.dot(d2)
+        hsp3 = csr_dot_product_mkl(d1, d2)
+
+        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
 
