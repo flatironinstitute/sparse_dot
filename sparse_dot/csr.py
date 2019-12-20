@@ -98,6 +98,8 @@ def csr_dot_product_mkl_debug(csr_matrix_a, csr_matrix_b, copy=False):
     # Destroy
     if copy:
         _destroy_mkl_handle(csr_mkl_c)
+        times.append(time.time())
+        print("C object deallocation complete: {t}".format(t=times[-1] - times[-2]))
 
     return csr_python_c
 
