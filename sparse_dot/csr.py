@@ -6,7 +6,6 @@ from sparse_dot._common import _matmul_mkl, _destroy_mkl_handle, _check_mkl_typi
 import numpy as np
 import scipy.sparse as _spsparse
 from numpy.ctypeslib import as_array
-import time
 
 
 def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False, reorder_output=False):
@@ -54,58 +53,6 @@ def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False, reorder_output=F
     # Destroy
     if copy:
         _destroy_mkl_handle(csr_mkl_c)
-
-    return csr_python_c
-
-
-def csr_dot_product_mkl_debug(csr_matrix_a, csr_matrix_b, copy=False, reorder_output=False):
-
-    times = [time.time()]
-
-    if not _spsparse.isspmatrix_csr(csr_matrix_a) or not _spsparse.isspmatrix_csr(csr_matrix_b):
-        raise ValueError("Both input matrices to csr_dot_product_mkl must be CSR format")
-
-    _check_alignment(csr_matrix_a, csr_matrix_b)
-    mkl_double_precision = _check_mkl_typing(csr_matrix_a, csr_matrix_b)
-
-    times.append(time.time())
-    print("Preflight time: {t}".format(t=times[-1] - times[-2]))
-
-    # Create intel MKL objects
-    csr_mkl_a = _create_mkl_csr(csr_matrix_a, double_precision=mkl_double_precision)
-
-    times.append(time.time())
-    print("Arr1 MKL construction complete: {t}".format(t=times[-1] - times[-2]))
-
-    csr_mkl_b = _create_mkl_csr(csr_matrix_b, double_precision=mkl_double_precision)
-
-    times.append(time.time())
-    print("Arr2 MKL construction complete: {t}".format(t=times[-1] - times[-2]))
-
-    # Dot product
-    csr_mkl_c = _matmul_mkl(csr_mkl_a, csr_mkl_b)
-
-    times.append(time.time())
-    print("Dot product complete: {t}".format(t=times[-1] - times[-2]))
-
-    # Reorder
-    if reorder_output:
-        _order_mkl_handle(csr_mkl_c)
-
-        times.append(time.time())
-        print("Reordering complete: {t}".format(t=times[-1] - times[-2]))
-
-    # Extract
-    csr_python_c = _export_csr_mkl(csr_mkl_c, copy=copy, debug=True)
-
-    times.append(time.time())
-    print("Python object construction complete: {t}".format(t=times[-1] - times[-2]))
-
-    # Destroy
-    if copy:
-        _destroy_mkl_handle(csr_mkl_c)
-        times.append(time.time())
-        print("C object deallocation complete: {t}".format(t=times[-1] - times[-2]))
 
     return csr_python_c
 
@@ -173,7 +120,7 @@ def _create_mkl_csr(csr_data, double_precision=True, copy=False):
     return ref
 
 
-def _export_csr_mkl(csr_mkl_handle, double_precision=True, copy=False, debug=False):
+def _export_csr_mkl(csr_mkl_handle, double_precision=True, copy=False):
     """
     Export a MKL sparse handle in CSR format
     https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-csr
@@ -186,9 +133,6 @@ def _export_csr_mkl(csr_mkl_handle, double_precision=True, copy=False, debug=Fal
 
     :return:
     """
-
-    if debug:
-        t0 = time.time()
 
     indptrb = _ctypes.POINTER(MKL_INT)()
     indptren = _ctypes.POINTER(MKL_INT)()
@@ -215,10 +159,6 @@ def _export_csr_mkl(csr_mkl_handle, double_precision=True, copy=False, debug=Fal
                        _ctypes.byref(indptren),
                        _ctypes.byref(indices),
                        _ctypes.byref(data))
-
-    if debug:
-        t1 = time.time()
-        print("MKL pointer export to python complete: {t}".format(t=t1 - t0))
 
     # Check return
     if ret_val != 0:
@@ -255,16 +195,6 @@ def _export_csr_mkl(csr_mkl_handle, double_precision=True, copy=False, debug=Fal
     data = np.array(as_array(data, shape=(nnz,)), copy=copy)
     indices = np.array(as_array(indices, shape=(nnz,)), copy=copy)
 
-    if debug:
-        t2 = time.time()
-        print("Numpy index/data array construction complete: {t}".format(t=t2 - t1))
-
     # Pack and return the CSR matrix
 
-    ret_matrix = _spsparse.csr_matrix((data, indices, indptren), shape=(nrows, ncols))
-
-    if debug:
-        t3 = time.time()
-        print("Scipy sparse matrix construction complete: {t}".format(t=t3 - t2))
-
-    return ret_matrix
+    return _spsparse.csr_matrix((data, indices, indptren), shape=(nrows, ncols))
