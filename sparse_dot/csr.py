@@ -51,6 +51,57 @@ def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False):
     return csr_python_c
 
 
+def csr_dot_product_mkl_debug(csr_matrix_a, csr_matrix_b, copy=False):
+
+    import time
+
+    times = [time.time()]
+
+    if not _spsparse.isspmatrix_csr(csr_matrix_a) or not _spsparse.isspmatrix_csr(csr_matrix_b):
+        raise ValueError("Both input matrices to csr_dot_product_mkl must be CSR format")
+
+    _check_alignment(csr_matrix_a, csr_matrix_b)
+    mkl_double_precision = _check_mkl_typing(csr_matrix_a, csr_matrix_b)
+
+    times.append(time.time())
+    print("Preflight time: {t}".format(t=times[-1] - times[-2]))
+
+    # Create intel MKL objects
+    csr_mkl_a = _create_mkl_csr(csr_matrix_a, double_precision=mkl_double_precision)
+
+    times.append(time.time())
+    print("Arr1 MKL construction complete: {t}".format(t=times[-1] - times[-2]))
+
+    csr_mkl_b = _create_mkl_csr(csr_matrix_b, double_precision=mkl_double_precision)
+
+    times.append(time.time())
+    print("Arr2 MKL construction complete: {t}".format(t=times[-1] - times[-2]))
+
+    # Dot product
+    csr_mkl_c = _matmul_mkl(csr_mkl_a, csr_mkl_b)
+
+    times.append(time.time())
+    print("Dot product complete: {t}".format(t=times[-1] - times[-2]))
+
+    # Reorder
+    _order_mkl_handle(csr_mkl_c)
+
+    times.append(time.time())
+    print("Reordering complete: {t}".format(t=times[-1] - times[-2]))
+
+    # Extract
+    csr_python_c = _export_csr_mkl(csr_mkl_c, copy=copy)
+
+    times.append(time.time())
+    print("Python object construction complete: {t}".format(t=times[-1] - times[-2]))
+
+    # Destroy
+    if copy:
+        _destroy_mkl_handle(csr_mkl_c)
+
+    return csr_python_c
+
+
 def _create_mkl_csr(csr_data, double_precision=True, copy=False):
     """
     Create MKL internal representation in CSR format
