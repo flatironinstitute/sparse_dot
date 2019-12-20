@@ -10,7 +10,9 @@ from numpy.ctypeslib import as_array
 
 def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False, reorder_output=False):
     """
-    Multiply together two scipy CSR matrixes using the intel Math Kernel Library
+    Multiply together two scipy CSR matrixes using the intel Math Kernel Library.
+    This is efficient if both matrices have float32 data or both matrices have float64 data.
+    It will cast data to float64 if necessary but this functionality may cause a memory leak and should be avoided
 
     :param csr_matrix_a: Sparse matrix A in CSR format
     :type csr_matrix_a: scipy.sparse.csr_matrix
