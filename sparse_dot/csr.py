@@ -9,7 +9,7 @@ from numpy.ctypeslib import as_array
 import time
 
 
-def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False):
+def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False, reorder_output=False):
     """
     Multiply together two scipy CSR matrixes using the intel Math Kernel Library
 
@@ -22,6 +22,11 @@ def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False):
     If set to False, numpy arrays will be created from C pointers without a copy.
     I don't know if these arrays will be garbage collected correctly by python.
     :type copy: bool
+    :param reorder_output: Should the array indices be reordered using MKL
+    If set to True, the object in C will be ordered and then exported into python
+    If set to False, the array column indices will not be ordered.
+    The scipy sparse dot product does not yield ordered column indices so this defaults to False
+    :type reorder_output: bool
     :return: Sparse matrix that is the result of A * B in CSR format
     :rtype: scipy.sparse.csr_matrix
     """
@@ -40,7 +45,8 @@ def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False):
     csr_mkl_c = _matmul_mkl(csr_mkl_a, csr_mkl_b)
 
     # Reorder
-    _order_mkl_handle(csr_mkl_c)
+    if reorder_output:
+        _order_mkl_handle(csr_mkl_c)
 
     # Extract
     csr_python_c = _export_csr_mkl(csr_mkl_c, copy=copy)
@@ -52,7 +58,7 @@ def csr_dot_product_mkl(csr_matrix_a, csr_matrix_b, copy=False):
     return csr_python_c
 
 
-def csr_dot_product_mkl_debug(csr_matrix_a, csr_matrix_b, copy=False):
+def csr_dot_product_mkl_debug(csr_matrix_a, csr_matrix_b, copy=False, reorder_output=False):
 
     times = [time.time()]
 
@@ -83,10 +89,11 @@ def csr_dot_product_mkl_debug(csr_matrix_a, csr_matrix_b, copy=False):
     print("Dot product complete: {t}".format(t=times[-1] - times[-2]))
 
     # Reorder
-    _order_mkl_handle(csr_mkl_c)
+    if reorder_output:
+        _order_mkl_handle(csr_mkl_c)
 
-    times.append(time.time())
-    print("Reordering complete: {t}".format(t=times[-1] - times[-2]))
+        times.append(time.time())
+        print("Reordering complete: {t}".format(t=times[-1] - times[-2]))
 
     # Extract
     csr_python_c = _export_csr_mkl(csr_mkl_c, copy=copy, debug=True)
