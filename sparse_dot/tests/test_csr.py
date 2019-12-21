@@ -65,6 +65,38 @@ class TestCSR(unittest.TestCase):
         npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
         npt.assert_array_almost_equal(mat3_np, mat3.A)
 
+    def test_spmm_success_float32(self):
+        self.mat1.data = self.mat1.data.astype(np.float32)
+        self.mat2.data = self.mat2.data.astype(np.float32)
+
+        ref_1 = _create_mkl_csr(self.mat1)
+        ref_2 = _create_mkl_csr(self.mat2)
+
+        ref_3 = _matmul_mkl(ref_1, ref_2)
+        mat3 = _export_csr_mkl(ref_3)
+
+        mat3_sp = self.mat1.dot(self.mat2)
+        mat3_np = np.dot(self.mat1.A, self.mat2.A)
+
+        npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
+        npt.assert_array_almost_equal(mat3_np, mat3.A)
+
+    def test_spmm_success_mixed(self):
+        self.mat1.data = self.mat1.data.astype(np.float64)
+        self.mat2.data = self.mat2.data.astype(np.float32)
+
+        ref_1 = _create_mkl_csr(self.mat1)
+        ref_2 = _create_mkl_csr(self.mat2)
+
+        ref_3 = _matmul_mkl(ref_1, ref_2)
+        mat3 = _export_csr_mkl(ref_3)
+
+        mat3_sp = self.mat1.dot(self.mat2)
+        mat3_np = np.dot(self.mat1.A, self.mat2.A)
+
+        npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
+        npt.assert_array_almost_equal(mat3_np, mat3.A)
+
     def test_spmm_error_bad_dims(self):
 
         ref_1 = _create_mkl_csr(self.mat1.transpose())
@@ -95,8 +127,8 @@ class TestCSR(unittest.TestCase):
 
     def test_csr_all_zeros(self):
 
-        zero_mat_1 = _spsparse.csr_matrix((50,100))
-        zero_mat_2 = _spsparse.csr_matrix((100,20))
+        zero_mat_1 = _spsparse.csr_matrix((50, 100))
+        zero_mat_2 = _spsparse.csr_matrix((100, 20))
 
         zm_sp = zero_mat_1.dot(zero_mat_2)
         zm_mkl = csr_dot_product_mkl(zero_mat_1, zero_mat_2)
