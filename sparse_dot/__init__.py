@@ -10,6 +10,8 @@ NUMPY_FLOAT_DTYPES = [np.float32, np.float64]
 
 
 class MKL:
+    """ This class holds shared object references to C functions with arg and returntypes that can be adjusted"""
+    
     MKL_INT = None
     MKL_INT_NUMPY = None
 
@@ -120,6 +122,9 @@ class MKL:
 
         cls._mkl_sparse_order.argtypes = [sparse_matrix_t]
         cls._mkl_sparse_order.restypes = _ctypes.c_int
+
+    def __init__(self):
+        raise NotImplementedError("This class is not intended to be instanced")
 
 
 # Construct opaque struct & type
