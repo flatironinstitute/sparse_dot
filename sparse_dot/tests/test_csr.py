@@ -2,8 +2,8 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 import scipy.sparse as _spsparse
-from sparse_dot import sparse_matrix_t
-from sparse_dot._common import _check_mkl_typing, _matmul_mkl
+from sparse_dot import sparse_matrix_t, _matmul_mkl
+from sparse_dot._common import _check_mkl_typing
 from sparse_dot.csr import _create_mkl_csr, _export_csr_mkl, csr_dot_product_mkl
 
 SEED = 86
