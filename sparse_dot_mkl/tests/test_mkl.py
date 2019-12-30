@@ -175,6 +175,12 @@ class TestMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
         self.assertTrue(hsp3.dtype == np.float64)
 
+    def test_COO(self):
+        d1, d2 = _spsparse.coo_matrix(self.mat1), self.mat2
+
+        with self.assertRaises(ValueError):
+            hsp3 = dot_product_mkl(d1, d2)
+
     def test_mixed(self):
         d1, d2 = self.mat1.astype(np.float32), self.mat2
 
@@ -193,6 +199,12 @@ class TestMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
         self.assertTrue(hsp3.dtype == np.float64)
 
+    def test_mixed_nocast(self):
+        d1, d2 = self.mat1, self.mat2.astype(np.float32)
+
+        with self.assertRaises(ValueError):
+            hsp3 = dot_product_mkl(d1, d2, cast=False)
+
     def test_float32(self):
         d1, d2 = self.mat1.astype(np.float32), self.mat2.astype(np.float32)
 
@@ -201,3 +213,21 @@ class TestMultiplication(unittest.TestCase):
 
         npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
         self.assertTrue(hsp3.dtype == np.float32)
+
+    def test_csr_dot_product_mkl_copy(self):
+        mat3 = dot_product_mkl(self.mat1, self.mat2, copy=True)
+
+        mat3_sp = self.mat1.dot(self.mat2)
+        mat3_np = np.dot(self.mat1.A, self.mat2.A)
+
+        npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
+        npt.assert_array_almost_equal(mat3_np, mat3.A)
+
+    def test_csr_dot_product_mkl_order(self):
+        mat3 = dot_product_mkl(self.mat1, self.mat2, reorder_output=True)
+
+        mat3_sp = self.mat1.dot(self.mat2)
+        mat3_np = np.dot(self.mat1.A, self.mat2.A)
+
+        npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
+        npt.assert_array_almost_equal(mat3_np, mat3.A)
