@@ -1,6 +1,6 @@
 from setuptools import setup
 
-DISTNAME = 'sparse_dot'
+DISTNAME = 'sparse_dot_mkl'
 VERSION = '0.1'
 DESCRIPTION = "Intel MKL wrapper for sparse matrix operations"
 MAINTAINER = 'Chris Jackson'
