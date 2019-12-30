@@ -164,8 +164,8 @@ def _create_mkl_sparse(matrix, cast=False):
     """
     Create MKL internal representation
 
-    :param csr_data: Sparse data in CSR or CSC format
-    :type csr_data: scipy.sparse.csr_matrix or scipy.sparse.csc_matrix
+    :param matrix: Sparse data in CSR or CSC format
+    :type matrix: scipy.sparse.spmatrix
     :param cast: If the dtype isn't float32 or float64, cast it to float64.
         Note that this changes the data in the CSR matrix.
     :type cast: bool
@@ -174,125 +174,59 @@ def _create_mkl_sparse(matrix, cast=False):
     :rtype: sparse_matrix_t, float
     """
 
+    # Figure out which dtype for data
+    if matrix.dtype == np.float32:
+        double_precision = False
+    elif matrix.dtype == np.float64:
+        double_precision = True
+    elif cast:
+        matrix.data = matrix.astype(np.float64)
+        double_precision = True
+    else:
+        raise ValueError("Only float32 or float64 dtypes are supported")
+
+    # Cast indexes to MKL_INT type
+    _check_scipy_index_typing(matrix)
+
     if _spsparse.isspmatrix_csr(matrix):
-        return _create_mkl_csr(matrix, cast=cast)
+        csr_func = MKL._mkl_sparse_d_create_csr if double_precision else MKL._mkl_sparse_s_create_csr
+        return _pass_mkl_handle(matrix, csr_func), double_precision
     elif _spsparse.isspmatrix_csc(matrix):
-        return _create_mkl_csc(matrix, cast=cast)
+        csc_func = MKL._mkl_sparse_d_create_csc if double_precision else MKL._mkl_sparse_s_create_csc
+        return _pass_mkl_handle(matrix, csc_func), double_precision
     else:
         raise ValueError("Matrix is not CSC or CSR")
 
 
-def _create_mkl_csr(csr_data, cast=False):
+def _pass_mkl_handle(data, handle_func):
     """
-    Create MKL internal representation in CSR format
-    https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-csr
+    Create MKL internal representation
 
-    :param csr_data: Sparse data in CSR format
-    :type csr_data: scipy.sparse.csr_matrix
-    :param cast: If the dtype isn't float32 or float64, cast it to float64.
-        Note that this changes the data in the CSR matrix.
-    :type cast: bool
-
-    :return ref, double_precision: Handle for the MKL internal representation and boolean for double precision
-    :rtype: sparse_matrix_t, float
+    :param data: Sparse data
+    :type data: scipy.sparse.spmatrix
+    :return ref: Handle for the MKL internal representation
+    :rtype: sparse_matrix_t
     """
-
-    assert _spsparse.isspmatrix_csr(csr_data)
-
-    # Cast indexes to MKL_INT type
-    _check_scipy_index_typing(csr_data)
-
-    # Figure out which dtype for data
-    if csr_data.dtype == np.float32:
-        double_precision = False
-    elif csr_data.dtype == np.float64:
-        double_precision = True
-    elif cast:
-        csr_data.data = csr_data.astype(np.float64)
-        double_precision = True
-    else:
-        raise ValueError("Only float32 or float64 dtypes are supported")
-
-    if double_precision:
-        csr_func = MKL._mkl_sparse_d_create_csr
-    else:
-        csr_func = MKL._mkl_sparse_s_create_csr
 
     # Create a pointer for the output matrix
     ref = sparse_matrix_t()
 
     # Load into a MKL data structure and check return
-    ret_val = csr_func(_ctypes.byref(ref),
-                       _ctypes.c_int(0),
-                       MKL.MKL_INT(csr_data.shape[0]),
-                       MKL.MKL_INT(csr_data.shape[1]),
-                       csr_data.indptr[0:-1],
-                       csr_data.indptr[1:],
-                       csr_data.indices,
-                       csr_data.data)
+    ret_val = handle_func(_ctypes.byref(ref),
+                          _ctypes.c_int(0),
+                          MKL.MKL_INT(data.shape[0]),
+                          MKL.MKL_INT(data.shape[1]),
+                          data.indptr[0:-1],
+                          data.indptr[1:],
+                          data.indices,
+                          data.data)
 
     # Check return
     if ret_val != 0:
-        err_msg = "{fn} returned {v} ({e})".format(fn=csr_func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
+        err_msg = "{fn} returned {v} ({e})".format(fn=handle_func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
         raise ValueError(err_msg)
 
-    return ref, double_precision
-
-
-def _create_mkl_csc(csc_data, cast=False):
-    """
-    Create MKL internal representation in CSC format
-    https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-csr
-
-    :param csc_data: Sparse data in CSC format
-    :type csc_data: scipy.sparse.csc_matrix
-    :param cast: If the dtype isn't float32 or float64, cast it to float64.
-        Note that this changes the data in-place in the CSC matrix.
-
-    :return ref, double_precision: Handle for the MKL internal representation and boolean for double precision
-    :rtype: sparse_matrix_t, float
-    """
-
-    assert _spsparse.isspmatrix_csc(csc_data)
-
-    # Cast indexes to MKL_INT type
-    _check_scipy_index_typing(csc_data)
-
-    # Figure out which dtype for data
-    if csc_data.dtype == np.float32:
-        double_precision = False
-    elif csc_data.dtype == np.float64:
-        double_precision = True
-    elif cast:
-        csc_data.data = csc_data.astype(np.float64)
-        double_precision = True
-    else:
-        raise ValueError("Only float32 or float64 dtypes are supported")
-
-    if double_precision:
-        csc_func = MKL._mkl_sparse_d_create_csc
-    else:
-        csc_func = MKL._mkl_sparse_s_create_csc
-
-    # Create a pointer for the output matrix
-    ref = sparse_matrix_t()
-
-    # Load into a MKL data structure and check return
-    ret_val = csc_func(_ctypes.byref(ref),
-                       _ctypes.c_int(0),
-                       MKL.MKL_INT(csc_data.shape[0]),
-                       MKL.MKL_INT(csc_data.shape[1]),
-                       csc_data.indptr[0:-1],
-                       csc_data.indptr[1:],
-                       csc_data.indices,
-                       csc_data.data)
-
-    # Check return
-    if ret_val != 0:
-        err_msg = "{fn} returned {v} ({e})".format(fn=csc_func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
-        raise ValueError(err_msg)
-
-    return ref, double_precision
+    return ref
 
 
 def _export_mkl(csr_mkl_handle, double_precision, output_type="csr", copy=False):
@@ -373,7 +307,9 @@ def _export_mkl(csr_mkl_handle, double_precision, output_type="csr", copy=False)
     index_dim = nrows if output_type == "csr" else ncols
 
     # Construct a numpy array and add 0 to first position for scipy.sparse's 3-array indexing
+    indptrb = as_array(indptrb, shape=(index_dim,))
     indptren = as_array(indptren, shape=(index_dim,))
+
     indptren = np.insert(indptren, 0, indptrb[0])
     nnz = indptren[-1] - indptrb[0]
 
@@ -474,7 +410,7 @@ def _validate_dtype():
     test_array = _spsparse.random(5, 5, density=0.5, format="csc", dtype=np.float32, random_state=50)
     test_comparison = test_array.A
 
-    csc_ref, precision_flag = _create_mkl_csc(test_array)
+    csc_ref, precision_flag = _create_mkl_sparse(test_array)
 
     csr_ref = _convert_to_csr(csc_ref)
     final_array = _export_mkl(csr_ref, precision_flag)

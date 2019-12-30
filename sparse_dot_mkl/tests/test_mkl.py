@@ -3,8 +3,7 @@ import numpy as np
 import numpy.testing as npt
 import scipy.sparse as _spsparse
 from sparse_dot_mkl import dot_product_mkl
-from sparse_dot_mkl.sparse_dot import (_create_mkl_sparse, _create_mkl_csc, _create_mkl_csr, _export_mkl, _matmul_mkl,
-                                       sparse_matrix_t)
+from sparse_dot_mkl.sparse_dot import _create_mkl_sparse, _export_mkl, _matmul_mkl, sparse_matrix_t
 
 SEED = 86
 
@@ -101,8 +100,8 @@ class TestMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(mat3_np, mat3.A)
 
     def test_spmm_error_bad_dims(self):
-        ref_1, precision_1 = _create_mkl_csc(self.mat1.transpose())
-        ref_2, precision_2 = _create_mkl_csr(self.mat2)
+        ref_1, prec_1 = _create_mkl_sparse(self.mat1.transpose())
+        ref_2, prec_2 = _create_mkl_sparse(self.mat2)
 
         with self.assertRaises(ValueError):
             _matmul_mkl(ref_1, ref_2)

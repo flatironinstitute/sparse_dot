@@ -17,6 +17,6 @@ setup(name=DISTNAME,
       author=MAINTAINER,
       author_email=MAINTAINER_EMAIL,
       license=LICENSE,
-      packages=['sparse_dot'],
+      packages=['sparse_dot_mkl'],
       install_requires=['numpy', 'scipy'],
       zip_safe=True)
