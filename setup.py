@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 DISTNAME = 'sparse_dot_mkl'
 VERSION = '0.1'
@@ -17,6 +17,8 @@ setup(name=DISTNAME,
       author=MAINTAINER,
       author_email=MAINTAINER_EMAIL,
       license=LICENSE,
-      packages=['sparse_dot_mkl'],
+      packages=find_packages(include=['sparse_dot_mkl', "sparse_dot_mkl.*"], exclude=["tests", "*.tests"]),
       install_requires=['numpy', 'scipy'],
+      tests_require=['nose', 'coverage'],
+      test_suite="nose.collector",
       zip_safe=True)
