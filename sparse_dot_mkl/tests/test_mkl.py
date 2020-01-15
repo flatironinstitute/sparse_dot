@@ -143,9 +143,9 @@ class TestMultiplication(unittest.TestCase):
     def test_scale(self):
         hsp1, hsp2 = make_matrixes(10000, 6000, 10000, 0.01)
         hsp3_sp = hsp1.dot(hsp2)
-        hsp3 = dot_product_mkl(hsp1, hsp2)
+        hsp3 = dot_product_mkl(hsp1, hsp2, debug=True)
 
-        npt.assert_array_almost_equal(hsp3[0:2, :].A, hsp3_sp[0:2, :].A)
+        npt.assert_array_almost_equal(hsp3[0:5, :].A, hsp3_sp[0:5, :].A)
 
     def test_dense_CSR(self):
         d1, d2 = make_matrixes(10, 20, 50, 1)

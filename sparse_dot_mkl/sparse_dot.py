@@ -1,9 +1,11 @@
+import time
 import ctypes as _ctypes
 import numpy as np
 import scipy.sparse as _spsparse
 from scipy.sparse import isspmatrix_csr as is_csr, isspmatrix_csc as is_csc
 from numpy.ctypeslib import ndpointer, as_array
 from numpy.testing import assert_array_almost_equal
+
 
 # Load mkl_spblas.so through the common interface
 _libmkl = _ctypes.cdll.LoadLibrary("libmkl_rt.so")
@@ -435,7 +437,7 @@ if MKL.MKL_INT is None:
             raise ImportError("Unable to set MKL numeric types")
 
 
-def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=False):
+def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=False, debug=False):
     """
     Multiply together two scipy sparse matrixes using the intel Math Kernel Library.
     This currently only supports float32 and float64 data
@@ -459,9 +461,13 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
     If set to False, the array column indices will not be ordered.
     The scipy sparse dot product does not yield ordered column indices so this defaults to False
     :type reorder_output: bool
+    :param debug: Should debug and timing messages be printed. Defaults to false.
+    :type debug: bool
     :return: Sparse matrix that is the result of A * B in CSR format
     :rtype: scipy.sparse.csr_matrix
     """
+
+    dprint = print if debug else lambda x: x
 
     # Check for allowed sparse matrix types
     if not is_csr(matrix_a) or not is_csr(matrix_b):
@@ -474,6 +480,8 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
 
     # Check dtypes
     if matrix_a.dtype != matrix_b.dtype and cast:
+        dprint("Recasting matrix data types {a} and {b} to np.float64".format(a=matrix_a.data.dtype,
+                                                                              b=matrix_b.data.dtype))
         matrix_a.data = matrix_a.data if matrix_a.dtype == np.float64 else matrix_a.data.astype(np.float64)
         matrix_b.data = matrix_b.data if matrix_b.dtype == np.float64 else matrix_b.data.astype(np.float64)
     elif matrix_a.dtype != matrix_b.dtype:
@@ -481,22 +489,40 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
                                                                                           b=matrix_b.dtype)
         raise ValueError(err_msg)
 
+    t0 = time.time()
+
     # Create intel MKL objects
     mkl_a, a_dbl = _create_mkl_sparse(matrix_a, cast=cast)
     mkl_b, b_dbl = _create_mkl_sparse(matrix_b, cast=cast)
 
+    t1 = time.time()
+    dprint("Created MKL sparse handles: {0:.4f} seconds".format(t1 - t0))
+
     # Dot product
     mkl_c = _matmul_mkl(mkl_a, mkl_b)
+
+    t2 = time.time()
+    dprint("Multiplied matrices: {0:.4f} seconds".format(t2 - t1))
 
     # Reorder
     if reorder_output:
         _order_mkl_handle(mkl_c)
 
+        t2_1 = time.time()
+        dprint("Reordered indicies: {0:.4f} seconds".format(t2_1 - t2))
+        t2 = t2_1
+
     # Extract
     python_c = _export_mkl(mkl_c, a_dbl or b_dbl, copy=copy, output_type="csr")
+
+    t3 = time.time()
+    dprint("Created python handle: {0:.4f} seconds".format(t3 - t2))
 
     # Destroy
     if copy:
         _destroy_mkl_handle(mkl_c)
+
+        t4 = time.time()
+        dprint("Cleaned up MKL object: {0:.4f} seconds".format(t4 - t3))
 
     return python_c
