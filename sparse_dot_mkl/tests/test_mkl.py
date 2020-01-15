@@ -148,6 +148,7 @@ class TestMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
         self.assertTrue(hsp3.dtype == np.float64)
 
+    @unittest.skip
     def test_CSC(self):
         d1, d2 = _spsparse.csc_matrix(self.mat1), _spsparse.csc_matrix(self.mat2)
 
@@ -157,6 +158,7 @@ class TestMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
         self.assertTrue(hsp3.dtype == np.float64)
 
+    @unittest.skip
     def test_CSR_CSC(self):
         d1, d2 = self.mat1, _spsparse.csc_matrix(self.mat2)
 
@@ -166,6 +168,7 @@ class TestMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
         self.assertTrue(hsp3.dtype == np.float64)
 
+    @unittest.skip
     def test_CSC_CSR(self):
         d1, d2 = _spsparse.csc_matrix(self.mat1), self.mat2
 

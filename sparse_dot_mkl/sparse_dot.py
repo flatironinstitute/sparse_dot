@@ -464,8 +464,8 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
     """
 
     # Check for allowed sparse matrix types
-    if not ((is_csr(matrix_a) or is_csc(matrix_a)) and (is_csr(matrix_b) or is_csc(matrix_b))):
-        raise ValueError("Both input matrices to csr_dot_product_mkl must be CSR or CSC format")
+    if not is_csr(matrix_a) or not is_csr(matrix_b):
+        raise ValueError("Both input matrices to csr_dot_product_mkl must be CSR")
 
     # Check to make sure that this multiplication can work
     if matrix_a.shape[1] != matrix_b.shape[0]:
@@ -485,16 +485,6 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
     mkl_a, a_dbl = _create_mkl_sparse(matrix_a, cast=cast)
     mkl_b, b_dbl = _create_mkl_sparse(matrix_b, cast=cast)
 
-    output_type = "csr"
-
-    # Convert a non-CSR matrix to CSR if they're mixed type
-    if is_csr(matrix_a) and is_csc(matrix_b):
-        mkl_csc, mkl_b = mkl_b, _convert_to_csr(mkl_b)
-    elif is_csc(matrix_a) and is_csr(matrix_b):
-        mkl_csc, mkl_a = mkl_a, _convert_to_csr(mkl_a)
-    elif is_csc(matrix_a) and is_csc(matrix_b):
-        output_type = "csc"
-
     # Dot product
     mkl_c = _matmul_mkl(mkl_a, mkl_b)
 
@@ -503,7 +493,7 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
         _order_mkl_handle(mkl_c)
 
     # Extract
-    python_c = _export_mkl(mkl_c, a_dbl or b_dbl, copy=copy, output_type=output_type)
+    python_c = _export_mkl(mkl_c, a_dbl or b_dbl, copy=copy, output_type="csr")
 
     # Destroy
     if copy:
