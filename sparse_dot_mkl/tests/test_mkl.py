@@ -141,7 +141,7 @@ class TestMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
 
     def test_scale(self):
-        hsp1, hsp2 = make_matrixes(10000, 10000, 6000, 0.01)
+        hsp1, hsp2 = make_matrixes(10000, 6000, 10000, 0.01)
         hsp3_sp = hsp1.dot(hsp2)
         hsp3 = dot_product_mkl(hsp1, hsp2)
 
