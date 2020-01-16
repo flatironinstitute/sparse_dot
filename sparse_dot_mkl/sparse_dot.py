@@ -2,7 +2,7 @@ import time
 import ctypes as _ctypes
 import numpy as np
 import scipy.sparse as _spsparse
-from scipy.sparse import isspmatrix_csr as is_csr
+from scipy.sparse import isspmatrix_csr as is_csr, isspmatrix_csc as is_csc
 from numpy.ctypeslib import ndpointer, as_array
 from numpy.testing import assert_array_almost_equal
 
@@ -162,15 +162,12 @@ def _check_scipy_index_typing(sparse_matrix):
         sparse_matrix.indices = sparse_matrix.indices.astype(MKL.MKL_INT_NUMPY)
 
 
-def _create_mkl_sparse(matrix, cast=False):
+def _create_mkl_sparse(matrix):
     """
     Create MKL internal representation
 
     :param matrix: Sparse data in CSR or CSC format
     :type matrix: scipy.sparse.spmatrix
-    :param cast: If the dtype isn't float32 or float64, cast it to float64.
-        Note that this changes the data in the CSR matrix.
-    :type cast: bool
 
     :return ref, double_precision: Handle for the MKL internal representation and boolean for double precision
     :rtype: sparse_matrix_t, float
@@ -180,9 +177,6 @@ def _create_mkl_sparse(matrix, cast=False):
     if matrix.dtype == np.float32:
         double_precision = False
     elif matrix.dtype == np.float64:
-        double_precision = True
-    elif cast:
-        matrix.data = matrix.data.astype(np.float64)
         double_precision = True
     else:
         raise ValueError("Only float32 or float64 dtypes are supported")
@@ -334,7 +328,7 @@ def _export_mkl(csr_mkl_handle, double_precision, output_type="csr", copy=False)
     return sp_matrix_constructor((data, indices, indptren), shape=(nrows, ncols))
 
 
-def _matmul_mkl(mat_ref_a, mat_ref_b, sp_ref_a, sp_ref_b):
+def _matmul_mkl(sp_ref_a, sp_ref_b):
     """
     Dot product two MKL objects together and return a handle to the result
 
@@ -347,6 +341,7 @@ def _matmul_mkl(mat_ref_a, mat_ref_b, sp_ref_a, sp_ref_b):
     """
 
     ref_handle = sparse_matrix_t()
+
     ret_val = MKL._mkl_sparse_spmm(_ctypes.c_int(10),
                                    sp_ref_a,
                                    sp_ref_b,
@@ -355,9 +350,6 @@ def _matmul_mkl(mat_ref_a, mat_ref_b, sp_ref_a, sp_ref_b):
     # Check return
     if ret_val != 0:
         raise ValueError("mkl_sparse_spmm returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
-
-    assert mat_ref_a.data.shape[0] == mat_ref_a.indices.shape[0]
-    assert mat_ref_b.data.shape[0] == mat_ref_b.indices.shape[0]
 
     return ref_handle
 
@@ -427,6 +419,19 @@ def _validate_dtype():
     assert_array_almost_equal(test_comparison, final_array.A)
 
 
+def _matrix_stats(matrix, name="", pfunc=print):
+    stat_str = "\tMin: {mi:.4f}, Max: {ma:.4f}, Density: {d:.4f}, Data Type: {t}, Index Type: {it}"
+    pfunc("Matrix {name}: {sh}, ({nnz} nnz), ({nr} leading axis index)".format(name=name,
+                                                                               sh=matrix.shape,
+                                                                               nnz=matrix.data.shape[0],
+                                                                               nr=matrix.indptr.shape[0]))
+    pfunc(stat_str.format(mi=matrix.data.min(),
+                          ma=matrix.data.max(),
+                          t=matrix.data.dtype,
+                          it=matrix.indices.dtype,
+                          d=matrix.data.shape[0] / (matrix.shape[0] * matrix.shape[1])))
+
+
 # Define dtypes empirically
 # Basically just try with int64s and if that doesn't work try with int32s
 if MKL.MKL_INT is None:
@@ -475,11 +480,15 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
     :rtype: scipy.sparse.csr_matrix
     """
 
-    dprint = print if debug else lambda x: x
+    dprint = print if debug else lambda *x: x
 
     # Check for allowed sparse matrix types
-    if not is_csr(matrix_a) or not is_csr(matrix_b):
-        raise ValueError("Both input matrices to csr_dot_product_mkl must be CSR")
+    if is_csr(matrix_a) and is_csr(matrix_b):
+        output_type = "csr"
+    elif is_csc(matrix_a) and is_csc(matrix_b):
+        output_type = "csc"
+    else:
+        raise ValueError("Both input matrices to csr_dot_product_mkl must be CSR or both must be CSC")
 
     # Check to make sure that this multiplication can work
     if matrix_a.shape[1] != matrix_b.shape[0]:
@@ -497,7 +506,7 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
            matrix_b.indices.shape[0]) == 0:
 
         final_dtype = np.float64 if matrix_a.dtype != matrix_b.dtype or matrix_a.dtype != np.float32 else np.float32
-        return _spsparse.csr_matrix((matrix_a.shape[0], matrix_b.shape[0]), dtype=final_dtype)
+        return _spsparse.csr_matrix((matrix_a.shape[0], matrix_b.shape[1]), dtype=final_dtype)
 
     # Check dtypes
     if matrix_a.dtype != matrix_b.dtype and cast:
@@ -511,37 +520,17 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
         raise ValueError(err_msg)
 
     if debug:
-        stat_str = "\tMin: {mi:.4f}, Max: {ma:.4f}, Density: {d:.4f}, Data Type: {t}, Index Type: {it}"
-        dprint("Matrix A: {sh}, ({nnz} nnz), ({nr} leading axis index)".format(sh=matrix_a.shape,
-                                                                               nnz=matrix_a.data.shape[0],
-                                                                               nr=matrix_a.indptr.shape[0]))
-        dprint(stat_str.format(mi=matrix_a.data.min(),
-                               ma=matrix_a.data.max(),
-                               t=matrix_a.data.dtype,
-                               it=matrix_a.indices.dtype,
-                               d=matrix_a.data.shape[0] / (matrix_a.shape[0] * matrix_a.shape[1])))
-
-        dprint("Matrix B: {sh}, ({nnz} nnz), ({nr} leading axis index)".format(sh=matrix_b.shape,
-                                                                               nnz=matrix_b.data.shape[0],
-                                                                               nr=matrix_b.indptr.shape[0]))
-        dprint(stat_str.format(mi=matrix_b.data.min(),
-                               ma=matrix_b.data.max(),
-                               t=matrix_b.data.dtype,
-                               it=matrix_b.indices.dtype,
-                               d=matrix_b.data.shape[0] / (matrix_b.shape[0] * matrix_b.shape[1])))
-
-    t0 = time.time()
+        _matrix_stats(matrix_a, name="A", pfunc=dprint)
+        _matrix_stats(matrix_b, name="B", pfunc=dprint)
+        t0 = time.time()
 
     # Create intel MKL objects
-    mkl_a, a_dbl = _create_mkl_sparse(matrix_a, cast=cast)
-    mkl_b, b_dbl = _create_mkl_sparse(matrix_b, cast=cast)
-
-    _order_mkl_handle(mkl_a)
-    _order_mkl_handle(mkl_b)
+    mkl_a, a_dbl = _create_mkl_sparse(matrix_a)
+    mkl_b, b_dbl = _create_mkl_sparse(matrix_b)
 
     if debug:
-        t0_1 = time.time()
-        dprint("Created MKL sparse handles: {0:.6f} seconds".format(t0_1 - t0))
+        t1 = time.time()
+        dprint("Created MKL sparse handles: {0:.6f} seconds".format(t1 - t0))
 
         dbg_a = _export_mkl(mkl_a, a_dbl, copy=False, output_type="csr" if is_csr(matrix_a) else "csc")
         dbg_b = _export_mkl(mkl_b, b_dbl, copy=False, output_type="csr" if is_csr(matrix_b) else "csc")
@@ -554,46 +543,35 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
         dprint("\tMatrix B: {n} / {sz} non-finite".format(n=(~np.isfinite(dbg_b.data)).sum(),
                                                           sz=dbg_b.shape[0] * dbg_b.shape[1]))
 
-        dprint("Validated MKL sparse handles: {0:.6f} seconds".format(time.time() - t0_1))
-
-    t1 = time.time()
+        t2 = time.time()
+        dprint("Validated MKL sparse handles: {0:.6f} seconds".format(t2 - t1))
 
     # Dot product
-    mkl_c = _matmul_mkl(matrix_a, matrix_b, mkl_a, mkl_b)
+    mkl_c = _matmul_mkl(mkl_a, mkl_b)
 
-    t2 = time.time()
-    dprint("Multiplied matrices: {0:.6f} seconds".format(t2 - t1))
+    _destroy_mkl_handle(mkl_a)
+    _destroy_mkl_handle(mkl_b)
+
+    if debug:
+        t3 = time.time()
+        dprint("Multiplied matrices: {0:.6f} seconds".format(t3 - t2))
 
     # Reorder
     if reorder_output:
         _order_mkl_handle(mkl_c)
 
-        t2_1 = time.time()
-        dprint("Reordered indicies: {0:.6f} seconds".format(t2_1 - t2))
-        t2 = t2_1
+        if debug:
+            dprint("Reordered indicies: {0:.6f} seconds".format(time.time() - t3))
+            t3 = time.time()
 
     # Extract
-    python_c = _export_mkl(mkl_c, a_dbl or b_dbl, copy=copy, output_type="csr")
+    python_c = _export_mkl(mkl_c, a_dbl or b_dbl, copy=copy, output_type=output_type)
 
-    t3 = time.time()
-    dprint("Created python handle: {0:.6f} seconds".format(t3 - t2))
-
-    if debug:
-        stat_str = "\tMin: {mi:.4f}, Max: {ma:.4f}, Density: {d:.4f}, Data Type: {t}, Index Type: {it}"
-        dprint("Output: {sh}, ({nnz} nnz), ({nr} leading axis index)".format(sh=python_c.shape,
-                                                                             nnz=python_c.data.shape[0],
-                                                                             nr=python_c.indptr.shape[0]))
-        dprint(stat_str.format(mi=python_c.data.min(),
-                               ma=python_c.data.max(),
-                               t=python_c.data.dtype,
-                               it=python_c.indices.dtype,
-                               d=python_c.data.shape[0] / (python_c.shape[0] * python_c.shape[1])))
-
-    # Destroy
     if copy:
         _destroy_mkl_handle(mkl_c)
 
-        t4 = time.time()
-        dprint("Cleaned up MKL object: {0:.6f} seconds".format(t4 - t3))
+    if debug:
+        dprint("Created python handle: {0:.6f} seconds".format(time.time() - t3))
+        _matrix_stats(python_c, name="Output", pfunc=dprint)
 
     return python_c
