@@ -66,6 +66,14 @@ class MKL:
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-convert-csr
     _mkl_sparse_convert_csr = _libmkl.mkl_sparse_convert_csr
 
+    # Import function for matmul single dense
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-spmm
+    _mkl_sparse_s_spmmd = _libmkl.mkl_sparse_s_spmmd
+
+    # Import function for matmul double dense
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-spmm
+    _mkl_sparse_d_spmmd = _libmkl.mkl_sparse_d_spmmd
+
     @classmethod
     def _set_int_type(cls, c_type, np_type):
         cls.MKL_INT = c_type
@@ -119,6 +127,22 @@ class MKL:
                                          sparse_matrix_t,
                                          _ctypes.POINTER(sparse_matrix_t)]
         cls._mkl_sparse_spmm.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_s_spmmd.argtypes = [_ctypes.c_int,
+                                            sparse_matrix_t,
+                                            sparse_matrix_t,
+                                            _ctypes.c_int,
+                                            _ctypes.POINTER(_ctypes.c_float),
+                                            MKL.MKL_INT]
+        cls._mkl_sparse_s_spmmd.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_d_spmmd.argtypes = [_ctypes.c_int,
+                                            sparse_matrix_t,
+                                            sparse_matrix_t,
+                                            _ctypes.c_int,
+                                            _ctypes.POINTER(_ctypes.c_double),
+                                            MKL.MKL_INT]
+        cls._mkl_sparse_d_spmmd.restypes = _ctypes.c_int
 
         cls._mkl_sparse_destroy.argtypes = [sparse_matrix_t]
         cls._mkl_sparse_destroy.restypes = _ctypes.c_int
@@ -354,6 +378,39 @@ def _matmul_mkl(sp_ref_a, sp_ref_b):
     return ref_handle
 
 
+def _matmul_mkl_dense(sp_ref_a, sp_ref_b, output_shape, double_precision):
+    """
+
+    :param sp_ref_a: Sparse matrix A handle
+    :type sp_ref_a: sparse_matrix_t
+    :param sp_ref_b: Sparse matrix B handle
+    :type sp_ref_b: sparse_matrix_t
+    :param double_precision: The resulting array will be float64
+    :type double_precision: bool
+
+    :return: Sparse matrix handle that is the dot product A * B
+    :rtype: sparse_matrix_t
+    """
+
+    output_arr = np.zeros(output_shape, dtype=np.float64 if double_precision else np.float32)
+    output_ctype = _ctypes.c_double if double_precision else _ctypes.c_float
+    func = MKL._mkl_sparse_d_spmmd if double_precision else MKL._mkl_sparse_s_spmmd
+
+    ret_val = func(10,
+                   sp_ref_a,
+                   sp_ref_b,
+                   101,
+                   output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
+                   output_shape[1])
+
+    # Check return
+    if ret_val != 0:
+        err_msg = "{fn} returned {v} ({e})".format(fn=func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
+        raise ValueError(err_msg)
+
+    return output_arr
+
+
 def _destroy_mkl_handle(ref_handle):
     """
     Deallocate a MKL sparse handle
@@ -450,7 +507,7 @@ if MKL.MKL_INT is None:
             raise ImportError("Unable to set MKL numeric types")
 
 
-def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=False, debug=False):
+def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False):
     """
     Multiply together two scipy sparse matrixes using the intel Math Kernel Library.
     This currently only supports float32 and float64 data
@@ -466,14 +523,17 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
     :param copy: Should the MKL arrays get copied and then explicitly deallocated.
     If set to True, there is a copy, but there is less risk of memory leaking.
     If set to False, numpy arrays will be created from C pointers without a copy.
-    I don't know if these arrays will be garbage collected correctly by python.
-    They seem to, so this defaults to False.
+    This isn't correctly garbage collected correctly by python when set to False.
+    So this defaults to True.
     :type copy: bool
     :param reorder_output: Should the array indices be reordered using MKL
     If set to True, the object in C will be ordered and then exported into python
     If set to False, the array column indices will not be ordered.
     The scipy sparse dot product does not yield ordered column indices so this defaults to False
     :type reorder_output: bool
+    :param dense: Should the matrix multiplication yield a dense numpy array
+    This does not require any copy and is memory efficient if the output array density is > 50%
+    :type dense: bool
     :param debug: Should debug and timing messages be printed. Defaults to false.
     :type debug: bool
     :return: Sparse matrix that is the result of A * B in CSR format
@@ -481,6 +541,7 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
     """
 
     dprint = print if debug else lambda *x: x
+    default_output = _spsparse.csr_matrix if not dense else np.zeros
 
     # Check for allowed sparse matrix types
     if is_csr(matrix_a) and is_csr(matrix_b):
@@ -506,7 +567,7 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
            matrix_b.indices.shape[0]) == 0:
 
         final_dtype = np.float64 if matrix_a.dtype != matrix_b.dtype or matrix_a.dtype != np.float32 else np.float32
-        return _spsparse.csr_matrix((matrix_a.shape[0], matrix_b.shape[1]), dtype=final_dtype)
+        return default_output((matrix_a.shape[0], matrix_b.shape[1]), dtype=final_dtype)
 
     # Check dtypes
     if matrix_a.dtype != matrix_b.dtype and cast:
@@ -546,32 +607,43 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=False, reorder_output=F
         t2 = time.time()
         dprint("Validated MKL sparse handles: {0:.6f} seconds".format(t2 - t1))
 
-    # Dot product
-    mkl_c = _matmul_mkl(mkl_a, mkl_b)
+    # Call spmmd for dense output directly if the dense flag is set
+    if dense:
+        dense_arr = _matmul_mkl_dense(mkl_a, mkl_b, (matrix_a.shape[0], matrix_b.shape[1]), a_dbl or b_dbl)
 
-    _destroy_mkl_handle(mkl_a)
-    _destroy_mkl_handle(mkl_b)
+        _destroy_mkl_handle(mkl_a)
+        _destroy_mkl_handle(mkl_b)
 
-    if debug:
-        t3 = time.time()
-        dprint("Multiplied matrices: {0:.6f} seconds".format(t3 - t2))
+        return dense_arr
 
-    # Reorder
-    if reorder_output:
-        _order_mkl_handle(mkl_c)
+    # Call spmm for sparse output if the dense flag is not set and then export the sparse matrix to python
+    else:
+        # Dot product
+        mkl_c = _matmul_mkl(mkl_a, mkl_b)
+
+        _destroy_mkl_handle(mkl_a)
+        _destroy_mkl_handle(mkl_b)
 
         if debug:
-            dprint("Reordered indicies: {0:.6f} seconds".format(time.time() - t3))
             t3 = time.time()
+            dprint("Multiplied matrices: {0:.6f} seconds".format(t3 - t2))
 
-    # Extract
-    python_c = _export_mkl(mkl_c, a_dbl or b_dbl, copy=copy, output_type=output_type)
+        # Reorder
+        if reorder_output:
+            _order_mkl_handle(mkl_c)
 
-    if copy:
-        _destroy_mkl_handle(mkl_c)
+            if debug:
+                dprint("Reordered indicies: {0:.6f} seconds".format(time.time() - t3))
+                t3 = time.time()
 
-    if debug:
-        dprint("Created python handle: {0:.6f} seconds".format(time.time() - t3))
-        _matrix_stats(python_c, name="Output", pfunc=dprint)
+        # Extract
+        python_c = _export_mkl(mkl_c, a_dbl or b_dbl, copy=copy, output_type=output_type)
 
-    return python_c
+        if copy:
+            _destroy_mkl_handle(mkl_c)
+
+        if debug:
+            dprint("Created python handle: {0:.6f} seconds".format(time.time() - t3))
+            _matrix_stats(python_c, name="Output", pfunc=dprint)
+
+        return python_c

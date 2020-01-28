@@ -232,3 +232,42 @@ class TestMultiplication(unittest.TestCase):
 
         npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
         npt.assert_array_almost_equal(mat3_np, mat3.A)
+
+
+class TestDenseMultiplication(unittest.TestCase):
+
+    def setUp(self):
+        self.mat1 = MATRIX_1.copy()
+        self.mat2 = MATRIX_2.copy()
+
+    def test_float32_CSR(self):
+        d1, d2 = self.mat1.astype(np.float32), self.mat2.astype(np.float32)
+        mat3_np = np.dot(d1.A, d2.A)
+
+        mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_float32_CSC(self):
+        d1, d2 = self.mat1.astype(np.float32).tocsc(), self.mat2.astype(np.float32).tocsc()
+        mat3_np = np.dot(d1.A, d2.A)
+
+        mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_float64_CSR(self):
+        d1, d2 = self.mat1, self.mat2
+        mat3_np = np.dot(d1.A, d2.A)
+
+        mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_float64_CSC(self):
+        d1, d2 = self.mat1.tocsc(), self.mat2.tocsc()
+        mat3_np = np.dot(d1.A, d2.A)
+
+        mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
