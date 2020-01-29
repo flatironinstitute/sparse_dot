@@ -305,7 +305,6 @@ class TestDenseDenseMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(mat3_np, mat3)
 
 
-@unittest.skip
 class TestSparseDenseMultiplication(unittest.TestCase):
 
     def setUp(self):

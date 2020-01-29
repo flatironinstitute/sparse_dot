@@ -2,7 +2,7 @@ import numpy as np
 import ctypes as _ctypes
 import scipy.sparse as _spsparse
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
-                                           _destroy_mkl_handle, RETURN_CODES)
+                                           _destroy_mkl_handle, matrix_descr, RETURN_CODES)
 
 
 def _sparse_dense_matmul(matrix_a, matrix_b, double_precision, m, n, k, scalar=1., b_is_sparse=False):
@@ -18,7 +18,7 @@ def _sparse_dense_matmul(matrix_a, matrix_b, double_precision, m, n, k, scalar=1
         ret_val = func(10,
                        scalar,
                        matrix_a,
-                       20,
+                       matrix_descr(),
                        101,
                        matrix_b,
                        output_shape[1],

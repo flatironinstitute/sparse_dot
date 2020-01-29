@@ -161,7 +161,7 @@ class MKL:
         cls._mkl_sparse_s_mm.argtypes = [_ctypes.c_int,
                                          _ctypes.c_float,
                                          sparse_matrix_t,
-                                         _ctypes.c_int,
+                                         matrix_descr,
                                          _ctypes.c_int,
                                          ndpointer(dtype=_ctypes.c_float, ndim=2, flags='C_CONTIGUOUS'),
                                          MKL.MKL_INT,
@@ -174,7 +174,7 @@ class MKL:
         cls._mkl_sparse_d_mm.argtypes = [_ctypes.c_int,
                                          _ctypes.c_double,
                                          sparse_matrix_t,
-                                         _ctypes.c_int,
+                                         matrix_descr,
                                          _ctypes.c_int,
                                          ndpointer(dtype=_ctypes.c_double, ndim=2, flags='C_CONTIGUOUS'),
                                          MKL.MKL_INT,
@@ -232,6 +232,17 @@ class _sparse_matrix(_ctypes.Structure):
 
 
 sparse_matrix_t = _ctypes.POINTER(_sparse_matrix)
+
+
+# Matrix description struct
+class matrix_descr(_ctypes.Structure):
+    _fields_ = [("sparse_matrix_type_t", _ctypes.c_int),
+                ("sparse_fill_mode_t", _ctypes.c_int),
+                ("sparse_diag_type_t", _ctypes.c_int)]
+
+    def __init__(self, sparse_matrix_type_t=20, sparse_fill_mode_t=0, sparse_diag_type_t=0):
+        super(matrix_descr, self).__init__(sparse_matrix_type_t, sparse_fill_mode_t, sparse_diag_type_t)
+
 
 # Define standard return codes
 RETURN_CODES = {0: "SPARSE_STATUS_SUCCESS",
