@@ -9,10 +9,10 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     Multiply together matrixes using the intel Math Kernel Library.
     This currently only supports float32 and float64 data
 
-    :param matrix_a: Sparse matrix A in CSC/CSR format
-    :type matrix_a: scipy.sparse.spmatrix
-    :param matrix_b: Sparse matrix B in CSC/CSR format
-    :type matrix_b: scipy.sparse.spmatrix
+    :param matrix_a: Sparse matrix A in CSC/CSR format or dense matrix in numpy format
+    :type matrix_a: scipy.sparse.spmatrix, np.ndarray
+    :param matrix_b: Sparse matrix B in CSC/CSR format or dense matrix in numpy format
+    :type matrix_b: scipy.sparse.spmatrix, np.ndarray
     :param cast: Should the data be coerced into float64 if it isn't float32 or float64
     If set to True and any other dtype is passed, the matrix data will be modified in-place
     If set to False and any dtype that isn't float32 or float64 is passed, a ValueError will be raised

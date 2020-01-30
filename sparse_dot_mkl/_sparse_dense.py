@@ -2,7 +2,7 @@ import numpy as np
 import ctypes as _ctypes
 import scipy.sparse as _spsparse
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
-                                           _destroy_mkl_handle, matrix_descr, RETURN_CODES)
+                                           _destroy_mkl_handle, matrix_descr, RETURN_CODES, _convert_to_csr)
 
 
 def _sparse_dense_matmul(matrix_a, matrix_b, double_precision, m, n, scalar=1., b_is_sparse=False):
@@ -72,19 +72,31 @@ def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1.):
 
     matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast, dprint=dprint)
 
-    if _spsparse.issparse(matrix_a):
+    if _spsparse.isspmatrix_csr(matrix_a) or _spsparse.isspmatrix_csc(matrix_a):
         mkl_a, a_dbl = _create_mkl_sparse(matrix_a)
+
+        if _spsparse.isspmatrix_csc(matrix_a):
+            mkl_a = _convert_to_csr(mkl_a)
+
         b_dbl = matrix_b.dtype == np.float64
         matrix_c = _sparse_dense_matmul(mkl_a, matrix_b,
                                         a_dbl or b_dbl, matrix_a.shape[0], matrix_b.shape[1],
                                         scalar=scalar, b_is_sparse=False)
         _destroy_mkl_handle(mkl_a)
         return matrix_c
-    elif _spsparse.issparse(matrix_b):
+
+    elif _spsparse.isspmatrix_csr(matrix_b) or _spsparse.isspmatrix_csc(matrix_b):
         mkl_b, b_dbl = _create_mkl_sparse(matrix_b)
+
+        if _spsparse.isspmatrix_csc(matrix_b):
+            mkl_b = _convert_to_csr(mkl_b)
+
         a_dbl = matrix_a.dtype == np.float64
         matrix_c = _sparse_dense_matmul(matrix_a, mkl_b,
                                         a_dbl or b_dbl, matrix_a.shape[0], matrix_b.shape[1],
                                         scalar=scalar, b_is_sparse=True)
         _destroy_mkl_handle(mkl_b)
         return matrix_c
+
+    else:
+        raise ValueError("The sparse input matrix to dot_product_mkl must be CSR or CSC")
