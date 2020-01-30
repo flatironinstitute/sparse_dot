@@ -121,7 +121,7 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
         return default_output((matrix_a.shape[0], matrix_b.shape[1]), dtype=final_dtype)
 
     # Check dtypes
-    _type_check(matrix_a, matrix_b, cast=cast, dprint=dprint)
+    matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast, dprint=dprint)
 
     t0 = time.time()
 

@@ -515,12 +515,7 @@ def _sanity_check(matrix_a, matrix_b):
 
 
 def _cast_to_float64(matrix):
-    if _spsparse.issparse(matrix) and matrix.data.dtype != np.float64:
-        matrix.data = matrix.data.astype(np.float64)
-    elif matrix.dtype != np.float64:
-        matrix = matrix.astype(np.float64)
-
-    return matrix
+    return matrix.astype(np.float64) if matrix.dtype != np.float64 else matrix
 
 
 def _type_check(matrix_a, matrix_b, cast=False, dprint=print):
