@@ -8,7 +8,7 @@ A secondary advantage is the direct multiplication of a sparse and a dense matri
 intermediate conversion (also multithreaded). 
 
 The only function explicitly available is `dot_product_mkl`, which takes two matrices
-`dot_product_mkl(A, B)` and a matrix that is `A (dot) B`. 
+`dot_product_mkl(A, B)` and returns a matrix that is `A (dot) B`. 
 If both matrices are dense, the output will be dense.
 If one matrix is dense and one is sparse, the output will be dense.
 If both matrices are sparse, the output will be sparse unless the `dense=True` flag is passed.
