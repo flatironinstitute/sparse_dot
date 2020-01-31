@@ -2,11 +2,11 @@ import os
 from setuptools import setup, find_packages
 
 DISTNAME = 'sparse_dot_mkl'
-VERSION = '0.2'
-DESCRIPTION = "Intel MKL wrapper for sparse matrix operations"
+VERSION = '0.2a'
+DESCRIPTION = "Intel MKL wrapper for sparse matrix multiplication"
 MAINTAINER = 'Chris Jackson'
 MAINTAINER_EMAIL = 'cj59@nyu.edu'
-URL = 'https://github.com/asistradition/sparse_dot'
+URL = 'https://github.com/flatironinstitute/sparse_dot'
 LICENSE = 'MIT'
 
 # Description from README.md

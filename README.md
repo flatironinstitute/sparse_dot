@@ -1,4 +1,7 @@
 # sparse_dot_mkl
+[![Build Status](https://travis-ci.org/flatironinstitute/sparse_dot.svg?branch=master)](https://travis-ci.org/flatironinstitute/sparse_dot)
+[![codecov](https://codecov.io/gh/flatironinstitute/sparse_dot/branch/master/graph/badge.svg)](https://codecov.io/gh/flatironinstitute/sparse_dot)
+
 
 This is a wrapper for the sparse matrix multiplication in the intel MKL library.
 It is implemented entirely in native python using `ctypes`.
@@ -24,7 +27,8 @@ This only does floating point data, and both matrices must be identical types.
 If `cast=True` non-float matrices will be converted to doubles,
 and a single-precision matrix will be promoted to doubles unless both matrices are single-precision. 
 `cast=True` will ***not*** change data in-place, but will instead make an internal copy. 
-This function may also reorder sparse data structures without warning while creating MKL's internal matrix representation.
+This function may also reorder sparse data structures without warning while creating MKL's internal matrix representation
+(reordering does not change data, only the way it is stored).
 
 This package requires `libmkl_rt.so`. This is distributed with the full version of conda,
 and can be installed into Miniconda with `conda install -c intel mkl`.
