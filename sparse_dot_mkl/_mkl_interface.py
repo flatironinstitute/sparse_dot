@@ -2,8 +2,6 @@ import ctypes as _ctypes
 import numpy as np
 import scipy.sparse as _spsparse
 from numpy.ctypeslib import ndpointer, as_array
-from numpy.testing import assert_array_almost_equal
-
 
 # Load mkl_spblas.so through the common interface
 _libmkl = _ctypes.cdll.LoadLibrary("libmkl_rt.so")
@@ -93,47 +91,28 @@ class MKL:
         cls.MKL_INT = c_type
         cls.MKL_INT_NUMPY = np_type
 
-        create_argtypes = [_ctypes.POINTER(sparse_matrix_t),
-                           _ctypes.c_int,
-                           cls.MKL_INT,
-                           cls.MKL_INT,
-                           ndpointer(dtype=cls.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
-                           ndpointer(dtype=cls.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
-                           ndpointer(dtype=cls.MKL_INT, ndim=1, flags='C_CONTIGUOUS')]
-
-        export_argtypes = [sparse_matrix_t,
-                           _ctypes.POINTER(_ctypes.c_int),
-                           _ctypes.POINTER(cls.MKL_INT),
-                           _ctypes.POINTER(cls.MKL_INT),
-                           _ctypes.POINTER(_ctypes.POINTER(cls.MKL_INT)),
-                           _ctypes.POINTER(_ctypes.POINTER(cls.MKL_INT)),
-                           _ctypes.POINTER(_ctypes.POINTER(cls.MKL_INT))]
-
-        ndpt_double = ndpointer(dtype=_ctypes.c_double, ndim=1, flags='C_CONTIGUOUS')
-        ndpt_single = ndpointer(dtype=_ctypes.c_float, ndim=1, flags='C_CONTIGUOUS')
-
-        cls._mkl_sparse_d_create_csr.argtypes = create_argtypes + [ndpt_double]
+        cls._mkl_sparse_d_create_csr.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_create_csr.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_create_csr.argtypes = create_argtypes + [ndpt_single]
+        cls._mkl_sparse_s_create_csr.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_create_csr.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_d_create_csc.argtypes = create_argtypes + [ndpt_double]
+        cls._mkl_sparse_d_create_csc.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_create_csc.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_create_csc.argtypes = create_argtypes + [ndpt_single]
+        cls._mkl_sparse_s_create_csc.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_create_csc.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_d_export_csr.argtypes = export_argtypes + [_ctypes.POINTER(_ctypes.POINTER(_ctypes.c_double))]
+        cls._mkl_sparse_d_export_csr.argtypes = cls._mkl_export_create_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_export_csr.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_export_csr.argtypes = export_argtypes + [_ctypes.POINTER(_ctypes.POINTER(_ctypes.c_float))]
+        cls._mkl_sparse_s_export_csr.argtypes = cls._mkl_export_create_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_export_csr.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_d_export_csc.argtypes = export_argtypes + [_ctypes.POINTER(_ctypes.POINTER(_ctypes.c_double))]
+        cls._mkl_sparse_d_export_csc.argtypes = cls._mkl_export_create_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_export_csc.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_export_csr.argtypes = export_argtypes + [_ctypes.POINTER(_ctypes.POINTER(_ctypes.c_float))]
+        cls._mkl_sparse_s_export_csr.argtypes = cls._mkl_export_create_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_export_csr.restypes = _ctypes.c_int
 
         cls._mkl_sparse_spmm.argtypes = [_ctypes.c_int,
@@ -142,78 +121,22 @@ class MKL:
                                          _ctypes.POINTER(sparse_matrix_t)]
         cls._mkl_sparse_spmm.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_spmmd.argtypes = [_ctypes.c_int,
-                                            sparse_matrix_t,
-                                            sparse_matrix_t,
-                                            _ctypes.c_int,
-                                            _ctypes.POINTER(_ctypes.c_float),
-                                            MKL.MKL_INT]
+        cls._mkl_sparse_s_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_spmmd.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_d_spmmd.argtypes = [_ctypes.c_int,
-                                            sparse_matrix_t,
-                                            sparse_matrix_t,
-                                            _ctypes.c_int,
-                                            _ctypes.POINTER(_ctypes.c_double),
-                                            MKL.MKL_INT]
+        cls._mkl_sparse_d_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_spmmd.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_mm.argtypes = [_ctypes.c_int,
-                                         _ctypes.c_float,
-                                         sparse_matrix_t,
-                                         matrix_descr,
-                                         _ctypes.c_int,
-                                         ndpointer(dtype=_ctypes.c_float, ndim=2, flags='C_CONTIGUOUS'),
-                                         MKL.MKL_INT,
-                                         MKL.MKL_INT,
-                                         _ctypes.c_float,
-                                         _ctypes.POINTER(_ctypes.c_float),
-                                         MKL.MKL_INT]
+        cls._mkl_sparse_s_mm.argtypes = cls._mkl_sparse_mm_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_mm.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_d_mm.argtypes = [_ctypes.c_int,
-                                         _ctypes.c_double,
-                                         sparse_matrix_t,
-                                         matrix_descr,
-                                         _ctypes.c_int,
-                                         ndpointer(dtype=_ctypes.c_double, ndim=2, flags='C_CONTIGUOUS'),
-                                         MKL.MKL_INT,
-                                         MKL.MKL_INT,
-                                         _ctypes.c_double,
-                                         _ctypes.POINTER(_ctypes.c_double),
-                                         MKL.MKL_INT]
+        cls._mkl_sparse_d_mm.argtypes = cls._mkl_sparse_mm_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_mm.restypes = _ctypes.c_int
 
-        cls._cblas_sgemm.argtypes = [_ctypes.c_int,
-                                     _ctypes.c_int,
-                                     _ctypes.c_int,
-                                     MKL.MKL_INT,
-                                     MKL.MKL_INT,
-                                     MKL.MKL_INT,
-                                     _ctypes.c_float,
-                                     ndpointer(dtype=_ctypes.c_float, ndim=2, flags='C_CONTIGUOUS'),
-                                     MKL.MKL_INT,
-                                     ndpointer(dtype=_ctypes.c_float, ndim=2, flags='C_CONTIGUOUS'),
-                                     MKL.MKL_INT,
-                                     _ctypes.c_float,
-                                     _ctypes.POINTER(_ctypes.c_float),
-                                     MKL.MKL_INT]
+        cls._cblas_sgemm.argtypes = cls._cblas_gemm_argtypes(_ctypes.c_float)
         cls._cblas_sgemm.restypes = None
 
-        cls._cblas_dgemm.argtypes = [_ctypes.c_int,
-                                     _ctypes.c_int,
-                                     _ctypes.c_int,
-                                     MKL.MKL_INT,
-                                     MKL.MKL_INT,
-                                     MKL.MKL_INT,
-                                     _ctypes.c_double,
-                                     ndpointer(dtype=_ctypes.c_double, ndim=2, flags='C_CONTIGUOUS'),
-                                     MKL.MKL_INT,
-                                     ndpointer(dtype=_ctypes.c_double, ndim=2, flags='C_CONTIGUOUS'),
-                                     MKL.MKL_INT,
-                                     _ctypes.c_double,
-                                     _ctypes.POINTER(_ctypes.c_double),
-                                     MKL.MKL_INT]
+        cls._cblas_dgemm.argtypes = cls._cblas_gemm_argtypes(_ctypes.c_double)
         cls._cblas_dgemm.restypes = None
 
         cls._mkl_sparse_destroy.argtypes = [sparse_matrix_t]
@@ -225,6 +148,69 @@ class MKL:
     def __init__(self):
         raise NotImplementedError("This class is not intended to be instanced")
 
+    """ The following methods return the argtype lists for each MKL function that has s and d variants"""
+
+    @staticmethod
+    def _mkl_sparse_create_argtypes(prec_type):
+        return [_ctypes.POINTER(sparse_matrix_t),
+                _ctypes.c_int,
+                MKL.MKL_INT,
+                MKL.MKL_INT,
+                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
+                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
+                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
+                ndpointer(dtype=prec_type, ndim=1, flags='C_CONTIGUOUS')]
+
+    @staticmethod
+    def _mkl_export_create_argtypes(prec_type):
+        return [sparse_matrix_t,
+                _ctypes.POINTER(_ctypes.c_int),
+                _ctypes.POINTER(MKL.MKL_INT),
+                _ctypes.POINTER(MKL.MKL_INT),
+                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+                _ctypes.POINTER(_ctypes.POINTER(prec_type))]
+
+
+    @staticmethod
+    def _cblas_gemm_argtypes(prec_type):
+        return [_ctypes.c_int,
+                _ctypes.c_int,
+                _ctypes.c_int,
+                MKL.MKL_INT,
+                MKL.MKL_INT,
+                MKL.MKL_INT,
+                prec_type,
+                ndpointer(dtype=prec_type, ndim=2, flags='C_CONTIGUOUS'),
+                MKL.MKL_INT,
+                ndpointer(dtype=prec_type, ndim=2, flags='C_CONTIGUOUS'),
+                MKL.MKL_INT,
+                prec_type,
+                _ctypes.POINTER(prec_type),
+                MKL.MKL_INT]
+
+    @staticmethod
+    def _mkl_sparse_spmmd_argtypes(prec_type):
+        return [_ctypes.c_int,
+                sparse_matrix_t,
+                sparse_matrix_t,
+                _ctypes.c_int,
+                _ctypes.POINTER(prec_type), MKL.MKL_INT]
+
+    @staticmethod
+    def _mkl_sparse_mm_argtypes(prec_type):
+        return [_ctypes.c_int,
+                prec_type,
+                sparse_matrix_t,
+                matrix_descr,
+                _ctypes.c_int,
+                ndpointer(dtype=prec_type, ndim=2, flags='C_CONTIGUOUS'),
+                MKL.MKL_INT,
+                MKL.MKL_INT,
+                prec_type,
+                _ctypes.POINTER(prec_type),
+                MKL.MKL_INT]
 
 # Construct opaque struct & type
 class _sparse_matrix(_ctypes.Structure):
@@ -476,49 +462,34 @@ def _convert_to_csr(ref_handle):
     return csr_ref
 
 
-def _validate_dtype():
-    """
-    Test to make sure that this library works by creating a random sparse array in CSC format,
-    then converting it to CSR format and making sure is has not raised an exception.
-
-    """
-
-    test_array = _spsparse.random(5, 5, density=0.5, format="csc", dtype=np.float32, random_state=50)
-    test_comparison = test_array.A
-
-    csc_ref, precision_flag = _create_mkl_sparse(test_array)
-
-    csr_ref = _convert_to_csr(csc_ref)
-    final_array = _export_mkl(csr_ref, precision_flag)
-    assert_array_almost_equal(test_comparison, final_array.A)
-
-
-def _matrix_stats(matrix, name="", pfunc=print):
-    stat_str = "\tMin: {mi:.4f}, Max: {ma:.4f}, Density: {d:.4f}, Data Type: {t}, Index Type: {it}"
-    pfunc("Matrix {name}: {sh}, ({nnz} nnz), ({nr} leading axis index)".format(name=name,
-                                                                               sh=matrix.shape,
-                                                                               nnz=matrix.data.shape[0],
-                                                                               nr=matrix.indptr.shape[0]))
-    pfunc(stat_str.format(mi=matrix.data.min(),
-                          ma=matrix.data.max(),
-                          t=matrix.data.dtype,
-                          it=matrix.indices.dtype,
-                          d=matrix.data.shape[0] / (matrix.shape[0] * matrix.shape[1])))
-
-
 def _sanity_check(matrix_a, matrix_b):
+    """
+    Check matrix dimensions
+    :param matrix_a: sp.sparse or numpy array
+    :param matrix_b: sp.sparse or numpy array
+    """
+
+    # Check to make sure that both matrices are 2-d
+    if matrix_a.ndim != 2 or matrix_b.ndim != 2:
+        err_msg = "Matrices must be 2d: {m1} * {m2} is not valid".format(m1=matrix_a.shape, m2=matrix_b.shape)
+        raise ValueError(err_msg)
 
     # Check to make sure that this multiplication can work
     if matrix_a.shape[1] != matrix_b.shape[0]:
-        err_msg = "Matrix alignment error: {m1} * {m2}".format(m1=matrix_a.shape, m2=matrix_b.shape)
+        err_msg = "Matrix alignment error: {m1} * {m2} is not valid".format(m1=matrix_a.shape, m2=matrix_b.shape)
         raise ValueError(err_msg)
 
 
 def _cast_to_float64(matrix):
+    """ Make a copy of the array as double precision floats or return the reference if it already is"""
     return matrix.astype(np.float64) if matrix.dtype != np.float64 else matrix
 
 
 def _type_check(matrix_a, matrix_b, cast=False, dprint=print):
+    """
+    Make sure that both matrices are single precision floats or both are double precision floats
+    If not, convert to double precision floats if cast is True, or raise an error if cast is False
+    """
 
     # Check dtypes
     if matrix_a.dtype == np.float32 and matrix_b.dtype == np.float32:
@@ -539,33 +510,62 @@ def _type_check(matrix_a, matrix_b, cast=False, dprint=print):
 
 
 def _empty_output_check(matrix_a, matrix_b):
-    # Check for edge condition inputs which result in empty outputs
+    """Check for trivial cases where an empty array should be produced"""
+
+    # One dimension is zero
     if min(matrix_a.shape[0],
            matrix_a.shape[1],
            matrix_b.shape[0],
            matrix_b.shape[1]) == 0:
         return True
+
+    # The sparse array is empty
     elif _spsparse.issparse(matrix_a) and min(matrix_a.data.shape[0], matrix_a.indices.shape[0]) == 0:
         return True
     elif _spsparse.issparse(matrix_b) and min(matrix_b.data.shape[0], matrix_b.indices.shape[0]) == 0:
         return True
+
+    # Neither trivial condition
     else:
         return False
 
 
+def _validate_dtype():
+    """
+    Test to make sure that this library works by creating a random sparse array in CSC format,
+    then converting it to CSR format and making sure is has not raised an exception.
+
+    """
+
+    test_array = _spsparse.random(5, 5, density=0.5, format="csc", dtype=np.float32, random_state=50)
+    test_comparison = test_array.A
+
+    csc_ref, precision_flag = _create_mkl_sparse(test_array)
+
+    try:
+        csr_ref = _convert_to_csr(csc_ref)
+        final_array = _export_mkl(csr_ref, precision_flag)
+        if not np.allclose(test_comparison, final_array.A):
+            raise ValueError("Match failed after matrix conversion")
+        _destroy_mkl_handle(csr_ref)
+    finally:
+        _destroy_mkl_handle(csc_ref)
+
+
 # Define dtypes empirically
 # Basically just try with int64s and if that doesn't work try with int32s
+# There's a way to do this with intel's mkl helper package but I don't want to add the dependency
 if MKL.MKL_INT is None:
 
     MKL._set_int_type(_ctypes.c_longlong, np.int64)
 
     try:
         _validate_dtype()
-    except (AssertionError, ValueError) as err:
+    except ValueError as err:
 
         MKL._set_int_type(_ctypes.c_int, np.int32)
 
         try:
             _validate_dtype()
-        except (AssertionError, ValueError):
-            raise ImportError("Unable to set MKL numeric types")
+        except ValueError:
+            raise ImportError("Unable to set MKL numeric type")
