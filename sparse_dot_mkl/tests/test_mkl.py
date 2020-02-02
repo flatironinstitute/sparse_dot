@@ -141,12 +141,12 @@ class TestMultiplication(unittest.TestCase):
 
         npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
 
-    def test_scale(self):
-        hsp1, hsp2 = make_matrixes(10000, 6000, 10000, 0.01)
+    def test_highly_highly_sparse_CSR(self):
+        hsp1, hsp2 = make_matrixes(2000, 1000, 3000, 0.000005)
         hsp3_sp = hsp1.dot(hsp2)
-        hsp3 = dot_product_mkl(hsp1, hsp2, debug=True)
+        hsp3 = dot_product_mkl(hsp1, hsp2)
 
-        npt.assert_array_almost_equal(hsp3[0:5, :].A, hsp3_sp[0:5, :].A)
+        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
 
     def test_dense_CSR(self):
         d1, d2 = make_matrixes(10, 20, 50, 1)
@@ -395,3 +395,10 @@ class TestSparseDenseMultiplication(unittest.TestCase):
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
+
+def run():
+    unittest.main(module='sparse_dot_mkl.tests.test_mkl')
+
+
+if __name__ == '__main__':
+    unittest.main()
