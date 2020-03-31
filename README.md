@@ -29,8 +29,9 @@ and a single-precision matrix will be promoted to doubles unless both matrices a
 This function may also reorder sparse data structures without warning while creating MKL's internal matrix representation
 (reordering does not change data, only the way it is stored).
 
-This package requires `libmkl_rt.so` (or `libmkl_rt.dylib` for OSX). 
-This is distributed with the full version of conda,
+This package requires `libmkl_rt.so` (or `libmkl_rt.dylib` for OSX, or `libmkl_rt.dll` for WIN).
+If the MKL library cannot be loaded an `ImportError` will be raised when the package is first imported. 
+MKL is distributed with the full version of conda,
 and can be installed into Miniconda with `conda install -c intel mkl`.
 Alternatively, you may add need to add the path to MKL shared objects to `LD_LIBRARY_PATH`
 (e.g. `export LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64:$LD_LIBRARY_PATH`).

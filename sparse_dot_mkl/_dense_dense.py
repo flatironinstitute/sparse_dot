@@ -1,6 +1,7 @@
+from sparse_dot_mkl._mkl_interface import MKL, _type_check, _sanity_check, _empty_output_check
+
 import numpy as np
 import ctypes as _ctypes
-from sparse_dot_mkl._mkl_interface import MKL, _type_check, _sanity_check, _empty_output_check
 
 
 def _dense_matmul(matrix_a, matrix_b, double_precision, scalar=1.):

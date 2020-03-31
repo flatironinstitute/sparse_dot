@@ -1,11 +1,12 @@
+from sparse_dot_mkl._mkl_interface import (MKL, sparse_matrix_t, RETURN_CODES, _create_mkl_sparse,
+                                           _export_mkl, _order_mkl_handle, _destroy_mkl_handle, _type_check,
+                                           _empty_output_check, _sanity_check)
 import ctypes as _ctypes
 import numpy as np
 import time
 import scipy.sparse as _spsparse
 from scipy.sparse import isspmatrix_csr as is_csr, isspmatrix_csc as is_csc
-from sparse_dot_mkl._mkl_interface import (MKL, sparse_matrix_t, RETURN_CODES, _create_mkl_sparse,
-                                           _export_mkl, _order_mkl_handle, _destroy_mkl_handle, _type_check,
-                                           _empty_output_check, _sanity_check)
+
 
 
 def _matmul_mkl(sp_ref_a, sp_ref_b):

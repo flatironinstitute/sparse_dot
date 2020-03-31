@@ -1,7 +1,7 @@
-import scipy.sparse as _spsparse
 from sparse_dot_mkl._sparse_sparse import _sparse_dot_sparse as _sds
 from sparse_dot_mkl._sparse_dense import _sparse_dot_dense as _sdd
 from sparse_dot_mkl._dense_dense import _dense_dot_dense as _ddd
+import scipy.sparse as _spsparse
 
 
 def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False):

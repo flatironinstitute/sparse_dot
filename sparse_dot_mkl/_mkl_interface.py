@@ -1,20 +1,28 @@
 import ctypes as _ctypes
+
+# Load mkl_spblas through the libmkl_rt common interface
+# Check each of these library types
+_MKL_SO_LINUX = "libmkl_rt.so"
+_MKL_SO_OSX = "libmkl_rt.dylib"
+_MKL_SO_WINDOWS = "libmkl_rt.dll"
+
+# There's probably a better way to do this
+_libmkl, _libmkl_loading_errors = None, []
+for so_file in [_MKL_SO_LINUX, _MKL_SO_OSX, _MKL_SO_WINDOWS]:
+    try:
+        _libmkl = _ctypes.cdll.LoadLibrary(so_file)
+        break
+    except (OSError, ImportError) as err:
+        _libmkl_loading_errors.append(err)
+
+if _libmkl is None:
+    msg = "Unable to load the MKL libraries through libmkl_rt. Try setting $LD_LIBRARY_PATH."
+    msg += "\n\t" + "\n\t".join(map(lambda x: str(x), _libmkl_loading_errors))
+    raise ImportError(msg)
+
 import numpy as np
 import scipy.sparse as _spsparse
 from numpy.ctypeslib import ndpointer, as_array
-
-# Load mkl_spblas.so through the common interface
-_MKL_SO_LINUX = "libmkl_rt.so"
-_MKL_SO_OSX = "libmkl_rt.dylib"
-
-# There's probably a better way to do this
-try:
-    _libmkl = _ctypes.cdll.LoadLibrary(_MKL_SO_LINUX)
-except OSError:
-    try:
-        _libmkl = _ctypes.cdll.LoadLibrary(_MKL_SO_OSX)
-    except OSError:
-        raise ImportError
 
 NUMPY_FLOAT_DTYPES = [np.float32, np.float64]
 
