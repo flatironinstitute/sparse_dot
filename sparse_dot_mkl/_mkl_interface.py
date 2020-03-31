@@ -4,7 +4,18 @@ import scipy.sparse as _spsparse
 from numpy.ctypeslib import ndpointer, as_array
 
 # Load mkl_spblas.so through the common interface
-_libmkl = _ctypes.cdll.LoadLibrary("libmkl_rt.so")
+_MKL_SO_LINUX = "libmkl_rt.so"
+_MKL_SO_OSX = "libmkl_rt.dylib"
+
+# There's probably a better way to do this
+try:
+    _libmkl = _ctypes.cdll.LoadLibrary(_MKL_SO_LINUX)
+except OSError:
+    try:
+        _libmkl = _ctypes.cdll.LoadLibrary(_MKL_SO_OSX)
+    except OSError:
+        raise ImportError
+
 NUMPY_FLOAT_DTYPES = [np.float32, np.float64]
 
 

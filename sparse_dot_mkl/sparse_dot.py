@@ -14,24 +14,24 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     :param matrix_b: Sparse matrix B in CSC/CSR format or dense matrix in numpy format
     :type matrix_b: scipy.sparse.spmatrix, np.ndarray
     :param cast: Should the data be coerced into float64 if it isn't float32 or float64
-    If set to True and any other dtype is passed, the matrix data will be modified in-place
+    If set to True and any other dtype is passed, the matrix data will copied internally before multiplication
     If set to False and any dtype that isn't float32 or float64 is passed, a ValueError will be raised
     Defaults to False
-    :param copy: Deprecated flag to force copy
+    :param copy: Deprecated flag to force copy. Removed because the behavior was inconsistent.
     :type copy: bool
     :param reorder_output: Should the array indices be reordered using MKL
     If set to True, the object in C will be ordered and then exported into python
     If set to False, the array column indices will not be ordered.
     The scipy sparse dot product does not yield ordered column indices so this defaults to False
     :type reorder_output: bool
-    :param dense: Should the matrix multiplication be forced to a dense numpy array
+    :param dense: Should the matrix multiplication be put into a dense numpy array
     This does not require any copy and is memory efficient if the output array density is > 50%
     Note that this flag has no effect if one input array is dense; then the output will always be dense
     :type dense: bool
     :param debug: Should debug and timing messages be printed. Defaults to false.
     :type debug: bool
-    :return: Sparse matrix that is the result of A * B in CSR format
-    :rtype: scipy.sparse.csr_matrix
+    :return: Matrix that is the result of A * B in input-dependent format
+    :rtype: scipy.sparse.csr_matrix, scipy.sparse.csc_matrix, np.ndarray
     """
 
     dprint = print if debug else lambda *x: x
