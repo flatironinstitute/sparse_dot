@@ -2,6 +2,7 @@ language: python
 python:
   - 3.6
   - 3.7
+  - 3.8
 install:
   # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/use-conda-with-travis-ci.html
   - sudo apt-get -y update
