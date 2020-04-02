@@ -201,9 +201,9 @@ class MKL:
                 MKL.MKL_INT,
                 MKL.MKL_INT,
                 prec_type,
-                ndpointer(dtype=prec_type, ndim=2, flags='C_CONTIGUOUS'),
+                ndpointer(dtype=prec_type, ndim=2),
                 MKL.MKL_INT,
-                ndpointer(dtype=prec_type, ndim=2, flags='C_CONTIGUOUS'),
+                ndpointer(dtype=prec_type, ndim=2),
                 MKL.MKL_INT,
                 prec_type,
                 _ctypes.POINTER(prec_type),
@@ -224,7 +224,7 @@ class MKL:
                 sparse_matrix_t,
                 matrix_descr,
                 _ctypes.c_int,
-                ndpointer(dtype=prec_type, ndim=2, flags='C_CONTIGUOUS'),
+                ndpointer(dtype=prec_type, ndim=2),
                 MKL.MKL_INT,
                 MKL.MKL_INT,
                 prec_type,
@@ -258,6 +258,10 @@ RETURN_CODES = {0: "SPARSE_STATUS_SUCCESS",
                 5: "SPARSE_STATUS_INTERNAL_ERROR",
                 6: "SPARSE_STATUS_NOT_SUPPORTED"}
 
+# Define order codes
+LAYOUT_CODE_C = 101
+LAYOUT_CODE_F = 102
+
 
 def _check_scipy_index_typing(sparse_matrix):
     """
@@ -272,6 +276,27 @@ def _check_scipy_index_typing(sparse_matrix):
         sparse_matrix.indptr = sparse_matrix.indptr.astype(MKL.MKL_INT_NUMPY)
     if sparse_matrix.indices.dtype != MKL.MKL_INT_NUMPY:
         sparse_matrix.indices = sparse_matrix.indices.astype(MKL.MKL_INT_NUMPY)
+
+
+def _get_numpy_layout(numpy_arr):
+    """
+    Get the array layout code for a dense array in C or F order.
+    Raises a ValueError if the array is not contiguous.
+
+    :param numpy_arr: Numpy dense array
+    :type numpy_arr: np.ndarray
+    :return: The layout code for MKL and the leading dimension
+    :rtype: int, int
+    """
+
+    if numpy_arr.flags.c_contiguous:
+        return LAYOUT_CODE_C, numpy_arr.shape[1]
+    elif numpy_arr.flags.f_contiguous:
+        return LAYOUT_CODE_F, numpy_arr.shape[0]
+    elif not numpy_arr.flags.contiguous:
+        raise ValueError("Array is not contiguous")
+    else:
+        raise ValueError("Array layout check has failed for unknown reason")
 
 
 def _create_mkl_sparse(matrix):
