@@ -1,4 +1,5 @@
-from sparse_dot_mkl._mkl_interface import MKL, _type_check, _sanity_check, _empty_output_check
+from sparse_dot_mkl._mkl_interface import (MKL, _type_check, _sanity_check, _empty_output_check, _get_numpy_layout,
+                                           LAYOUT_CODE_C, LAYOUT_CODE_F)
 
 import numpy as np
 import ctypes as _ctypes
@@ -9,25 +10,36 @@ def _dense_matmul(matrix_a, matrix_b, double_precision, scalar=1.):
     m, n, k = matrix_a.shape[0], matrix_b.shape[1], matrix_a.shape[1]
     output_shape = (m, n)
 
-    # Allocate an array for outputs and set functions and types for float or doubles
-    output_arr = np.zeros(output_shape, dtype=np.float64 if double_precision else np.float32)
-    output_ctype = _ctypes.c_double if double_precision else _ctypes.c_float
     func = MKL._cblas_dgemm if double_precision else MKL._cblas_sgemm
 
-    func(101,
+    # Get the memory order for arrays
+    layout_a, ld_a = _get_numpy_layout(matrix_a)
+    layout_b, ld_b = _get_numpy_layout(matrix_b)
+
+    # If they aren't the same, use the order for matrix a and have matrix b transposed
+    op_b = 112 if layout_b != layout_a else 111
+
+    # Set output array; use the memory order from matrix_a
+    out_order, ld_out = ("C", output_shape[1]) if layout_a == LAYOUT_CODE_C else ("F", output_shape[0])
+
+    # Allocate an array for outputs and set functions and types for float or doubles
+    output_arr = np.zeros(output_shape, dtype=np.float64 if double_precision else np.float32, order=out_order)
+    output_ctype = _ctypes.c_double if double_precision else _ctypes.c_float
+
+    func(layout_a,
          111,
-         111,
+         op_b,
          m,
          n,
          k,
          scalar,
          matrix_a,
-         matrix_a.shape[1],
+         ld_a,
          matrix_b,
-         matrix_b.shape[1],
+         ld_b,
          1.,
          output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
-         output_shape[1])
+         ld_out)
 
     return output_arr
 

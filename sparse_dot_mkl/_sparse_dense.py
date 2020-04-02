@@ -1,12 +1,12 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
-                                           _destroy_mkl_handle, matrix_descr, RETURN_CODES, _convert_to_csr)
+                                           _destroy_mkl_handle, matrix_descr, RETURN_CODES, _convert_to_csr,
+                                           _get_numpy_layout, LAYOUT_CODE_C)
 import numpy as np
 import ctypes as _ctypes
 import scipy.sparse as _spsparse
 
 
 def _sparse_dense_matmul(matrix_a, matrix_b, double_precision, m, n, scalar=1., b_is_sparse=False):
-
     output_shape = (m, n)
 
     # Allocate an array for outputs and set functions and types for float or doubles
@@ -15,18 +15,24 @@ def _sparse_dense_matmul(matrix_a, matrix_b, double_precision, m, n, scalar=1., 
 
     # matrix_a is an mkl handle and matrix_b is dense
     if not b_is_sparse:
-        output_arr = np.zeros(output_shape, dtype=np.float64 if double_precision else np.float32)
+
+        layout_b, ld_b = _get_numpy_layout(matrix_b)
+
+        output_arr = np.zeros(output_shape, dtype=np.float64 if double_precision else np.float32,
+                              order="C" if layout_b == LAYOUT_CODE_C else "F")
+        output_ld = output_shape[1] if layout_b == LAYOUT_CODE_C else output_shape[0]
+
         ret_val = func(10,
                        scalar,
                        matrix_a,
                        matrix_descr(),
-                       101,
+                       layout_b,
                        matrix_b,
                        output_shape[1],
-                       matrix_b.shape[1],
+                       ld_b,
                        1.,
                        output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
-                       output_shape[1])
+                       output_ld)
 
         # Check return
         if ret_val != 0:
@@ -36,18 +42,25 @@ def _sparse_dense_matmul(matrix_a, matrix_b, double_precision, m, n, scalar=1., 
     # matrix_a is dense and and matrix_b is a mkl handle
     # calculate BT (dot) AT and return the transpose (which will be A dot B)
     elif b_is_sparse:
-        output_arr = np.zeros(output_shape, dtype=np.float64 if double_precision else np.float32).T
+
+        matrix_a = matrix_a.T
+        layout_a, ld_a = _get_numpy_layout(matrix_a)
+
+        output_arr = np.zeros(output_shape, dtype=np.float64 if double_precision else np.float32,
+                              order="F" if layout_a == LAYOUT_CODE_C else "C").T
+        output_ld = output_shape[0] if layout_a == LAYOUT_CODE_C else output_shape[1]
+
         ret_val = func(11,
                        scalar,
                        matrix_b,
                        matrix_descr(),
-                       102,
+                       layout_a,
                        matrix_a,
                        output_shape[0],
-                       matrix_a.shape[1],
+                       ld_a,
                        1.,
                        output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
-                       output_shape[1])
+                       output_ld)
 
         # Check return
         if ret_val != 0:
@@ -62,7 +75,6 @@ def _sparse_dense_matmul(matrix_a, matrix_b, double_precision, m, n, scalar=1., 
 
 
 def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1.):
-
     _sanity_check(matrix_a, matrix_b)
 
     # Check for edge condition inputs which result in empty outputs

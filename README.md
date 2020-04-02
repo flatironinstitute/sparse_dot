@@ -20,7 +20,8 @@ It has no effect if set when a dense output would normally be produced.
 
 If both matrices are sparse, they must be of the same type (CSC or CSR).
 There is no support currently for COO or BSR sparse matrices. 
-Numpy (dense) arrays must be C-ordered and contiguous (these are the defaults in most situations).
+Numpy (dense) arrays must be contiguous in row-major (C) or column-major (F) order.
+The resulting arrays may be row-major or column-major order depending on input.
 
 This only does floating point data, and both matrices must be identical types.
 If `cast=True` non-float matrices will be converted to doubles,
