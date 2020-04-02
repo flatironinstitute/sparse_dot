@@ -101,14 +101,15 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
     """
 
     # Check for allowed sparse matrix types
-    if is_csr(matrix_a) and is_csr(matrix_b):
-        default_output = _spsparse.csr_matrix
-        output_type = "csr"
-    elif is_csc(matrix_a) and is_csc(matrix_b):
+
+    if is_csr(matrix_a) and (is_csc(matrix_b) or is_csr(matrix_b)):
         default_output = _spsparse.csc_matrix
+        output_type = "csr"
+    elif is_csc(matrix_a) and (is_csc(matrix_b) or is_csr(matrix_b)):
+        default_output = _spsparse.csr_matrix
         output_type = "csc"
     else:
-        raise ValueError("Both input matrices to dot_product_mkl must be CSR or both must be CSC")
+        raise ValueError("Both input matrices to dot_product_mkl must be CSR or CSC; COO and BSR are not supported")
 
     # Override output if dense flag is set
     default_output = default_output if not dense else np.zeros

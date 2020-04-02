@@ -12,16 +12,17 @@ intermediate conversion (also multithreaded).
 
 The only function explicitly available is `dot_product_mkl`, which takes two matrices
 `dot_product_mkl(A, B)` and returns a matrix that is `A (dot) B`. 
+CSR and CSC matrices from scipy.sparse are supported, and numpy dense matrices are supported.
+There is no support for COO or BSR sparse matrices.
+Numpy (dense) arrays must be contiguous in row-major (C) or column-major (F) order.
+
+Dense array outputs may be row-major or column-major order depending on input.
 If both matrices are dense, the output will be dense.
 If one matrix is dense and one is sparse, the output will be dense.
 If both matrices are sparse, the output will be sparse unless the `dense=True` flag is passed.
 The dense flag will directly multiply to a dense matrix without requiring intermediate conversion.
 It has no effect if set when a dense output would normally be produced.
-
-If both matrices are sparse, they must be of the same type (CSC or CSR).
-There is no support currently for COO or BSR sparse matrices. 
-Numpy (dense) arrays must be contiguous in row-major (C) or column-major (F) order.
-The resulting arrays may be row-major or column-major order depending on input.
+Sparse array output format is the same as the left input sparse array (either CSC or CSR).
 
 This only does floating point data, and both matrices must be identical types.
 If `cast=True` non-float matrices will be converted to doubles,

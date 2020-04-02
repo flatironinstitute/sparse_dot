@@ -169,14 +169,20 @@ class TestMultiplication(unittest.TestCase):
     def test_CSR_CSC(self):
         d1, d2 = self.mat1, _spsparse.csc_matrix(self.mat2)
 
-        with self.assertRaises(ValueError):
-            hsp3 = dot_product_mkl(d1, d2)
+        hsp3_sp = d1.dot(d2)
+        hsp3 = dot_product_mkl(d1, d2)
+
+        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        self.assertTrue(hsp3.dtype == np.float64)
 
     def test_CSC_CSR(self):
         d1, d2 = _spsparse.csc_matrix(self.mat1), self.mat2
 
-        with self.assertRaises(ValueError):
-            hsp3 = dot_product_mkl(d1, d2)
+        hsp3_sp = d1.dot(d2)
+        hsp3 = dot_product_mkl(d1, d2)
+
+        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        self.assertTrue(hsp3.dtype == np.float64)
 
     def test_COO(self):
         d1, d2 = _spsparse.coo_matrix(self.mat1), self.mat2
