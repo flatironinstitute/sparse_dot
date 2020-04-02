@@ -103,10 +103,10 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
     # Check for allowed sparse matrix types
 
     if is_csr(matrix_a) and (is_csc(matrix_b) or is_csr(matrix_b)):
-        default_output = _spsparse.csc_matrix
+        default_output = _spsparse.csr_matrix
         output_type = "csr"
     elif is_csc(matrix_a) and (is_csc(matrix_b) or is_csr(matrix_b)):
-        default_output = _spsparse.csr_matrix
+        default_output = _spsparse.csc_matrix
         output_type = "csc"
     else:
         raise ValueError("Both input matrices to dot_product_mkl must be CSR or CSC; COO and BSR are not supported")
