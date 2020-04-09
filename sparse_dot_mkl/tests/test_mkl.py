@@ -1,3 +1,6 @@
+import os
+os.environ["MKL_NUM_THREADS"] = "1"
+
 import unittest
 import numpy as np
 import numpy.testing as npt
