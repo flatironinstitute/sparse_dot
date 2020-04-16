@@ -4,7 +4,7 @@ import ctypes as _ctypes
 # Check each of these library types
 _MKL_SO_LINUX = "libmkl_rt.so"
 _MKL_SO_OSX = "libmkl_rt.dylib"
-_MKL_SO_WINDOWS = "libmkl_rt.dll"
+_MKL_SO_WINDOWS = "mkl_rt.dll"
 
 # There's probably a better way to do this
 _libmkl, _libmkl_loading_errors = None, []
