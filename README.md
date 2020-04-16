@@ -2,6 +2,7 @@
 [![Build Status](https://travis-ci.org/flatironinstitute/sparse_dot.svg?branch=master)](https://travis-ci.org/flatironinstitute/sparse_dot)
 [![codecov](https://codecov.io/gh/flatironinstitute/sparse_dot/branch/master/graph/badge.svg)](https://codecov.io/gh/flatironinstitute/sparse_dot)
 [![PyPI version](https://badge.fury.io/py/sparse-dot-mkl.svg)](https://badge.fury.io/py/sparse-dot-mkl)
+[![Conda version](https://anaconda.org/conda-forge/sparse_dot_mkl/badges/version.svg)](https://anaconda.org/conda-forge/sparse_dot_mkl)
 
 This is a wrapper for the sparse matrix multiplication in the intel MKL library.
 It is implemented entirely in native python using `ctypes`.
