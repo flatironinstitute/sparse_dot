@@ -231,6 +231,7 @@ class MKL:
                 _ctypes.POINTER(prec_type),
                 MKL.MKL_INT]
 
+
 # Construct opaque struct & type
 class _sparse_matrix(_ctypes.Structure):
     pass
@@ -488,7 +489,7 @@ def _order_mkl_handle(ref_handle):
         raise ValueError("mkl_sparse_order returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
 
 
-def _convert_to_csr(ref_handle):
+def _convert_to_csr(ref_handle, destroy_original=False):
     """
     Convert a MKL sparse handle to CSR format
 
@@ -498,10 +499,18 @@ def _convert_to_csr(ref_handle):
     """
 
     csr_ref = sparse_matrix_t()
+    ret_val = MKL._mkl_sparse_convert_csr(ref_handle, _ctypes.c_int(10), _ctypes.byref(csr_ref))
 
-    if MKL._mkl_sparse_convert_csr(ref_handle, _ctypes.c_int(10), _ctypes.byref(csr_ref)) != 0:
-        _destroy_mkl_handle(csr_ref)
-        raise ValueError("CSC to CSR Conversion failed")
+    if ret_val != 0:
+        try:
+            _destroy_mkl_handle(csr_ref)
+        except ValueError:
+            pass
+
+        raise ValueError("mkl_sparse_convert_csr returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
+
+    if destroy_original:
+        _destroy_mkl_handle(ref_handle)
 
     return csr_ref
 
