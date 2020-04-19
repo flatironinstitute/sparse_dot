@@ -8,7 +8,6 @@ import scipy.sparse as _spsparse
 from scipy.sparse import isspmatrix_csr as is_csr, isspmatrix_csc as is_csc
 
 
-
 def _matmul_mkl(sp_ref_a, sp_ref_b):
     """
     Dot product two MKL objects together and return a handle to the result
@@ -172,4 +171,3 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
         dprint("Created python handle: {0:.6f} seconds".format(time.time() - t2))
 
         return python_c
-
