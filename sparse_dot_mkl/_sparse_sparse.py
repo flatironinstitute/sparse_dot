@@ -119,6 +119,7 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
 
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix_a, matrix_b):
+        dprint("Skipping multiplication because A (dot) B must yield an empty matrix")
         final_dtype = np.float64 if matrix_a.dtype != matrix_b.dtype or matrix_a.dtype != np.float32 else np.float32
         return default_output((matrix_a.shape[0], matrix_b.shape[1]), dtype=final_dtype)
 
