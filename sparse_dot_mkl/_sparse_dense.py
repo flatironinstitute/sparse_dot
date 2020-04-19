@@ -88,13 +88,24 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False):
 
 def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1.):
     """
-    Multiply together a dense and a sparse matrix
-    :param matrix_a:
-    :param matrix_b:
-    :param cast:
-    :param dprint:
-    :param scalar:
-    :return:
+    Multiply together a dense and a sparse matrix.
+    If the sparse matrix is not CSR, it may need to be reordered, depending on the order of the dense array.
+
+    :param matrix_a: Left (A) matrix
+    :type matrix_a: np.ndarray, sp.spmatrix.csr, sp.spmatrix.csc
+    :param matrix_b: Right (B) matrix
+    :type matrix_b: np.ndarray, sp.spmatrix.csr, sp.spmatrix.csc
+    :param scalar: A value to multiply the result matrix by. Defaults to 1.
+    :type scalar: float
+    :param cast: Convert values to compatible floats if True. Raise an error if they are not compatible if False.
+    Defaults to False.
+    :type cast: bool
+    :param dprint: A function that will handle debug strings. Defaults to print.
+    :type dprint: function
+    :param scalar: A value to multiply the output by. Defaults to 1.
+    :type scalar: float
+    :return: A (dot) B as a dense matrix
+    :rtype: np.ndarray
     """
     _sanity_check(matrix_a, matrix_b)
 
