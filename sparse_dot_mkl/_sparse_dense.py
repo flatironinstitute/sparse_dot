@@ -44,16 +44,15 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False):
     """
 
     output_shape = (matrix_a.shape[1] if transpose else matrix_a.shape[0], matrix_b.shape[1])
-
-    # Prep MKL handles and check that matrixes are compatible types
-    # MKL requires the sparse matrix to be CSR if the dense matrix is column-major (F)
-
-    mkl_a, dbl = _create_mkl_sparse(matrix_a)
     layout_b, ld_b = _get_numpy_layout(matrix_b)
 
+    # Prep MKL handles and check that matrixes are compatible types
     # MKL requires CSR format if the dense array is column-major
     if layout_b == LAYOUT_CODE_F and not _spsparse.isspmatrix_csr(matrix_a):
-        mkl_a = _convert_to_csr(mkl_a)
+        mkl_non_csr, dbl = _create_mkl_sparse(matrix_a)
+        mkl_a = _convert_to_csr(mkl_non_csr)
+    else:
+        mkl_a, dbl = _create_mkl_sparse(matrix_a)
 
     # Set functions and types for float or doubles
     output_ctype = _ctypes.c_double if dbl else _ctypes.c_float
