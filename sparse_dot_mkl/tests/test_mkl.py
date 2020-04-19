@@ -349,7 +349,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         d1, d2 = self.mat1_d.astype(np.float32), self.mat2.astype(np.float32)
         mat3_np = np.dot(d1, d2.A)
 
-        mat3 = dot_product_mkl(d1, d2)
+        mat3 = dot_product_mkl(d1, d2, debug=True)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
@@ -357,7 +357,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         d1, d2 = self.mat1_d, self.mat2
         mat3_np = np.dot(d1, d2.A)
 
-        mat3 = dot_product_mkl(d1, d2)
+        mat3 = dot_product_mkl(d1, d2, debug=True)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
@@ -365,7 +365,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         d1, d2 = self.mat1_d.astype(np.float32), self.mat2
         mat3_np = np.dot(d1, d2.A)
 
-        mat3 = dot_product_mkl(d1, d2, cast=True)
+        mat3 = dot_product_mkl(d1, d2, cast=True, debug=True)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
@@ -373,7 +373,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         d1, d2 = self.mat1_d.astype(np.float32), self.mat2.astype(np.float32).tocsc()
         mat3_np = np.dot(d1, d2.A)
 
-        mat3 = dot_product_mkl(d1, d2)
+        mat3 = dot_product_mkl(d1, d2, debug=True)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
         npt.assert_array_almost_equal(d2.A, self.mat2_d)
@@ -382,7 +382,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         d1, d2 = self.mat1_d, self.mat2.tocsc()
         mat3_np = np.dot(d1, d2.A)
 
-        mat3 = dot_product_mkl(d1, d2)
+        mat3 = dot_product_mkl(d1, d2, debug=True)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
         npt.assert_array_almost_equal(d2.A, self.mat2_d)
@@ -391,7 +391,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         d1, d2 = self.mat1_d.astype(np.float32), self.mat2.tocsc()
         mat3_np = np.dot(d1, d2.A)
 
-        mat3 = dot_product_mkl(d1, d2, cast=True)
+        mat3 = dot_product_mkl(d1, d2, cast=True, debug=True)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
         npt.assert_array_almost_equal(d2.A, self.mat2_d)
@@ -400,7 +400,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         d1, d2 = self.mat1.astype(np.float32), self.mat2_d.astype(np.float32)
         mat3_np = np.dot(d1.A, d2)
 
-        mat3 = dot_product_mkl(d1, d2)
+        mat3 = dot_product_mkl(d1, d2, debug=True)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
@@ -408,7 +408,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         d1, d2 = self.mat1, self.mat2_d
         mat3_np = np.dot(d1.A, d2)
 
-        mat3 = dot_product_mkl(d1, d2)
+        mat3 = dot_product_mkl(d1, d2, debug=True)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
@@ -416,7 +416,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         d1, d2 = self.mat1.tocsc(), self.mat2_d
         mat3_np = np.dot(d1.A, d2)
 
-        mat3 = dot_product_mkl(d1, d2)
+        mat3 = dot_product_mkl(d1, d2, debug=True)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
         npt.assert_array_almost_equal(d1.A, self.mat1_d)
@@ -425,7 +425,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         d1, d2 = self.mat1.astype(np.float32), self.mat2_d
         mat3_np = np.dot(d1.A, d2)
 
-        mat3 = dot_product_mkl(d1, d2, cast=True)
+        mat3 = dot_product_mkl(d1, d2, cast=True, debug=True)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 

@@ -2,6 +2,19 @@ from sparse_dot_mkl._sparse_sparse import _sparse_dot_sparse as _sds
 from sparse_dot_mkl._sparse_dense import _sparse_dot_dense as _sdd
 from sparse_dot_mkl._dense_dense import _dense_dot_dense as _ddd
 import scipy.sparse as _spsparse
+import warnings
+
+# Use mkl-service to check version if it's installed
+# Since it's not on PyPi I don't want to make this an actual package dependency
+# So without it just create mock functions and don't do this version checking or debug step
+try:
+    from mkl import get_version, get_version_string
+except ImportError:
+    def get_version():
+        return None
+
+    def get_version_string():
+        return None
 
 
 def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False):
@@ -35,6 +48,15 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     """
 
     dprint = print if debug else lambda *x: x
+    vinfo = get_version()
+
+    if vinfo is not None and vinfo["MajorVersion"] < 2020:
+        msg = "Loaded version of MKL is out of date: {v}".format(v=get_version_string())
+        warnings.warn(msg)
+    elif vinfo is None and debug:
+        warnings.warn("mkl-service must be installed to get full debug messaging")
+    elif debug:
+        dprint(get_version_string())
 
     if _spsparse.issparse(matrix_a) and _spsparse.issparse(matrix_b):
         return _sds(matrix_a, matrix_b, cast=cast, reorder_output=reorder_output, dense=dense, dprint=dprint)
