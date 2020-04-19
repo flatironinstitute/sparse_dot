@@ -53,7 +53,7 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False):
 
     # MKL requires CSR format if the dense array is column-major
     if layout_b == LAYOUT_CODE_F and not _spsparse.isspmatrix_csr(matrix_a):
-        mkl_a = _convert_to_csr(mkl_a, destroy_original=True)
+        mkl_a = _convert_to_csr(mkl_a)
 
     # Set functions and types for float or doubles
     output_ctype = _ctypes.c_double if dbl else _ctypes.c_float
