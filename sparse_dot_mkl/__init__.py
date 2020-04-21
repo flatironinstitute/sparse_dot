@@ -1,1 +1,1 @@
-from sparse_dot_mkl.sparse_dot import dot_product_mkl
+from sparse_dot_mkl.sparse_dot import dot_product_mkl, get_version_string
