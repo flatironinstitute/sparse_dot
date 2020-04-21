@@ -19,8 +19,7 @@ def _dense_sparse_matmul(matrix_a, matrix_b, scalar=1.):
     :rtype: np.ndarray
     """
 
-    matrix_a = matrix_a.T
-    return _sparse_dense_matmul(matrix_b, matrix_a, scalar=scalar, transpose=True).T
+    return _sparse_dense_matmul(matrix_b, matrix_a.T, scalar=scalar, transpose=True).T
 
 
 def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False):
