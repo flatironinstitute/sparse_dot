@@ -273,7 +273,7 @@ def _check_scipy_index_typing(sparse_matrix):
     """
 
     if sparse_matrix.nnz > np.iinfo(MKL.MKL_INT_NUMPY).max:
-        msg = "Matrix {m} is not compatible with index dtype {t}".format(m=repr(sparse_matrix), t=MKL.MKL_INT_NUMPY)
+        msg = "MKL interface is {t} and cannot hold matrix {m}".format(m=repr(sparse_matrix), t=MKL.MKL_INT_NUMPY)
         raise ValueError(msg)
 
     # Cast indexes to MKL_INT type

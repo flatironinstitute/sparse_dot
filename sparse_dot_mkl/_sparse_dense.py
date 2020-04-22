@@ -26,9 +26,8 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False):
     """
     Multiply together a sparse and a dense matrix
     mkl_sparse_?_mm requires the left (A) matrix to be sparse and the right (B) matrix to be dense
-    If B is sparse, calculate BT (dot) AT; the transpose of this product is equal to A (dot) B
-    This requires conversion of the sparse matrix to CSR format for some dense arrays;
-    If A must be CSR iff B is column-major
+    This requires conversion of the sparse matrix to CSR format for some dense arrays.
+    A must be CSR if B is column-major. Otherwise CSR or CSC are acceptable.
 
     :param matrix_a: Left (A) matrix
     :type matrix_a: sp.spmatrix.csr, sp.spmatrix.csc
