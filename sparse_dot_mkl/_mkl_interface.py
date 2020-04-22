@@ -16,9 +16,9 @@ for so_file in [_MKL_SO_LINUX, _MKL_SO_OSX, _MKL_SO_WINDOWS]:
         _libmkl_loading_errors.append(err)
 
 if _libmkl is None:
-    msg = "Unable to load the MKL libraries through libmkl_rt. Try setting $LD_LIBRARY_PATH."
-    msg += "\n\t" + "\n\t".join(map(lambda x: str(x), _libmkl_loading_errors))
-    raise ImportError(msg)
+    ierr_msg = "Unable to load the MKL libraries through libmkl_rt. Try setting $LD_LIBRARY_PATH."
+    ierr_msg += "\n\t" + "\n\t".join(map(lambda x: str(x), _libmkl_loading_errors))
+    raise ImportError(ierr_msg)
 
 import numpy as np
 import scipy.sparse as _spsparse
@@ -271,6 +271,10 @@ def _check_scipy_index_typing(sparse_matrix):
     :param sparse_matrix: Scipy matrix in CSC or CSR format
     :type sparse_matrix: scipy.sparse.spmatrix
     """
+
+    if sparse_matrix.nnz > np.iinfo(MKL.MKL_INT_NUMPY).max:
+        msg = "Matrix {m} is not compatible with index dtype {t}".format(m=repr(sparse_matrix), t=MKL.MKL_INT_NUMPY)
+        raise ValueError(msg)
 
     # Cast indexes to MKL_INT type
     if sparse_matrix.indptr.dtype != MKL.MKL_INT_NUMPY:
