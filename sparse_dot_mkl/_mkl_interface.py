@@ -1,3 +1,4 @@
+import warnings
 import ctypes as _ctypes
 
 # Load mkl_spblas through the libmkl_rt common interface
@@ -19,6 +20,24 @@ if _libmkl is None:
     ierr_msg = "Unable to load the MKL libraries through libmkl_rt. Try setting $LD_LIBRARY_PATH."
     ierr_msg += "\n\t" + "\n\t".join(map(lambda x: str(x), _libmkl_loading_errors))
     raise ImportError(ierr_msg)
+
+# Use mkl-service to check version if it's installed
+# Since it's not on PyPi I don't want to make this an actual package dependency
+# So without it just create mock functions and don't do this version checking or debug step
+try:
+    from mkl import get_version, get_version_string
+except ImportError:
+    def get_version():
+        return None
+
+    def get_version_string():
+        return None
+
+_vinfo = get_version()
+
+if _vinfo is not None and _vinfo["MajorVersion"] < 2020:
+    msg = "Loaded version of MKL is out of date: {v}".format(v=get_version_string())
+    warnings.warn(msg)
 
 import numpy as np
 import scipy.sparse as _spsparse
