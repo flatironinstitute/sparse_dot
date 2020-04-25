@@ -611,14 +611,11 @@ def _type_check(matrix_a, matrix_b, cast=False, dprint=print):
         raise ValueError(err_msg)
 
 
-def _empty_output_check(matrix_a, matrix_b, check_shape=True):
+def _empty_output_check(matrix_a, matrix_b):
     """Check for trivial cases where an empty array should be produced"""
 
     # One dimension is zero
-    if check_shape and min(matrix_a.shape[0],
-                           matrix_a.shape[1],
-                           matrix_b.shape[0],
-                           matrix_b.shape[1]) == 0:
+    if min([*matrix_a.shape, *matrix_b.shape]) == 0:
         return True
 
     # The sparse array is empty

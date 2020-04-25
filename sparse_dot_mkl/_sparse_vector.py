@@ -73,7 +73,7 @@ def _sparse_dot_vector(matrix_a, vector_b, cast=False, dprint=print, scalar=1.):
 
     _sanity_check(matrix_a, vector_b, allow_vector_b=True)
 
-    if _empty_output_check(matrix_a, vector_b, check_shape=False):
+    if _empty_output_check(matrix_a, vector_b):
         dprint("Skipping multiplication because A (dot) B must yield an empty matrix")
         final_dtype = np.float64 if matrix_a.dtype != vector_b.dtype or matrix_a.dtype != np.float32 else np.float32
         return np.zeros((matrix_a.shape[0],) if vector_b.ndim == 1 else (matrix_a.shape[1], 1), dtype=final_dtype)
