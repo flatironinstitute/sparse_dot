@@ -7,7 +7,7 @@ import numpy.testing as npt
 import scipy.sparse as _spsparse
 from sparse_dot_mkl import dot_product_mkl
 from sparse_dot_mkl._mkl_interface import (_create_mkl_sparse, _export_mkl, sparse_matrix_t, _destroy_mkl_handle,
-                                           _convert_to_csr, _order_mkl_handle)
+                                           _convert_to_csr, _order_mkl_handle, MKL)
 from sparse_dot_mkl._sparse_sparse import _matmul_mkl
 
 SEED = 86
@@ -21,6 +21,7 @@ def make_matrixes(a, b, n, density):
 
 MATRIX_1, MATRIX_2 = make_matrixes(200, 100, 300, 0.05)
 VECTOR_2 = np.random.rand(300).astype(np.float64)
+MATRIX_1_EMPTY = _spsparse.csr_matrix((200, 300), dtype=np.float64)
 
 
 class TestHandles(unittest.TestCase):
@@ -509,6 +510,43 @@ class TestSparseVectorMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(mat3_np, mat3)
 
 
+class TestEmptyConditions(unittest.TestCase):
+
+    def setUp(self):
+        self.mat1 = MATRIX_1.copy()
+        self.mat2 = MATRIX_2.copy()
+
+        self.mat1_d = np.asarray(MATRIX_1.A, order="C")
+        self.mat2_d = np.asarray(MATRIX_2.A, order="C")
+
+        self.mat1_zero = np.zeros((0, 300))
+
+    def test_sparse_sparse(self):
+
+        mat3 = dot_product_mkl(self.mat1, self.mat2)
+        mat3_np = np.dot(self.mat1_d, self.mat2_d)
+
+        npt.assert_array_almost_equal(mat3_np, mat3.A)
+
+    def test_sparse_dense(self):
+        mat3 = dot_product_mkl(self.mat1, self.mat2_d)
+        mat3_np = np.dot(self.mat1_d, self.mat2_d)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_sparse_vector(self):
+        mat3 = dot_product_mkl(self.mat1, self.mat2_d[:, 0])
+        mat3_np = np.dot(self.mat1_d, self.mat2_d[:, 0])
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_dense_dense(self):
+        mat3 = dot_product_mkl(self.mat1_zero, self.mat2_d)
+        mat3_np = np.dot(self.mat1_zero, self.mat2_d)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+
 class TestFailureConditions(unittest.TestCase):
 
     def setUp(self):
@@ -560,6 +598,11 @@ class TestFailureConditions(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             dot_product_mkl(self.mat1, d2)
+
+    def test_lets_be_honest_this_is_just_to_make_codecov_bigger(self):
+
+        with self.assertRaises(NotImplementedError):
+            MKL()
 
 
 def run():
