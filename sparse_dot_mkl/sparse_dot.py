@@ -4,6 +4,7 @@ from sparse_dot_mkl._dense_dense import _dense_dot_dense as _ddd
 from sparse_dot_mkl._sparse_vector import _sparse_dot_vector as _sdv
 from sparse_dot_mkl._mkl_interface import get_version_string
 import scipy.sparse as _spsparse
+import numpy as _np
 
 
 def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False):
@@ -43,12 +44,23 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     elif debug:
         dprint(get_version_string())
 
+    # SPARSE (DOT) SPARSE #
     if _spsparse.issparse(matrix_a) and _spsparse.issparse(matrix_b):
         return _sds(matrix_a, matrix_b, cast=cast, reorder_output=reorder_output, dense=dense, dprint=dprint)
+
+    # SPARSE (DOT) VECTOR #
+    elif _spsparse.issparse(matrix_a) and ((matrix_b.ndim == 1) or (matrix_b.shape[1] == 1)):
+        return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint)
+
+    # SPARSE (DOT) DENSE & DENSE (DOT) SPARSE #
     elif _spsparse.issparse(matrix_a) or _spsparse.issparse(matrix_b):
-        if _spsparse.issparse(matrix_a) and ((matrix_b.ndim == 1) or (matrix_b.shape[1] == 1)):
-            return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint)
-        else:
-            return _sdd(matrix_a, matrix_b, cast=cast, dprint=dprint)
+        return _sdd(matrix_a, matrix_b, cast=cast, dprint=dprint)
+
+    # SPECIAL CASE OF DENSE 1D * DENSE 1D VECTOR #
+    # THIS IS JUST EASIER THAN GETTING THIS EDGE CONDITION RIGHT IN MKL #
+    elif (matrix_a.ndim == 1) and (matrix_b.ndim == 1):
+        return _np.dot(matrix_a, matrix_b)
+
+    # DENSE (DOT) DENSE
     else:
         return _ddd(matrix_a, matrix_b, cast=cast, dprint=dprint)

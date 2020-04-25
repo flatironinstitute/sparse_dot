@@ -6,7 +6,8 @@ import numpy as np
 import numpy.testing as npt
 import scipy.sparse as _spsparse
 from sparse_dot_mkl import dot_product_mkl
-from sparse_dot_mkl._mkl_interface import _create_mkl_sparse, _export_mkl, sparse_matrix_t
+from sparse_dot_mkl._mkl_interface import (_create_mkl_sparse, _export_mkl, sparse_matrix_t, _destroy_mkl_handle,
+                                           _convert_to_csr, _order_mkl_handle)
 from sparse_dot_mkl._sparse_sparse import _matmul_mkl
 
 SEED = 86
@@ -506,6 +507,59 @@ class TestSparseVectorMultiplication(unittest.TestCase):
         mat3_np = np.dot(d1.A, d2)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
+
+
+class TestFailureConditions(unittest.TestCase):
+
+    def setUp(self):
+        self.mat1 = MATRIX_1.copy()
+        self.mat2 = MATRIX_2.copy()
+
+    def test_make_mkl_bad_type(self):
+
+        with self.assertRaises(ValueError):
+            _create_mkl_sparse(self.mat1.tocoo())
+
+        with self.assertRaises(ValueError):
+            _create_mkl_sparse(self.mat1.astype(np.int64))
+
+    def test_export_mkl_bad_type(self):
+
+        mkl_handle, dbl = _create_mkl_sparse(self.mat1)
+
+        with self.assertRaises(ValueError):
+            _export_mkl(mkl_handle, dbl, output_type="coo")
+
+        _destroy_mkl_handle(mkl_handle)
+
+    def test_empty_handle(self):
+
+        mkl_handle_empty = sparse_matrix_t()
+
+        with self.assertRaises(ValueError):
+            _export_mkl(mkl_handle_empty, True, output_type="csr")
+
+        with self.assertRaises(ValueError):
+            _convert_to_csr(mkl_handle_empty)
+
+        with self.assertRaises(ValueError):
+            _order_mkl_handle(mkl_handle_empty)
+
+        with self.assertRaises(ValueError):
+            _destroy_mkl_handle(mkl_handle_empty)
+
+    def test_3d_matrixes(self):
+
+        d1, d2 = self.mat1.A.reshape(200, 300, 1), self.mat2.A.reshape(300, 100, 1)
+
+        with self.assertRaises(ValueError):
+            dot_product_mkl(d1, d2)
+
+        with self.assertRaises(ValueError):
+            dot_product_mkl(d1, self.mat2)
+
+        with self.assertRaises(ValueError):
+            dot_product_mkl(self.mat1, d2)
 
 
 def run():

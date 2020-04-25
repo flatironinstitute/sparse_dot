@@ -71,7 +71,7 @@ def _sparse_dot_vector(matrix_a, vector_b, cast=False, dprint=print, scalar=1.):
     :rtype: np.ndarray
     """
 
-    _sanity_check(matrix_a, vector_b, allow_vector_b=True)
+    _sanity_check(matrix_a, vector_b, require_vector_b=True)
 
     if _empty_output_check(matrix_a, vector_b):
         dprint("Skipping multiplication because A (dot) B must yield an empty matrix")

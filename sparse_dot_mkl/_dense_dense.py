@@ -7,9 +7,15 @@ import ctypes as _ctypes
 
 def _dense_matmul(matrix_a, matrix_b, double_precision, scalar=1.):
 
+    # Reshape matrix_b to a column instead of a vector if it's 1d
+    flatten_output = matrix_b.ndim == 1
+    matrix_b = matrix_b.reshape(-1, 1) if flatten_output else matrix_b
+
+    # Get dimensions
     m, n, k = matrix_a.shape[0], matrix_b.shape[1], matrix_a.shape[1]
     output_shape = (m, n)
 
+    # Set the MKL function for precision
     func = MKL._cblas_dgemm if double_precision else MKL._cblas_sgemm
 
     # Get the memory order for arrays
@@ -41,12 +47,12 @@ def _dense_matmul(matrix_a, matrix_b, double_precision, scalar=1.):
          output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
          ld_out)
 
-    return output_arr
+    return output_arr.ravel() if flatten_output else output_arr
 
 
 def _dense_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1.):
 
-    _sanity_check(matrix_a, matrix_b)
+    _sanity_check(matrix_a, matrix_b, allow_vector_b=True)
 
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix_a, matrix_b):

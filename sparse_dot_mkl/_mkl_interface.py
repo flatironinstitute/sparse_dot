@@ -365,21 +365,21 @@ def _create_mkl_sparse(matrix):
     else:
         raise ValueError("Only float32 or float64 dtypes are supported")
 
-    # Cast indexes to MKL_INT type
-    _check_scipy_index_typing(matrix)
-
-    assert matrix.data.shape[0] == matrix.indices.shape[0]
-
+    # Figure out which matrix creation function to use
     if _spsparse.isspmatrix_csr(matrix):
-        csr_func = MKL._mkl_sparse_d_create_csr if double_precision else MKL._mkl_sparse_s_create_csr
         assert matrix.indptr.shape[0] == matrix.shape[0] + 1
-        return _pass_mkl_handle(matrix, csr_func), double_precision
+        handle_func = MKL._mkl_sparse_d_create_csr if double_precision else MKL._mkl_sparse_s_create_csr
     elif _spsparse.isspmatrix_csc(matrix):
         assert matrix.indptr.shape[0] == matrix.shape[1] + 1
-        csc_func = MKL._mkl_sparse_d_create_csc if double_precision else MKL._mkl_sparse_s_create_csc
-        return _pass_mkl_handle(matrix, csc_func), double_precision
+        handle_func = MKL._mkl_sparse_d_create_csc if double_precision else MKL._mkl_sparse_s_create_csc
     else:
         raise ValueError("Matrix is not CSC or CSR")
+
+    # Make sure indices are of the correct integer type
+    _check_scipy_index_typing(matrix)
+    assert matrix.data.shape[0] == matrix.indices.shape[0]
+
+    return _pass_mkl_handle(matrix, handle_func), double_precision
 
 
 def _pass_mkl_handle(data, handle_func):
@@ -561,18 +561,23 @@ def _convert_to_csr(ref_handle, destroy_original=False):
     return csr_ref
 
 
-def _sanity_check(matrix_a, matrix_b, allow_vector_b=False):
+def _sanity_check(matrix_a, matrix_b, allow_vector_b=False, require_vector_b=False):
     """
     Check matrix dimensions
     :param matrix_a: sp.sparse or numpy array
     :param matrix_b: sp.sparse or numpy array
     """
 
+    allow_vector_b = True if require_vector_b else allow_vector_b
+    b_is_vector = (matrix_b.ndim == 1) or (matrix_b.ndim == 2 and matrix_b.shape[1] == 1)
+
     # Check to make sure that both matrices are 2-d
     if matrix_a.ndim != 2 or (not allow_vector_b and matrix_b.ndim != 2):
         err_msg = "Matrices must be 2d: {m1} * {m2} is not valid".format(m1=matrix_a.shape, m2=matrix_b.shape)
         raise ValueError(err_msg)
-    elif allow_vector_b and ((matrix_b.ndim > 2) or (matrix_b.ndim == 2 and matrix_b.shape[1] != 1)):
+
+    # Check to make sure B is a vector if that flag is set
+    if require_vector_b and not b_is_vector:
         err_msg = "Vector B must be (n,) or (n,1): {v} is not valid".format(v=matrix_b.shape)
         raise ValueError(err_msg)
 
