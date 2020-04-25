@@ -2,7 +2,7 @@ import os
 from setuptools import setup, find_packages
 
 DISTNAME = 'sparse_dot_mkl'
-VERSION = '0.3.4'
+VERSION = '0.4.0'
 DESCRIPTION = "Intel MKL wrapper for sparse matrix multiplication"
 MAINTAINER = 'Chris Jackson'
 MAINTAINER_EMAIL = 'cj59@nyu.edu'

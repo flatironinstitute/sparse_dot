@@ -99,8 +99,7 @@ def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1.):
     :type cast: bool
     :param dprint: A function that will handle debug strings. Defaults to print.
     :type dprint: function
-    :param scalar: A value to multiply the output by. Defaults to 1.
-    :type scalar: float
+
     :return: A (dot) B as a dense matrix
     :rtype: np.ndarray
     """

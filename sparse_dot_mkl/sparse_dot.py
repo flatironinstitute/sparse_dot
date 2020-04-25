@@ -1,6 +1,7 @@
 from sparse_dot_mkl._sparse_sparse import _sparse_dot_sparse as _sds
 from sparse_dot_mkl._sparse_dense import _sparse_dot_dense as _sdd
 from sparse_dot_mkl._dense_dense import _dense_dot_dense as _ddd
+from sparse_dot_mkl._sparse_vector import _sparse_dot_vector as _sdv
 from sparse_dot_mkl._mkl_interface import get_version_string
 import scipy.sparse as _spsparse
 
@@ -45,6 +46,9 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     if _spsparse.issparse(matrix_a) and _spsparse.issparse(matrix_b):
         return _sds(matrix_a, matrix_b, cast=cast, reorder_output=reorder_output, dense=dense, dprint=dprint)
     elif _spsparse.issparse(matrix_a) or _spsparse.issparse(matrix_b):
-        return _sdd(matrix_a, matrix_b, cast=cast, dprint=dprint)
+        if _spsparse.issparse(matrix_a) and ((matrix_b.ndim == 1) or (matrix_b.shape[1] == 1)):
+            return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint)
+        else:
+            return _sdd(matrix_a, matrix_b, cast=cast, dprint=dprint)
     else:
         return _ddd(matrix_a, matrix_b, cast=cast, dprint=dprint)

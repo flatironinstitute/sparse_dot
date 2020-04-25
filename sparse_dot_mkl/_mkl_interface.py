@@ -23,7 +23,7 @@ if _libmkl is None:
 
 # Use mkl-service to check version if it's installed
 # Since it's not on PyPi I don't want to make this an actual package dependency
-# So without it just create mock functions and don't do this version checking or debug step
+# So without it just create mock functions and don't do version checking
 try:
     from mkl import get_version, get_version_string
 except ImportError:
@@ -33,9 +33,7 @@ except ImportError:
     def get_version_string():
         return None
 
-_vinfo = get_version()
-
-if _vinfo is not None and _vinfo["MajorVersion"] < 2020:
+if get_version() is not None and get_version()["MajorVersion"] < 2020:
     msg = "Loaded version of MKL is out of date: {v}".format(v=get_version_string())
     warnings.warn(msg)
 
@@ -124,6 +122,14 @@ class MKL:
     # https://software.intel.com/en-us/mkl-developer-reference-c-cblas-gemm
     _cblas_dgemm = _libmkl.cblas_dgemm
 
+    # Import function for matrix * vector
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-mv
+    _mkl_sparse_s_mv = _libmkl.mkl_sparse_s_mv
+
+    # Import function for matrix * vector
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-mv
+    _mkl_sparse_d_mv = _libmkl.mkl_sparse_d_mv
+
     @classmethod
     def _set_int_type(cls, c_type, np_type):
         cls.MKL_INT = c_type
@@ -182,6 +188,12 @@ class MKL:
 
         cls._mkl_sparse_order.argtypes = [sparse_matrix_t]
         cls._mkl_sparse_order.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_s_mv.argtypes = cls._mkl_sparse_mv_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_mv.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_d_mv.argtypes = cls._mkl_sparse_mv_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_mv.restypes = _ctypes.c_int
 
     def __init__(self):
         raise NotImplementedError("This class is not intended to be instanced")
@@ -249,6 +261,16 @@ class MKL:
                 prec_type,
                 _ctypes.POINTER(prec_type),
                 MKL.MKL_INT]
+
+    @staticmethod
+    def _mkl_sparse_mv_argtypes(prec_type):
+        return [_ctypes.c_int,
+                prec_type,
+                sparse_matrix_t,
+                matrix_descr,
+                ndpointer(dtype=prec_type, ndim=1),
+                prec_type,
+                _ctypes.POINTER(prec_type)]
 
 
 # Construct opaque struct & type
@@ -538,7 +560,7 @@ def _convert_to_csr(ref_handle, destroy_original=False):
     return csr_ref
 
 
-def _sanity_check(matrix_a, matrix_b):
+def _sanity_check(matrix_a, matrix_b, allow_vector_b=False):
     """
     Check matrix dimensions
     :param matrix_a: sp.sparse or numpy array
@@ -546,8 +568,11 @@ def _sanity_check(matrix_a, matrix_b):
     """
 
     # Check to make sure that both matrices are 2-d
-    if matrix_a.ndim != 2 or matrix_b.ndim != 2:
+    if matrix_a.ndim != 2 or (not allow_vector_b and matrix_b.ndim != 2):
         err_msg = "Matrices must be 2d: {m1} * {m2} is not valid".format(m1=matrix_a.shape, m2=matrix_b.shape)
+        raise ValueError(err_msg)
+    elif allow_vector_b and ((matrix_b.ndim > 2) or (matrix_b.ndim == 2 and matrix_b.shape[1] != 1)):
+        err_msg = "Vector B must be (n,) or (n,1): {v} is not valid".format(v=matrix_b.shape)
         raise ValueError(err_msg)
 
     # Check to make sure that this multiplication can work
@@ -585,14 +610,14 @@ def _type_check(matrix_a, matrix_b, cast=False, dprint=print):
         raise ValueError(err_msg)
 
 
-def _empty_output_check(matrix_a, matrix_b):
+def _empty_output_check(matrix_a, matrix_b, check_shape=True):
     """Check for trivial cases where an empty array should be produced"""
 
     # One dimension is zero
-    if min(matrix_a.shape[0],
-           matrix_a.shape[1],
-           matrix_b.shape[0],
-           matrix_b.shape[1]) == 0:
+    if check_shape and min(matrix_a.shape[0],
+                           matrix_a.shape[1],
+                           matrix_b.shape[0],
+                           matrix_b.shape[1]) == 0:
         return True
 
     # The sparse array is empty
