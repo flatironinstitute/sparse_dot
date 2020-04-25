@@ -513,10 +513,10 @@ class TestSparseVectorMultiplication(unittest.TestCase):
 class TestEmptyConditions(unittest.TestCase):
 
     def setUp(self):
-        self.mat1 = MATRIX_1.copy()
+        self.mat1 = MATRIX_1_EMPTY.copy()
         self.mat2 = MATRIX_2.copy()
 
-        self.mat1_d = np.asarray(MATRIX_1.A, order="C")
+        self.mat1_d = np.asarray(MATRIX_1_EMPTY.A, order="C")
         self.mat2_d = np.asarray(MATRIX_2.A, order="C")
 
         self.mat1_zero = np.zeros((0, 300))
