@@ -313,7 +313,8 @@ def _check_scipy_index_typing(sparse_matrix):
     :type sparse_matrix: scipy.sparse.spmatrix
     """
 
-    if sparse_matrix.nnz > np.iinfo(MKL.MKL_INT_NUMPY).max:
+    int_max = np.iinfo(MKL.MKL_INT_NUMPY).max
+    if (sparse_matrix.nnz > int_max) or (max(sparse_matrix.shape) > int_max):
         msg = "MKL interface is {t} and cannot hold matrix {m}".format(m=repr(sparse_matrix), t=MKL.MKL_INT_NUMPY)
         raise ValueError(msg)
 
