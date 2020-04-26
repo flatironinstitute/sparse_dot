@@ -20,7 +20,7 @@ def make_matrixes(a, b, n, density):
 
 
 MATRIX_1, MATRIX_2 = make_matrixes(200, 100, 300, 0.05)
-VECTOR_2 = np.random.rand(300).astype(np.float64)
+VECTOR = np.random.rand(300).astype(np.float64)
 MATRIX_1_EMPTY = _spsparse.csr_matrix((200, 300), dtype=np.float64)
 
 
@@ -456,9 +456,7 @@ class TestSparseVectorMultiplication(unittest.TestCase):
 
     def setUp(self):
         self.mat1 = MATRIX_1.copy()
-        self.mat2 = VECTOR_2.copy()
-
-        self.mat1_d = np.asarray(MATRIX_1.A, order="C")
+        self.mat2 = VECTOR.copy()
 
     def test_mult_1d(self):
 
@@ -506,6 +504,64 @@ class TestSparseVectorMultiplication(unittest.TestCase):
 
         mat3 = dot_product_mkl(d1, d2, cast=True)
         mat3_np = np.dot(d1.A, d2)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+
+class TestVectorSparseMultiplication(unittest.TestCase):
+
+    def setUp(self):
+        self.mat1 = VECTOR.copy()
+        self.mat2 = MATRIX_2.copy()
+
+        self.mat2_d = np.asarray(MATRIX_2.A, order="C")
+
+    def test_mult_1d(self):
+
+        d1, d2 = self.mat1.astype(np.float64), self.mat2
+
+        mat3 = dot_product_mkl(d1, d2, cast=True)
+        mat3_np = np.dot(d1, d2.A)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_mult_1d_float32(self):
+        d1, d2 = self.mat1.astype(np.float32), self.mat2
+
+        mat3 = dot_product_mkl(d1, d2, cast=True)
+        mat3_np = np.dot(d1, d2.A)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_mult_1d_both_float32(self):
+        d1, d2 = self.mat1.astype(np.float32), self.mat2.astype(np.float32)
+
+        mat3 = dot_product_mkl(d1, d2, cast=True)
+        mat3_np = np.dot(d1, d2.A)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_mult_2d(self):
+        d1, d2 = self.mat1.astype(np.float64).reshape(1, -1), self.mat2
+
+        mat3 = dot_product_mkl(d1, d2, cast=True)
+        mat3_np = np.dot(d1, d2.A)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_mult_2d_float32(self):
+        d1, d2 = self.mat1.astype(np.float32).reshape(1, -1), self.mat2
+
+        mat3 = dot_product_mkl(d1, d2, cast=True)
+        mat3_np = np.dot(d1, d2.A)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_mult_2d_both_float32(self):
+        d1, d2 = self.mat1.astype(np.float32).reshape(1, -1), self.mat2.astype(np.float32)
+
+        mat3 = dot_product_mkl(d1, d2, cast=True)
+        mat3_np = np.dot(d1, d2.A)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 

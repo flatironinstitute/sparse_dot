@@ -561,28 +561,26 @@ def _convert_to_csr(ref_handle, destroy_original=False):
     return csr_ref
 
 
-def _sanity_check(matrix_a, matrix_b, allow_vector_b=False, require_vector_b=False):
+def _sanity_check(matrix_a, matrix_b, allow_vector=False):
     """
     Check matrix dimensions
     :param matrix_a: sp.sparse or numpy array
     :param matrix_b: sp.sparse or numpy array
     """
 
-    allow_vector_b = True if require_vector_b else allow_vector_b
-    b_is_vector = (matrix_b.ndim == 1) or (matrix_b.ndim == 2 and matrix_b.shape[1] == 1)
+    a_2d, b_2d = matrix_a.ndim == 2, matrix_b.ndim == 2
+    a_vec, b_vec = _is_dense_vector(matrix_a), _is_dense_vector(matrix_b)
 
     # Check to make sure that both matrices are 2-d
-    if matrix_a.ndim != 2 or (not allow_vector_b and matrix_b.ndim != 2):
+    if not allow_vector and (not a_2d or not b_2d):
         err_msg = "Matrices must be 2d: {m1} * {m2} is not valid".format(m1=matrix_a.shape, m2=matrix_b.shape)
         raise ValueError(err_msg)
 
-    # Check to make sure B is a vector if that flag is set
-    if require_vector_b and not b_is_vector:
-        err_msg = "Vector B must be (n,) or (n,1): {v} is not valid".format(v=matrix_b.shape)
-        raise ValueError(err_msg)
+    invalid_ndims = not (a_2d or a_vec) or not (b_2d, b_vec)
+    invalid_align = (matrix_a.shape[1] if not matrix_a.ndim == 1 else matrix_a.shape[0]) != matrix_b.shape[0]
 
     # Check to make sure that this multiplication can work
-    if matrix_a.shape[1] != matrix_b.shape[0]:
+    if invalid_align or invalid_ndims:
         err_msg = "Matrix alignment error: {m1} * {m2} is not valid".format(m1=matrix_a.shape, m2=matrix_b.shape)
         raise ValueError(err_msg)
 
@@ -614,6 +612,10 @@ def _type_check(matrix_a, matrix_b, cast=False, dprint=print):
         err_msg = "Matrix data types must be in concordance; {a} and {b} provided".format(a=matrix_a.dtype,
                                                                                           b=matrix_b.dtype)
         raise ValueError(err_msg)
+
+
+def _is_dense_vector(m_or_v):
+    return not _spsparse.issparse(m_or_v) and ((m_or_v.ndim == 1) or ((m_or_v.ndim == 2) and min(m_or_v.shape) == 1))
 
 
 def _empty_output_check(matrix_a, matrix_b):

@@ -52,7 +52,7 @@ def _dense_matmul(matrix_a, matrix_b, double_precision, scalar=1.):
 
 def _dense_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1.):
 
-    _sanity_check(matrix_a, matrix_b, allow_vector_b=True)
+    _sanity_check(matrix_a, matrix_b, allow_vector=True)
 
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix_a, matrix_b):
