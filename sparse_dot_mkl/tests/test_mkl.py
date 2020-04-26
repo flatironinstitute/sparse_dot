@@ -566,6 +566,33 @@ class TestVectorSparseMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(mat3_np, mat3)
 
 
+class TestVectorVectorMultplication(unittest.TestCase):
+
+    def test_1d_1d(self):
+        mat3 = dot_product_mkl(VECTOR, VECTOR)
+        mat3_np = np.dot(VECTOR, VECTOR)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_1d_2d(self):
+        mat3 = dot_product_mkl(VECTOR, VECTOR.reshape(-1, 1))
+        mat3_np = np.dot(VECTOR, VECTOR.reshape(-1, 1))
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_2d_1d(self):
+        mat3 = dot_product_mkl(VECTOR.reshape(1, -1), VECTOR)
+        mat3_np = np.dot(VECTOR.reshape(1, -1), VECTOR)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_2d_2d(self):
+        mat3 = dot_product_mkl(VECTOR.reshape(1, -1), VECTOR.reshape(-1, 1))
+        mat3_np = np.dot(VECTOR.reshape(1, -1), VECTOR.reshape(-1, 1))
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+
 class TestEmptyConditions(unittest.TestCase):
 
     def setUp(self):
