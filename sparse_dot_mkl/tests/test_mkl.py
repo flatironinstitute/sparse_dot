@@ -635,6 +635,7 @@ class TestFailureConditions(unittest.TestCase):
     def setUp(self):
         self.mat1 = MATRIX_1.copy()
         self.mat2 = MATRIX_2.copy()
+        self.vec = VECTOR.copy()
 
     def test_make_mkl_bad_type(self):
 
@@ -681,6 +682,23 @@ class TestFailureConditions(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             dot_product_mkl(self.mat1, d2)
+
+    def test_bad_shapes(self):
+
+        with self.assertRaises(ValueError):
+            dot_product_mkl(self.vec.reshape(-1, 1), self.mat2)
+
+        with self.assertRaises(ValueError):
+            dot_product_mkl(self.mat1, self.vec.reshape(1, -1))
+
+        with self.assertRaises(ValueError):
+            dot_product_mkl(self.vec.reshape(-1, 1), self.vec.reshape(-1, 1))
+
+        with self.assertRaises(ValueError):
+            dot_product_mkl(self.mat1.transpose(), self.mat2)
+
+        with self.assertRaises(ValueError):
+            dot_product_mkl(self.vec[100:], self.vec)
 
     def test_lets_be_honest_this_is_just_to_make_codecov_bigger(self):
 
