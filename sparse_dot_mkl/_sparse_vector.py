@@ -11,7 +11,7 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False):
 
     :param matrix_a: Left (A) matrix
     :type matrix_a: sp.spmatrix.csr, sp.spmatrix.csc
-    :param vector_b: Right (B) matrix
+    :param vector_b: Right (B) vector with shape (N, ) or (N, 1)
     :type vector_b: np.ndarray
     :param scalar: A value to multiply the result matrix by. Defaults to 1.
     :type scalar: float
@@ -58,14 +58,15 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False):
 
 def _sparse_dot_vector(mv_a, mv_b, cast=False, dprint=print, scalar=1.):
     """
-    Multiply a sparse matrix A by a dense vector B
-    B must be (N,) or (N, 1) shape.
-    Returns a dense vector of (N,) or (N, 1) shape (depending on input B)
+    Multiply a sparse matrix by a dense vector.
+    The matrix must be CSR or CSC format.
+    The vector must be (N,) or (N, 1) shape.
+    Returns a dense vector of (N,) or (N, 1) shape (depending on vector)
 
-    :param mv_a: Left (A) matrix
-    :type mv_a: sp.spmatrix.csr, sp.spmatrix.csc
-    :param mv_b: Right (B) vector
-    :type mv_b: np.ndarray
+    :param mv_a: Left (A) matrix or vector
+    :type mv_a: np.ndarray, sp.spmatrix.csr, sp.spmatrix.csc
+    :param mv_b: Right (B) matrix or vector
+    :type mv_b: np.ndarray, sp.spmatrix.csr, sp.spmatrix.csc
     :param scalar: A value to multiply the result matrix by. Defaults to 1.
     :type scalar: float
     :param cast: Convert values to compatible floats if True. Raise an error if they are not compatible if False.
