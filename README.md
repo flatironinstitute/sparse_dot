@@ -11,26 +11,32 @@ The scipy sparse implementation is single-threaded at the time of writing (2020-
 A secondary advantage is the direct multiplication of a sparse and a dense matrix without requiring any
 intermediate conversion (also multithreaded). 
 
-The only function explicitly available is `dot_product_mkl`, which takes two matrices
-`dot_product_mkl(A, B)` and returns a matrix that is `A (dot) B`. 
-CSR and CSC matrices from scipy.sparse are supported, and numpy dense matrices are supported.
-There is no support for COO or BSR sparse matrices.
-Numpy (dense) arrays must be contiguous in row-major (C) or column-major (F) order.
+The only function explicitly available is `dot_product_mkl`: 
 
-Dense array outputs may be row-major or column-major order depending on input.
-If both matrices are dense, the output will be dense.
-If one matrix is dense and one is sparse, the output will be dense.
-If both matrices are sparse, the output will be sparse unless the `dense=True` flag is passed.
-The dense flag will directly multiply to a dense matrix without requiring intermediate conversion.
-It has no effect if set when a dense output would normally be produced.
-Sparse array output format is the same as the left input sparse array (either CSC or CSR).
+`dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False)`
 
-This only does floating point data, and both matrices must be identical types.
-If `cast=True` non-float matrices will be converted to doubles,
-and a single-precision matrix will be promoted to doubles unless both matrices are single-precision. 
-`cast=True` will ***not*** change data in-place, but will instead make an internal copy. 
-This function may also reorder sparse data structures without warning while creating MKL's internal matrix representation
-(reordering does not change data, only the way it is stored).
+`matrix_a` and `matrix_b` are either numpy arrays (1d or 2d) or scipy sparse matrices (CSR or CSC).
+Sparse COO or BSR matrices are not supported. 
+Numpy arrays must be contiguous.
+
+This package only works with float data.
+`cast=True` will convert data to double-precision floats by making an internal copy if necessary.
+If A and B are both single-precision floats they will be used as is.
+`cast=False` will raise a ValueError if the input arrays are not both double-precision or both single-precision.
+
+The output will be a dense array, unless both inputs are sparse, in which case the output will be a sparse matrix.
+The sparse matrix output format will be the same as the left (A) input sparse matrix.
+`dense=True` will directly produce a dense array during sparse matrix multiplication. 
+`dense` has no effect if a dense array would be produced anyway. 
+Dense array outputs may be row-ordered or column-ordered, depending on input ordering.
+
+`copy` is deprecated and has no effect.
+
+`reorder_output=True` will order sparse matrix indices in the output matrix. 
+It has no effect if the output is a dense array.
+Input sparse matrices may be reordered without warning in place. 
+This will not change data, only the way it is stored.
+Scipy matrix multiplication does not produce ordered outputs, so this defaults to `False`.
 
 This package requires `libmkl_rt.so` (or `libmkl_rt.dylib` for OSX, or `mkl_rt.dll` for WIN).
 If the MKL library cannot be loaded an `ImportError` will be raised when the package is first imported. 
