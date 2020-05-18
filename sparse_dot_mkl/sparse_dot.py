@@ -1,10 +1,29 @@
-from sparse_dot_mkl._sparse_sparse import _sparse_dot_sparse as _sds
+from sparse_dot_mkl._sparse_sparse import _sparse_dot_sparse as _sds, _sparse_dot_transpose as _sdt
 from sparse_dot_mkl._sparse_dense import _sparse_dot_dense as _sdd
 from sparse_dot_mkl._dense_dense import _dense_dot_dense as _ddd
 from sparse_dot_mkl._sparse_vector import _sparse_dot_vector as _sdv
 from sparse_dot_mkl._mkl_interface import get_version_string, _is_dense_vector
 import scipy.sparse as _spsparse
 import numpy as _np
+
+
+def dot_product_transpose_mkl(matrix_a, cast=False, reorder_output=False, debug=False):
+    """
+    """
+
+    dprint = print if debug else lambda *x: x
+
+    if get_version_string() is None and debug:
+        dprint("mkl-service must be installed to get full debug messaging")
+    elif debug:
+        dprint(get_version_string())
+
+    is_sparse = _spsparse.issparse(matrix_a)
+
+    if is_sparse:
+        return _sdt(matrix_a, cast=cast, reorder_output=reorder_output, dprint=dprint)
+    else:
+        return _ddd(matrix_a, matrix_a.T, cast=cast, dprint=dprint)
 
 
 def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False):

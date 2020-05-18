@@ -86,6 +86,10 @@ class MKL:
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-spmm
     _mkl_sparse_spmm = _libmkl.mkl_sparse_spmm
 
+    # Import function for product of sparse matrix with its transpose
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-syrk
+    _mkl_sparse_syrk = _libmkl.mkl_sparse_syrk
+
     # Import function for cleaning up MKL objects
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-destroy
     _mkl_sparse_destroy = _libmkl.mkl_sparse_destroy
