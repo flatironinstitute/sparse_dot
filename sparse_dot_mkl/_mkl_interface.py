@@ -130,6 +130,26 @@ class MKL:
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-mv
     _mkl_sparse_d_mv = _libmkl.mkl_sparse_d_mv
 
+    # Import function for QR solver - reorder
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-reorder
+    _mkl_sparse_qr_reorder = _libmkl.mkl_sparse_qr_reorder
+
+    # Import function for QR solver - factorize
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-factorize
+    _mkl_sparse_d_qr_factorize = _libmkl.mkl_sparse_d_qr_factorize
+
+    # Import function for QR solver - factorize
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-factorize
+    _mkl_sparse_s_qr_factorize = _libmkl.mkl_sparse_s_qr_factorize
+
+    # Import function for QR solver - solve
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-solve
+    _mkl_sparse_d_qr_solve = _libmkl.mkl_sparse_d_qr_solve
+
+    # Import function for QR solver - solve
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-solve
+    _mkl_sparse_s_qr_solve = _libmkl.mkl_sparse_s_qr_solve
+
     @classmethod
     def _set_int_type(cls, c_type, np_type):
         cls.MKL_INT = c_type
@@ -194,6 +214,21 @@ class MKL:
 
         cls._mkl_sparse_d_mv.argtypes = cls._mkl_sparse_mv_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_mv.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_qr_reorder.argtypes = [sparse_matrix_t, matrix_descr]
+        cls._mkl_sparse_qr_reorder.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_d_qr_factorize.argtypes = [sparse_matrix_t, _ctypes.POINTER(_ctypes.c_double)]
+        cls._mkl_sparse_d_qr_factorize.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_s_qr_factorize.argtypes = [sparse_matrix_t, _ctypes.POINTER(_ctypes.c_float)]
+        cls._mkl_sparse_s_qr_factorize.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_d_qr_solve.argtypes = cls._mkl_sparse_qr_solve(_ctypes.c_double)
+        cls._mkl_sparse_d_qr_solve.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_s_qr_solve.argtypes = cls._mkl_sparse_qr_solve(_ctypes.c_float)
+        cls._mkl_sparse_s_qr_solve.restypes = _ctypes.c_int
 
     def __init__(self):
         raise NotImplementedError("This class is not intended to be instanced")
@@ -272,6 +307,18 @@ class MKL:
                 prec_type,
                 _ctypes.POINTER(prec_type)]
 
+    @staticmethod
+    def _mkl_sparse_qr_solve(prec_type):
+        return [_ctypes.c_int,
+                sparse_matrix_t,
+                _ctypes.POINTER(prec_type),
+                _ctypes.c_int,
+                MKL.MKL_INT,
+                _ctypes.POINTER(prec_type),
+                MKL.MKL_INT,
+                ndpointer(dtype=prec_type, ndim=2),
+                MKL.MKL_INT]
+
 
 # Construct opaque struct & type
 class _sparse_matrix(_ctypes.Structure):
@@ -303,6 +350,10 @@ RETURN_CODES = {0: "SPARSE_STATUS_SUCCESS",
 # Define order codes
 LAYOUT_CODE_C = 101
 LAYOUT_CODE_F = 102
+
+# Define transpose codes
+SPARSE_OPERATION_NON_TRANSPOSE = 10
+SPARSE_OPERATION_TRANSPOSE = 11
 
 
 def _check_scipy_index_typing(sparse_matrix):

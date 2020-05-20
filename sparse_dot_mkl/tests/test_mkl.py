@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 import scipy.sparse as _spsparse
-from sparse_dot_mkl import dot_product_mkl
+from sparse_dot_mkl import dot_product_mkl, sparse_qr_solve_mkl
 from sparse_dot_mkl._mkl_interface import (_create_mkl_sparse, _export_mkl, sparse_matrix_t, _destroy_mkl_handle,
                                            _convert_to_csr, _order_mkl_handle, MKL)
 from sparse_dot_mkl._sparse_sparse import _matmul_mkl
@@ -628,6 +628,40 @@ class TestEmptyConditions(unittest.TestCase):
         mat3_np = np.dot(self.mat1_zero, self.mat2_d)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
+
+
+class TestSparseSolver(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.A = _spsparse.diags((MATRIX_1.data[0:100].copy()), format="csr")
+        cls.B = MATRIX_1.data[0:100].copy().reshape(-1, 1)
+        cls.X = np.linalg.lstsq(cls.A.A, cls.B, rcond=None)[0]
+
+    def setUp(self):
+        self.mat1 = self.A.copy()
+        self.mat2 = self.B.copy()
+        self.mat3 = self.X.copy()
+
+    def test_sparse_solver(self):
+        mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2)
+        npt.assert_array_almost_equal(self.mat3, mat3)
+
+    def test_sparse_solver_single(self):
+        mat3 = sparse_qr_solve_mkl(self.mat1.astype(np.float32), self.mat2.astype(np.float32))
+        npt.assert_array_almost_equal(self.mat3, mat3)
+
+    def test_sparse_solver_cast_B(self):
+        mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2.astype(np.float32), cast=True)
+        npt.assert_array_almost_equal(self.mat3, mat3)
+
+    def test_sparse_solver_cast_A(self):
+        mat3 = sparse_qr_solve_mkl(self.mat1.astype(np.float32), self.mat2, cast=True)
+        npt.assert_array_almost_equal(self.mat3, mat3)
+
+    def test_sparse_solver_cast_CSC(self):
+        mat3 = sparse_qr_solve_mkl(self.mat1.tocsc(), self.mat2, cast=True)
+        npt.assert_array_almost_equal(self.mat3, mat3)
 
 
 class TestFailureConditions(unittest.TestCase):

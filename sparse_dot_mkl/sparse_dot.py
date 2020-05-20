@@ -2,6 +2,7 @@ from sparse_dot_mkl._sparse_sparse import _sparse_dot_sparse as _sds
 from sparse_dot_mkl._sparse_dense import _sparse_dot_dense as _sdd
 from sparse_dot_mkl._dense_dense import _dense_dot_dense as _ddd
 from sparse_dot_mkl._sparse_vector import _sparse_dot_vector as _sdv
+from sparse_dot_mkl._sparse_qr_solver import sparse_qr_solver as _qrs
 from sparse_dot_mkl._mkl_interface import get_version_string, _is_dense_vector
 import scipy.sparse as _spsparse
 import numpy as _np
@@ -69,4 +70,29 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
         return _ddd(matrix_a, matrix_b, cast=cast, dprint=dprint)
 
 
+def sparse_qr_solve_mkl(matrix_a, matrix_b, cast=False, debug=False):
+    """
+    Solve AX = B for X where A is sparse and B is dense
 
+    :param matrix_a: Sparse matrix (solver requires CSR; will convert if cast=True)
+    :type matrix_a: np.ndarray
+    :param matrix_b: Dense matrix
+    :type matrix_b: np.ndarray
+    :param cast: Should the data be coerced into float64 if it isn't float32 or float64,
+    and should a CSR matrix be cast to a CSC matrix.
+    Defaults to False
+    :type cast: bool
+    :param debug: Should debug messages be printed. Defaults to false.
+    :type debug: bool
+    :return: Dense array X
+    :rtype: np.ndarray
+    """
+
+    dprint = print if debug else lambda *x: x
+
+    if get_version_string() is None and debug:
+        dprint("mkl-service must be installed to get full debug messaging")
+    elif debug:
+        dprint(get_version_string())
+
+    return _qrs(matrix_a, matrix_b, cast=cast, dprint=dprint)
