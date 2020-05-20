@@ -93,4 +93,5 @@ def sparse_qr_solver(matrix_a, matrix_b, cast=False, dprint=print):
         raise ValueError(err_msg)
     else:
         matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast, dprint=dprint)
-        return _sparse_qr(matrix_a, matrix_b)
+        x_arr = _sparse_qr(matrix_a, matrix_b if matrix_b.ndim == 2 else matrix_b.reshape(-1, 1))
+        return x_arr if matrix_b.ndim == 2 else x_arr.ravel()
