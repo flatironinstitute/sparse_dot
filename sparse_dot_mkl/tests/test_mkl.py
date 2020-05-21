@@ -644,7 +644,7 @@ class TestSparseSolver(unittest.TestCase):
         self.mat3 = self.X.copy()
 
     def test_sparse_solver(self):
-        mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2)
+        mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2, debug=True)
         npt.assert_array_almost_equal(self.mat3, mat3)
 
     def test_sparse_solver_single(self):
@@ -666,6 +666,17 @@ class TestSparseSolver(unittest.TestCase):
     def test_sparse_solver_1d_d(self):
         mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2.ravel())
         npt.assert_array_almost_equal(self.mat3.ravel(), mat3)
+
+    def test_solver_guard_errors(self):
+
+        with self.assertRaises(ValueError):
+            mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2.T)
+
+        with self.assertRaises(ValueError):
+            mat3 = sparse_qr_solve_mkl(self.mat1.tocsc(), self.mat2)
+
+        with self.assertRaises(ValueError):
+            mat3 = sparse_qr_solve_mkl(self.mat1.tocoo(), self.mat2, cast=True)
 
 
 class TestFailureConditions(unittest.TestCase):
