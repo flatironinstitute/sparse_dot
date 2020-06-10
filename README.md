@@ -11,8 +11,9 @@ The scipy sparse implementation is single-threaded at the time of writing (2020-
 A secondary advantage is the direct multiplication of a sparse and a dense matrix without requiring any
 intermediate conversion (also multithreaded). 
 
-The only function explicitly available is `dot_product_mkl`: 
+Two functions are explicitly available - `dot_product_mkl` and `sparse_qr_solve_mkl`: 
 
+#### dot_product_mkl
 `dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False)`
 
 `matrix_a` and `matrix_b` are either numpy arrays (1d or 2d) or scipy sparse matrices (CSR or CSC).
@@ -37,6 +38,18 @@ It has no effect if the output is a dense array.
 Input sparse matrices may be reordered without warning in place. 
 This will not change data, only the way it is stored.
 Scipy matrix multiplication does not produce ordered outputs, so this defaults to `False`.
+
+#### sparse_qr_solve_mkl
+`sparse_qr_solve_mkl(matrix_a, matrix_b, cast=False, debug=False)`
+
+This is a QR solver for systems of linear equations (AX = B) where `matrix_a` is a sparse CSR matrix 
+and `matrix_b` is a dense matrix.
+It will return a dense array X.
+
+`cast=True` will convert data to compatible floats by making an internal copy if necessary.
+It will also convert a CSC matrix to a CSR matrix if necessary.
+
+#### Requirements
 
 This package requires `libmkl_rt.so` (or `libmkl_rt.dylib` for OSX, or `mkl_rt.dll` for WIN).
 If the MKL library cannot be loaded an `ImportError` will be raised when the package is first imported. 

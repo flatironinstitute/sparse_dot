@@ -1,22 +1,16 @@
 import warnings
 import ctypes as _ctypes
+import ctypes.util as _ctypes_util
 
 # Load mkl_spblas through the libmkl_rt common interface
-# Check each of these library types
-_MKL_SO_LINUX = "libmkl_rt.so"
-_MKL_SO_OSX = "libmkl_rt.dylib"
-_MKL_SO_WINDOWS = "mkl_rt.dll"
-
-# There's probably a better way to do this
 _libmkl, _libmkl_loading_errors = None, []
-for so_file in [_MKL_SO_LINUX, _MKL_SO_OSX, _MKL_SO_WINDOWS]:
-    try:
-        _libmkl = _ctypes.cdll.LoadLibrary(so_file)
-        break
-    except (OSError, ImportError) as err:
-        _libmkl_loading_errors.append(err)
+try:
+    so_file = _ctypes_util.find_library('mkl_rt')
+    _libmkl = _ctypes.cdll.LoadLibrary(so_file)    
+except (OSError, ImportError) as err:
+    _libmkl_loading_errors.append(err)
 
-if _libmkl is None:
+if _libmkl._name is None:
     ierr_msg = "Unable to load the MKL libraries through libmkl_rt. Try setting $LD_LIBRARY_PATH."
     ierr_msg += "\n\t" + "\n\t".join(map(lambda x: str(x), _libmkl_loading_errors))
     raise ImportError(ierr_msg)
@@ -150,6 +144,26 @@ class MKL:
     # https://software.intel.com/en-us/mkl-developer-reference-c-cblas-syrk
     _cblas_dsyrk = _libmkl.cblas_dsyrk
 
+    # Import function for QR solver - reorder
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-reorder
+    _mkl_sparse_qr_reorder = _libmkl.mkl_sparse_qr_reorder
+
+    # Import function for QR solver - factorize
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-factorize
+    _mkl_sparse_d_qr_factorize = _libmkl.mkl_sparse_d_qr_factorize
+
+    # Import function for QR solver - factorize
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-factorize
+    _mkl_sparse_s_qr_factorize = _libmkl.mkl_sparse_s_qr_factorize
+
+    # Import function for QR solver - solve
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-solve
+    _mkl_sparse_d_qr_solve = _libmkl.mkl_sparse_d_qr_solve
+
+    # Import function for QR solver - solve
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-solve
+    _mkl_sparse_s_qr_solve = _libmkl.mkl_sparse_s_qr_solve
+
     @classmethod
     def _set_int_type(cls, c_type, np_type):
         cls.MKL_INT = c_type
@@ -231,6 +245,21 @@ class MKL:
 
         cls._cblas_dsyrk.argtypes = cls._cblas_syrk_argtypes(_ctypes.c_double)
         cls._cblas_dsyrk.restypes = None
+
+        cls._mkl_sparse_qr_reorder.argtypes = [sparse_matrix_t, matrix_descr]
+        cls._mkl_sparse_qr_reorder.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_d_qr_factorize.argtypes = [sparse_matrix_t, _ctypes.POINTER(_ctypes.c_double)]
+        cls._mkl_sparse_d_qr_factorize.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_s_qr_factorize.argtypes = [sparse_matrix_t, _ctypes.POINTER(_ctypes.c_float)]
+        cls._mkl_sparse_s_qr_factorize.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_d_qr_solve.argtypes = cls._mkl_sparse_qr_solve(_ctypes.c_double)
+        cls._mkl_sparse_d_qr_solve.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_s_qr_solve.argtypes = cls._mkl_sparse_qr_solve(_ctypes.c_float)
+        cls._mkl_sparse_s_qr_solve.restypes = _ctypes.c_int
 
     def __init__(self):
         raise NotImplementedError("This class is not intended to be instanced")
@@ -332,6 +361,18 @@ class MKL:
                 prec_type,
                 _ctypes.POINTER(prec_type),
                 MKL.MKL_INT]
+      
+    @staticmethod
+    def _mkl_sparse_qr_solve(prec_type):
+        return [_ctypes.c_int,
+                sparse_matrix_t,
+                _ctypes.POINTER(prec_type),
+                _ctypes.c_int,
+                MKL.MKL_INT,
+                _ctypes.POINTER(prec_type),
+                MKL.MKL_INT,
+                ndpointer(dtype=prec_type, ndim=2),
+                MKL.MKL_INT]
 
 
 # Construct opaque struct & type
@@ -364,6 +405,10 @@ RETURN_CODES = {0: "SPARSE_STATUS_SUCCESS",
 # Define order codes
 LAYOUT_CODE_C = 101
 LAYOUT_CODE_F = 102
+
+# Define transpose codes
+SPARSE_OPERATION_NON_TRANSPOSE = 10
+SPARSE_OPERATION_TRANSPOSE = 11
 
 
 def _check_scipy_index_typing(sparse_matrix):
