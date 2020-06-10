@@ -34,6 +34,29 @@ def _matmul_mkl(sp_ref_a, sp_ref_b):
     return ref_handle
 
 
+def _syrk_mkl(sp_ref_a):
+    """
+    Dot product an MKL object with its transpose and return a handle to the result
+
+    :param sp_ref_a: Sparse matrix A handle
+    :type sp_ref_a: sparse_matrix_t
+    :return: Sparse matrix handle that is the dot product A * A.T
+    :rtype: sparse_matrix_t
+    """
+
+    ref_handle = sparse_matrix_t()
+
+    ret_val = MKL._mkl_sparse_syrk(_ctypes.c_int(10),
+                                   sp_ref_a,
+                                   _ctypes.byref(ref_handle))
+
+    # Check return
+    if ret_val != 0:
+        raise ValueError("mkl_sparse_spmm returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
+
+    return ref_handle
+
+
 def _matmul_mkl_dense(sp_ref_a, sp_ref_b, output_shape, double_precision):
     """
     Dot product two MKL objects together into a dense numpy array and return the result
@@ -171,3 +194,73 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
         dprint("Created python handle: {0:.6f} seconds".format(time.time() - t2))
 
         return python_c
+
+
+def _sparse_dot_transpose(matrix_a, cast=False, reorder_output=False, dprint=print):
+    """
+    Multiply together two scipy sparse matrixes using the intel Math Kernel Library.
+    This currently only supports float32 and float64 data
+
+    :param matrix_a: Sparse matrix A in CSC/CSR format
+    :type matrix_a: scipy.sparse.spmatrix
+    :param cast: Should the data be coerced into float64 if it isn't float32 or float64
+    If set to True and any other dtype is passed, the matrix data will be modified in-place
+    If set to False and any dtype that isn't float32 or float64 is passed, a ValueError will be raised
+    Defaults to False
+    :param reorder_output: Should the array indices be reordered using MKL
+    If set to True, the object in C will be ordered and then exported into python
+    If set to False, the array column indices will not be ordered.
+    The scipy sparse dot product does not yield ordered column indices so this defaults to False
+    :type reorder_output: bool
+    :param dprint: Should debug and timing messages be printed. Defaults to false.
+    :type dprint: function
+    :return: Sparse matrix that is the result of A * B in CSR format
+    :rtype: scipy.sparse.csr_matrix
+    """
+
+    # Check for allowed sparse matrix types
+
+    if is_csr(matrix_a):
+        default_output = _spsparse.csr_matrix
+        output_type = "csr"
+    elif is_csc(matrix_a):
+        default_output = _spsparse.csc_matrix
+        output_type = "csc"
+    else:
+        raise ValueError("Input matrix to dot_product_transpose_mkl must be CSR or CSC; COO and BSR are not supported")
+
+    # Check for edge condition inputs which result in empty outputs
+    if _empty_output_check(matrix_a, matrix_a.T):
+        dprint("Skipping multiplication because A (dot) A.T must yield an empty matrix")
+        return default_output((matrix_a.shape[0], matrix_a.shape[1]), dtype=matrix_a.dtype)
+
+    t0 = time.time()
+
+    # Create intel MKL objects
+    mkl_a, a_dbl = _create_mkl_sparse(matrix_a)
+
+    t1 = time.time()
+    dprint("Created MKL sparse handle: {0:.6f} seconds".format(t1 - t0))
+
+    # Dot product
+    mkl_c = _syrk_mkl(mkl_a)
+
+    _destroy_mkl_handle(mkl_a)
+
+    t2 = time.time()
+    dprint("Multiplied matrices: {0:.6f} seconds".format(t2 - t1))
+
+    # Reorder
+    if reorder_output:
+        _order_mkl_handle(mkl_c)
+
+        dprint("Reordered indicies: {0:.6f} seconds".format(time.time() - t2))
+        t2 = time.time()
+
+    # Extract
+    python_c = _export_mkl(mkl_c, a_dbl, output_type=output_type)
+    _destroy_mkl_handle(mkl_c)
+
+    dprint("Created python handle: {0:.6f} seconds".format(time.time() - t2))
+
+    return python_c
