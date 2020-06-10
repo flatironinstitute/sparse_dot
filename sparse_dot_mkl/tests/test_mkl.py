@@ -317,6 +317,14 @@ class TestDenseDenseMultiplication(unittest.TestCase):
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
+    def test_outer_product(self):
+        d1, d2 = self.mat1[:, 0].reshape(-1, 1).copy(), self.mat2[0, :].reshape(1, -1).copy()
+
+        mat3 = dot_product_mkl(d1, d2)
+        mat3_np = np.dot(d1, d2)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
 
 class TestDenseDenseFCMultiplication(TestDenseDenseMultiplication):
 
