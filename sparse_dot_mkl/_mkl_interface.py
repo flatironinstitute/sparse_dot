@@ -86,10 +86,6 @@ class MKL:
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-spmm
     _mkl_sparse_spmm = _libmkl.mkl_sparse_spmm
 
-    # Import function for product of sparse matrix with its transpose
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-syrk
-    _mkl_sparse_syrk = _libmkl.mkl_sparse_syrk
-
     # Import function for cleaning up MKL objects
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-destroy
     _mkl_sparse_destroy = _libmkl.mkl_sparse_destroy
@@ -133,6 +129,26 @@ class MKL:
     # Import function for matrix * vector
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-mv
     _mkl_sparse_d_mv = _libmkl.mkl_sparse_d_mv
+
+    # Import function for sparse gram matrix
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-syrk
+    _mkl_sparse_syrk = _libmkl.mkl_sparse_syrk
+
+    # Import function for dense single gram matrix from sparse
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-syrkd
+    _mkl_sparse_s_syrkd = _libmkl.mkl_sparse_s_syrkd
+
+    # Import function for dense double gram matrix from sparse
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-syrkd
+    _mkl_sparse_d_syrkd = _libmkl.mkl_sparse_d_syrkd
+
+    # Import function for dense single gram matrix
+    # https://software.intel.com/en-us/mkl-developer-reference-c-cblas-syrk
+    _cblas_ssyrk = _libmkl.cblas_ssyrk
+
+    # Import function for dense double gram matrix
+    # https://software.intel.com/en-us/mkl-developer-reference-c-cblas-syrk
+    _cblas_dsyrk = _libmkl.cblas_dsyrk
 
     @classmethod
     def _set_int_type(cls, c_type, np_type):
@@ -198,6 +214,23 @@ class MKL:
 
         cls._mkl_sparse_d_mv.argtypes = cls._mkl_sparse_mv_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_mv.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_syrk.argtypes = [_ctypes.c_int,
+                                         sparse_matrix_t,
+                                         _ctypes.POINTER(sparse_matrix_t)]
+        cls._mkl_sparse_syrk.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_s_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_syrkd.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_d_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_syrkd.restypes = _ctypes.c_int
+
+        cls._cblas_ssyrk.argtypes = cls._cblas_syrk_argtypes(_ctypes.c_float)
+        cls._cblas_ssyrk.restypes = None
+
+        cls._cblas_dsyrk.argtypes = cls._cblas_syrk_argtypes(_ctypes.c_double)
+        cls._cblas_dsyrk.restypes = None
 
     def __init__(self):
         raise NotImplementedError("This class is not intended to be instanced")
@@ -275,6 +308,30 @@ class MKL:
                 ndpointer(dtype=prec_type, ndim=1),
                 prec_type,
                 _ctypes.POINTER(prec_type)]
+
+    @staticmethod
+    def _mkl_sparse_syrkd_argtypes(prec_type):
+        return [_ctypes.c_int,
+                sparse_matrix_t,
+                prec_type,
+                prec_type,
+                _ctypes.POINTER(prec_type),
+                _ctypes.c_int,
+                MKL.MKL_INT]
+
+    @staticmethod
+    def _cblas_syrk_argtypes(prec_type):
+        return [_ctypes.c_int,
+                _ctypes.c_int,
+                _ctypes.c_int,
+                MKL.MKL_INT,
+                MKL.MKL_INT,
+                prec_type,
+                ndpointer(dtype=prec_type, ndim=2),
+                MKL.MKL_INT,
+                prec_type,
+                _ctypes.POINTER(prec_type),
+                MKL.MKL_INT]
 
 
 # Construct opaque struct & type
@@ -594,11 +651,19 @@ def _cast_to_float64(matrix):
     return matrix.astype(np.float64) if matrix.dtype != np.float64 else matrix
 
 
-def _type_check(matrix_a, matrix_b, cast=False, dprint=print):
+def _type_check(matrix_a, matrix_b=None, cast=False, dprint=print):
     """
     Make sure that both matrices are single precision floats or both are double precision floats
     If not, convert to double precision floats if cast is True, or raise an error if cast is False
     """
+
+    if matrix_b is None and matrix_a.dtype in NUMPY_FLOAT_DTYPES:
+        return matrix_a
+    elif matrix_b is None and cast:
+        return _cast_to_float64(matrix_a)
+    elif matrix_b is None:
+        err_msg = "Matrix data type must be float32 or float64; {a} provided".format(a=matrix_a.dtype)
+        raise ValueError(err_msg)
 
     # Check dtypes
     if matrix_a.dtype == np.float32 and matrix_b.dtype == np.float32:
