@@ -1,22 +1,16 @@
 import warnings
 import ctypes as _ctypes
+import ctypes.util as _ctypes_util
 
 # Load mkl_spblas through the libmkl_rt common interface
-# Check each of these library types
-_MKL_SO_LINUX = "libmkl_rt.so"
-_MKL_SO_OSX = "libmkl_rt.dylib"
-_MKL_SO_WINDOWS = "mkl_rt.dll"
-
-# There's probably a better way to do this
 _libmkl, _libmkl_loading_errors = None, []
-for so_file in [_MKL_SO_LINUX, _MKL_SO_OSX, _MKL_SO_WINDOWS]:
-    try:
-        _libmkl = _ctypes.cdll.LoadLibrary(so_file)
-        break
-    except (OSError, ImportError) as err:
-        _libmkl_loading_errors.append(err)
+try:
+    so_file = _ctypes_util.find_library('mkl_rt')
+    _libmkl = _ctypes.cdll.LoadLibrary(so_file)    
+except (OSError, ImportError) as err:
+    _libmkl_loading_errors.append(err)
 
-if _libmkl is None:
+if _libmkl._name is None:
     ierr_msg = "Unable to load the MKL libraries through libmkl_rt. Try setting $LD_LIBRARY_PATH."
     ierr_msg += "\n\t" + "\n\t".join(map(lambda x: str(x), _libmkl_loading_errors))
     raise ImportError(ierr_msg)
