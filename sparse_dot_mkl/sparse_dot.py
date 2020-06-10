@@ -2,6 +2,7 @@ from sparse_dot_mkl._sparse_sparse import _sparse_dot_sparse as _sds
 from sparse_dot_mkl._sparse_dense import _sparse_dot_dense as _sdd
 from sparse_dot_mkl._dense_dense import _dense_dot_dense as _ddd
 from sparse_dot_mkl._sparse_vector import _sparse_dot_vector as _sdv
+from sparse_dot_mkl._gram_matrix import _gram_matrix as _gm
 from sparse_dot_mkl._sparse_qr_solver import sparse_qr_solver as _qrs
 from sparse_dot_mkl._mkl_interface import get_version_string, _is_dense_vector
 import scipy.sparse as _spsparse
@@ -72,6 +73,38 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     else:
         return _ddd(matrix_a, matrix_b, cast=cast, dprint=dprint)
 
+def gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=False, reorder_output=False):
+    """
+    Calculate a gram matrix (AT (dot) A) matrix.
+    Note that this should calculate only the upper triangular matrix.
+    However providing a sparse matrix with transpose=False and dense=True will calculate a full matrix
+    (this appears to be a bug in mkl_sparse_?_syrkd)
+
+    :param matrix: Sparse matrix in CSR or CSC format or numpy array
+    :type matrix: scipy.sparse.csr_matrix, scipy.sparse.csc_matrix, numpy.ndarray
+    :param transpose: Calculate A (dot) AT instead
+    :type transpose: bool
+    :param cast: Make internal copies to convert matrix to a float matrix or convert to a CSR matrix if necessary
+    :type cast: bool
+    :param dense: Produce a dense matrix output instead of a sparse matrix
+    :type dense: bool
+    :param debug: Should debug and timing messages be printed. Defaults to false.
+    :type debug: bool
+    :param reorder_output: Should the array indices be reordered using MKL
+    The scipy sparse dot product does not yield ordered column indices so this defaults to False
+    :type reorder_output: bool
+    :return: Gram matrix
+    :rtype: scipy.sparse.csr_matrix, np.ndarray"""
+    
+    dprint = print if debug else lambda *x: x
+
+    if get_version_string() is None and debug:
+        dprint("mkl-service must be installed to get full debug messaging")
+    elif debug:
+        dprint(get_version_string())
+
+    return _gm(matrix, transpose=transpose, cast=cast, dense=dense, reorder_output=reorder_output)
+
 
 def sparse_qr_solve_mkl(matrix_a, matrix_b, cast=False, debug=False):
     """
@@ -90,12 +123,16 @@ def sparse_qr_solve_mkl(matrix_a, matrix_b, cast=False, debug=False):
     :return: Dense array X
     :rtype: np.ndarray
     """
-
+    
     dprint = print if debug else lambda *x: x
-
+    
     if get_version_string() is None and debug:
         dprint("mkl-service must be installed to get full debug messaging")
     elif debug:
         dprint(get_version_string())
-
+        
     return _qrs(matrix_a, matrix_b, cast=cast, dprint=dprint)
+
+  
+# Alias for backwards compatibility
+dot_product_transpose_mkl = gram_matrix_mkl

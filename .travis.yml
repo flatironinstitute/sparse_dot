@@ -1,15 +1,32 @@
-language: python
-python:
-  - 3.6
-  - 3.7
-  - 3.8
+jobs:
+  include:
+    - name: "Python 3.8.0 on Xenial Linux"
+      language: python
+      python: 3.8
+      before_install:
+        # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/use-conda-with-travis-ci.html
+        - sudo apt-get -y update
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - source "$HOME/miniconda/etc/profile.d/conda.sh"
+        - hash -r
+    - name: "Python 3.7.4 on macOS"
+      os: osx
+      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
+      language: shell       # 'language: python' is an error on Travis CI macOS
+      before_install:
+        - curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -o miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - source "$HOME/miniconda/etc/profile.d/conda.sh"
+    - name: "Python 3.8.0 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install miniconda3
+        - copy c/tools/miniconda3/Library/bin/libcrypto-1_1-x64.* c/tools/miniconda3/DLLs
+        - copy c/tools/miniconda3/Library/bin/libssl-1_1-x64.* c/tools/miniconda3/DLLs
+      env: PATH=/c/tools/miniconda3:/c/tools/miniconda3/Scripts:$PATH
 install:
-  # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/use-conda-with-travis-ci.html
-  - sudo apt-get -y update
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - source "$HOME/miniconda/etc/profile.d/conda.sh"
-  - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
@@ -17,11 +34,11 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION mkl
   - conda activate test-environment
   - conda list
-  - pip install nose
-  - pip install codecov
+  - python -m pip install nose
+  - python -m pip install codecov
   - python setup.py install
 script:
-  - coverage run setup.py test
+  - python -m coverage run setup.py test
 after_success:
   - codecov
 after_failure:

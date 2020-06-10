@@ -34,6 +34,29 @@ def _matmul_mkl(sp_ref_a, sp_ref_b):
     return ref_handle
 
 
+def _syrk_mkl(sp_ref_a):
+    """
+    Dot product an MKL object with its transpose and return a handle to the result
+
+    :param sp_ref_a: Sparse matrix A handle
+    :type sp_ref_a: sparse_matrix_t
+    :return: Sparse matrix handle that is the dot product A * A.T
+    :rtype: sparse_matrix_t
+    """
+
+    ref_handle = sparse_matrix_t()
+
+    ret_val = MKL._mkl_sparse_syrk(_ctypes.c_int(10),
+                                   sp_ref_a,
+                                   _ctypes.byref(ref_handle))
+
+    # Check return
+    if ret_val != 0:
+        raise ValueError("mkl_sparse_spmm returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
+
+    return ref_handle
+
+
 def _matmul_mkl_dense(sp_ref_a, sp_ref_b, output_shape, double_precision):
     """
     Dot product two MKL objects together into a dense numpy array and return the result
