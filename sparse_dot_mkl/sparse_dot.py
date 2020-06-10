@@ -45,14 +45,17 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
         dprint(get_version_string())
 
     num_sparse = sum((_spsparse.issparse(matrix_a), _spsparse.issparse(matrix_b)))
-    num_vectors = sum((_is_dense_vector(matrix_a), _is_dense_vector(matrix_b)))
 
     # SPARSE (DOT) SPARSE #
     if num_sparse == 2:
         return _sds(matrix_a, matrix_b, cast=cast, reorder_output=reorder_output, dense=dense, dprint=dprint)
 
     # SPARSE (DOT) VECTOR #
-    elif num_sparse == 1 and num_vectors == 1:
+    elif num_sparse == 1 and _is_dense_vector(matrix_a) and (matrix_a.ndim == 1 or matrix_a.shape[0] == 1):
+        return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint)
+
+    # SPARSE (DOT) VECTOR #
+    elif num_sparse == 1 and _is_dense_vector(matrix_b) and (matrix_b.ndim == 1 or matrix_b.shape[1] == 1):
         return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint)
 
     # SPARSE (DOT) DENSE & DENSE (DOT) SPARSE #
@@ -61,7 +64,7 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
 
     # SPECIAL CASE OF VECTOR (DOT) VECTOR #
     # THIS IS JUST EASIER THAN GETTING THIS EDGE CONDITION RIGHT IN MKL #
-    elif num_vectors == 2:
+    elif _is_dense_vector(matrix_a) and _is_dense_vector(matrix_b):
         return _np.dot(matrix_a, matrix_b)
 
     # DENSE (DOT) DENSE
