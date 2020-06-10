@@ -1,3 +1,8 @@
+### Version 0.5.1
+
+* Added gram_matrix_mkl to access [mkl_sparse_syrk](https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-syrk)
+* Fixed a bug that was not correctly multiplying vectors for outer products
+
 ### Version 0.5.0
 
 * Added sparse_qr_solve_mkl to access the [MKL QR solver](https://software.intel.com/content/www/us/en/develop/articles/intel-mkl-sparse-qr-solver-multifrontal-sparse-qr-factorization-method-for-solving-a-sparse.html)

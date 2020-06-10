@@ -11,7 +11,7 @@ The scipy sparse implementation is single-threaded at the time of writing (2020-
 A secondary advantage is the direct multiplication of a sparse and a dense matrix without requiring any
 intermediate conversion (also multithreaded). 
 
-Two functions are explicitly available - `dot_product_mkl` and `sparse_qr_solve_mkl`: 
+Three functions are explicitly available - `dot_product_mkl`, `gram_matrix_mkl`, and `sparse_qr_solve_mkl`: 
 
 #### dot_product_mkl
 `dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False)`
@@ -45,6 +45,20 @@ Scipy matrix multiplication does not produce ordered outputs, so this defaults t
 This is a QR solver for systems of linear equations (AX = B) where `matrix_a` is a sparse CSR matrix 
 and `matrix_b` is a dense matrix.
 It will return a dense array X.
+
+`cast=True` will convert data to compatible floats by making an internal copy if necessary.
+It will also convert a CSC matrix to a CSR matrix if necessary.
+
+#### gram_matrix_mkl
+`gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=False, reorder_output=False)`
+
+This will calculate the gram matrix A<sup>T</sup>A for matrix A, where matrix A is dense or a sparse CSR matrix.
+It will return the upper triangular portion of the resulting symmetric matrix.
+If A is sparse, it will return a sparse matrix unless `dense=True` is set.
+
+`transpose=True` will instead return AA<sup>T</sup> 
+
+`reorder_output=True` will order sparse matrix indices in the output matrix. 
 
 `cast=True` will convert data to compatible floats by making an internal copy if necessary.
 It will also convert a CSC matrix to a CSR matrix if necessary.

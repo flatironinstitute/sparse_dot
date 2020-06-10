@@ -1,4 +1,5 @@
 import os
+
 os.environ["MKL_NUM_THREADS"] = "1"
 
 import unittest
@@ -352,7 +353,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
     def setUp(self):
         self.mat1 = MATRIX_1.copy()
         self.mat2 = MATRIX_2.copy()
-        
+
         self.mat1_d = MATRIX_1.A
         self.mat2_d = MATRIX_2.A
 
@@ -467,7 +468,6 @@ class TestSparseVectorMultiplication(unittest.TestCase):
         self.mat2 = VECTOR.copy()
 
     def test_mult_1d(self):
-
         d1, d2 = self.mat1.astype(np.float64), self.mat2
 
         mat3 = dot_product_mkl(d1, d2, cast=True)
@@ -525,7 +525,6 @@ class TestVectorSparseMultiplication(unittest.TestCase):
         self.mat2_d = np.asarray(MATRIX_2.A, order="C")
 
     def test_mult_1d(self):
-
         d1, d2 = self.mat1.astype(np.float64), self.mat2
 
         mat3 = dot_product_mkl(d1, d2, cast=True)
@@ -629,7 +628,6 @@ class TestEmptyConditions(unittest.TestCase):
         self.mat1_zero = np.zeros((0, 300))
 
     def test_sparse_sparse(self):
-
         mat3 = dot_product_mkl(self.mat1, self.mat2)
         mat3_np = np.dot(self.mat1_d, self.mat2_d)
 
@@ -652,6 +650,7 @@ class TestEmptyConditions(unittest.TestCase):
         mat3_np = np.dot(self.mat1_zero, self.mat2_d)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
+
 
 class TestGramMatrix(unittest.TestCase):
 
@@ -717,6 +716,7 @@ class TestGramMatrix(unittest.TestCase):
         mat2 = gram_matrix_mkl(np.asarray(self.mat1.astype(np.float32).A, order="F"), dense=True)
         npt.assert_array_almost_equal(mat2, self.gram_ut)
 
+
 class TestSparseSolver(unittest.TestCase):
 
     @classmethod
@@ -755,7 +755,6 @@ class TestSparseSolver(unittest.TestCase):
         npt.assert_array_almost_equal(self.mat3.ravel(), mat3)
 
     def test_solver_guard_errors(self):
-
         with self.assertRaises(ValueError):
             mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2.T)
 
@@ -774,7 +773,6 @@ class TestFailureConditions(unittest.TestCase):
         self.vec = VECTOR.copy()
 
     def test_make_mkl_bad_type(self):
-
         with self.assertRaises(ValueError):
             _create_mkl_sparse(self.mat1.tocoo())
 
@@ -782,7 +780,6 @@ class TestFailureConditions(unittest.TestCase):
             _create_mkl_sparse(self.mat1.astype(np.int64))
 
     def test_export_mkl_bad_type(self):
-
         mkl_handle, dbl = _create_mkl_sparse(self.mat1)
 
         with self.assertRaises(ValueError):
@@ -791,7 +788,6 @@ class TestFailureConditions(unittest.TestCase):
         _destroy_mkl_handle(mkl_handle)
 
     def test_empty_handle(self):
-
         mkl_handle_empty = sparse_matrix_t()
 
         with self.assertRaises(ValueError):
@@ -807,7 +803,6 @@ class TestFailureConditions(unittest.TestCase):
             _destroy_mkl_handle(mkl_handle_empty)
 
     def test_3d_matrixes(self):
-
         d1, d2 = self.mat1.A.reshape(200, 300, 1), self.mat2.A.reshape(300, 100, 1)
 
         with self.assertRaises(ValueError):
@@ -820,7 +815,6 @@ class TestFailureConditions(unittest.TestCase):
             dot_product_mkl(self.mat1, d2)
 
     def test_bad_shapes(self):
-
         with self.assertRaises(ValueError):
             dot_product_mkl(self.vec.reshape(-1, 1), self.mat2)
 
@@ -837,7 +831,6 @@ class TestFailureConditions(unittest.TestCase):
             dot_product_mkl(self.vec[100:], self.vec)
 
     def test_lets_be_honest_this_is_just_to_make_codecov_bigger(self):
-
         with self.assertRaises(NotImplementedError):
             MKL()
 

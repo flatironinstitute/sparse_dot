@@ -73,6 +73,7 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     else:
         return _ddd(matrix_a, matrix_b, cast=cast, dprint=dprint)
 
+
 def gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=False, reorder_output=False):
     """
     Calculate a gram matrix (AT (dot) A) matrix.
