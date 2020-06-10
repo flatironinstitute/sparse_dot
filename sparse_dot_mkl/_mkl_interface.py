@@ -1,10 +1,11 @@
 import warnings
 import ctypes as _ctypes
+import ctypes.util as _ctypes_util
 
 # Load mkl_spblas through the libmkl_rt common interface
 _libmkl, _libmkl_loading_errors = None, []
 try:
-    so_file = _ctypes.util.find_library('mkl_rt')
+    so_file = _ctypes_util.find_library('mkl_rt')
     _libmkl = _ctypes.cdll.LoadLibrary(so_file)    
 except (OSError, ImportError) as err:
     _libmkl_loading_errors.append(err)
