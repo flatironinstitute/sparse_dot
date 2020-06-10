@@ -23,8 +23,8 @@ jobs:
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install miniconda3
-        - cp c/tools/miniconda3/Library/bin/libcrypto-1_1-x64.* c/tools/miniconda3/DLLs
-        - cp c/tools/miniconda3/Library/bin/libssl-1_1-x64.* c/tools/miniconda3/DLLs
+        - copy c/tools/miniconda3/Library/bin/libcrypto-1_1-x64.* c/tools/miniconda3/DLLs
+        - copy c/tools/miniconda3/Library/bin/libssl-1_1-x64.* c/tools/miniconda3/DLLs
       env: PATH=/c/tools/miniconda3:/c/tools/miniconda3/Scripts:$PATH
 install:
   - conda config --set always_yes yes --set changeps1 no
