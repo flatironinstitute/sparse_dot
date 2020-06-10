@@ -23,7 +23,7 @@ jobs:
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install miniconda3 --params="'/AddToPath:1'"
-      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+        - refreshenv
 install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
