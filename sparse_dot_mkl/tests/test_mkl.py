@@ -317,6 +317,14 @@ class TestDenseDenseMultiplication(unittest.TestCase):
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
+    def test_outer_product(self):
+        d1, d2 = self.mat1[:, 0].reshape(-1, 1).copy(), self.mat2[0, :].reshape(1, -1).copy()
+
+        mat3 = dot_product_mkl(d1, d2)
+        mat3_np = np.dot(d1, d2)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
 
 class TestDenseDenseFCMultiplication(TestDenseDenseMultiplication):
 
@@ -562,6 +570,22 @@ class TestVectorSparseMultiplication(unittest.TestCase):
 
         mat3 = dot_product_mkl(d1, d2, cast=True)
         mat3_np = np.dot(d1, d2.A)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_mult_outer_product_ds(self):
+        d1, d2 = self.mat1.reshape(-1, 1), _spsparse.csr_matrix(self.mat2_d[:, 0].reshape(1, -1))
+
+        mat3 = dot_product_mkl(d1, d2)
+        mat3_np = np.dot(d1, d2.A)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+
+    def test_mult_outer_product_sd(self):
+        d1, d2 = _spsparse.csr_matrix(self.mat1.reshape(-1, 1)), self.mat2_d[:, 0].reshape(1, -1).copy()
+
+        mat3 = dot_product_mkl(d1, d2)
+        mat3_np = np.dot(d1.A, d2)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
