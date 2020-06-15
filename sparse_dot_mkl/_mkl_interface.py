@@ -682,7 +682,7 @@ def _sanity_check(matrix_a, matrix_b, allow_vector=False):
         err_msg = "Matrices must be 2d: {m1} * {m2} is not valid".format(m1=matrix_a.shape, m2=matrix_b.shape)
         raise ValueError(err_msg)
 
-    invalid_ndims = not (a_2d or a_vec) or not (b_2d, b_vec)
+    invalid_ndims = not (a_2d or a_vec) or not (b_2d or b_vec)
     invalid_align = (matrix_a.shape[1] if not matrix_a.ndim == 1 else matrix_a.shape[0]) != matrix_b.shape[0]
 
     # Check to make sure that this multiplication can work
