@@ -3,17 +3,15 @@ import ctypes as _ctypes
 import ctypes.util as _ctypes_util
 
 # Load mkl_spblas through the libmkl_rt common interface
-_libmkl, _libmkl_loading_errors = None, []
+_libmkl = None
 try:
-    so_file = _ctypes_util.find_library('mkl_rt')
-    _libmkl = _ctypes.cdll.LoadLibrary(so_file)    
+    _so_file = _ctypes_util.find_library('mkl_rt')
+    if _so_file is None:
+        raise ImportError("mkl_rt not found.")
+    _libmkl = _ctypes.cdll.LoadLibrary(_so_file)
 except (OSError, ImportError) as err:
-    _libmkl_loading_errors.append(err)
-
-if _libmkl._name is None:
-    ierr_msg = "Unable to load the MKL libraries through libmkl_rt. Try setting $LD_LIBRARY_PATH."
-    ierr_msg += "\n\t" + "\n\t".join(map(lambda x: str(x), _libmkl_loading_errors))
-    raise ImportError(ierr_msg)
+    _ierr_msg = "Unable to load the MKL libraries through libmkl_rt. Try setting $LD_LIBRARY_PATH. " + str(err)
+    raise ImportError(_ierr_msg)
 
 # Use mkl-service to check version if it's installed
 # Since it's not on PyPi I don't want to make this an actual package dependency
@@ -772,11 +770,12 @@ def _validate_dtype():
         _destroy_mkl_handle(csc_ref)
 
 
-# Define dtypes empirically
-# Basically just try with int64s and if that doesn't work try with int32s
-# There's a way to do this with intel's mkl helper package but I don't want to add the dependency
-if MKL.MKL_INT is None:
-
+def _empirical_set_dtype():
+    """
+    Define dtypes empirically
+    Basically just try with int64s and if that doesn't work try with int32s
+    There's a way to do this with intel's mkl helper package but I don't want to add the dependency
+    """
     MKL._set_int_type(_ctypes.c_longlong, np.int64)
 
     try:
@@ -789,3 +788,7 @@ if MKL.MKL_INT is None:
             _validate_dtype()
         except ValueError:
             raise ImportError("Unable to set MKL numeric type")
+
+
+if MKL.MKL_INT is None:
+    _empirical_set_dtype()
