@@ -26,8 +26,8 @@ except ImportError:
         return None
 
 if get_version() is not None and get_version()["MajorVersion"] < 2020:
-    msg = "Loaded version of MKL is out of date: {v}".format(v=get_version_string())
-    warnings.warn(msg)
+    _verr_msg = "Loaded version of MKL is out of date: {v}".format(v=get_version_string())
+    warnings.warn(_verr_msg)
 
 import numpy as np
 import scipy.sparse as _spsparse
@@ -419,7 +419,8 @@ def _check_scipy_index_typing(sparse_matrix):
 
     int_max = np.iinfo(MKL.MKL_INT_NUMPY).max
     if (sparse_matrix.nnz > int_max) or (max(sparse_matrix.shape) > int_max):
-        msg = "MKL interface is {t} and cannot hold matrix {m}".format(m=repr(sparse_matrix), t=MKL.MKL_INT_NUMPY)
+        msg = "MKL interface is {t} and cannot hold matrix {m}\n".format(m=repr(sparse_matrix), t=MKL.MKL_INT_NUMPY)
+        msg += "Try changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
         raise ValueError(msg)
 
     # Cast indexes to MKL_INT type
