@@ -18,12 +18,15 @@ Three functions are explicitly available - `dot_product_mkl`, `gram_matrix_mkl`,
 
 `matrix_a` and `matrix_b` are either numpy arrays (1d or 2d) or scipy sparse matrices (CSR or CSC).
 Sparse COO or BSR matrices are not supported. 
-Numpy arrays must be contiguous.
+Numpy arrays must be contiguous. Non-contiguous arrays should be copied to a contiguous array prior to calling this 
+function.
 
 This package only works with float data.
 `cast=True` will convert data to double-precision floats by making an internal copy if necessary.
 If A and B are both single-precision floats they will be used as is.
 `cast=False` will raise a ValueError if the input arrays are not both double-precision or both single-precision.
+This defaults to `False` on the principle that potentially unsafe dtype conversions should not occur without explicit
+instruction.
 
 The output will be a dense array, unless both inputs are sparse, in which case the output will be a sparse matrix.
 The sparse matrix output format will be the same as the left (A) input sparse matrix.
@@ -65,7 +68,8 @@ It will also convert a CSC matrix to a CSR matrix if necessary.
 
 #### Requirements
 
-This package requires `libmkl_rt.so` (or `libmkl_rt.dylib` for OSX, or `mkl_rt.dll` for WIN).
+This package requires the MKL runtime linking library `libmkl_rt.so` 
+(or `libmkl_rt.dylib` for OSX, or `mkl_rt.dll` for WIN).
 If the MKL library cannot be loaded an `ImportError` will be raised when the package is first imported. 
 MKL is distributed with the full version of conda,
 and can be installed into Miniconda with `conda install -c intel mkl`.
