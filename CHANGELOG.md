@@ -1,3 +1,8 @@
+### Version 0.5.2
+
+* Fixed a bug that was not searching $LD_LIBRARY_PATH for `mkl_rt`
+* Clarified several error messages
+
 ### Version 0.5.1
 
 * Added gram_matrix_mkl to access [mkl_sparse_syrk](https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-syrk)
