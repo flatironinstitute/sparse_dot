@@ -7,8 +7,21 @@ _libmkl = None
 try:
     _so_file = _ctypes_util.find_library('mkl_rt')
     if _so_file is None:
-        raise ImportError("mkl_rt not found.")
-    _libmkl = _ctypes.cdll.LoadLibrary(_so_file)
+        # For some reason, find_library is not checking LD_LIBRARY_PATH
+        # If the ctypes.util approach doesn't work, try this (crude) approach
+
+        # Check each of these library types
+        for so_file in ["libmkl_rt.so", "libmkl_rt.dylib", "mkl_rt.dll"]:
+            try:
+                _libmkl = _ctypes.cdll.LoadLibrary(so_file)
+                break
+            except (OSError, ImportError) as err:
+                pass
+
+        if _libmkl is None:
+            raise ImportError("mkl_rt not found.")
+    else:
+        _libmkl = _ctypes.cdll.LoadLibrary(_so_file)
 except (OSError, ImportError) as err:
     _ierr_msg = "Unable to load the MKL libraries through libmkl_rt. Try setting $LD_LIBRARY_PATH. " + str(err)
     raise ImportError(_ierr_msg)
