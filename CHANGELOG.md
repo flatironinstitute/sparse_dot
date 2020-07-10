@@ -1,3 +1,8 @@
+### Version 0.5.3
+
+* Fixed a bug that was not hanging MKL threads if scikit-learn was imported prior to sparse_dot_mkl and 
+mkl functions were run from a child process
+
 ### Version 0.5.2
 
 * Fixed a bug that was not searching $LD_LIBRARY_PATH for `mkl_rt`
