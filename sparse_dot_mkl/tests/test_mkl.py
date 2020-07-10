@@ -849,7 +849,7 @@ class TestInAPool(unittest.TestCase):
         mat2 = MATRIX_2.copy()
         mat3_np = np.dot(mat1.A, mat2.A)
 
-        with multiprocessing.Pool(2) as pool:
+        with multiprocessing.get_context("spawn").Pool(2) as pool:
             for res in pool.starmap(dot_product_mkl, [(mat1, mat2)] * 4):
                 npt.assert_array_almost_equal(res.A, mat3_np)
 
