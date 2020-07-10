@@ -842,19 +842,7 @@ class TestFailureConditions(unittest.TestCase):
             MKL()
 
 
-class TestInAPool(unittest.TestCase):
-
-    def test_pool(self):
-        mat1 = MATRIX_1.copy()
-        mat2 = MATRIX_2.copy()
-        mat3_np = np.dot(mat1.A, mat2.A)
-
-        with multiprocessing.get_context("spawn").Pool(2) as pool:
-            for res in pool.starmap(dot_product_mkl, [(mat1, mat2)] * 4):
-                npt.assert_array_almost_equal(res.A, mat3_np)
-
-
-def execute_package():
+def run():
     unittest.main(module='sparse_dot_mkl.tests.test_mkl')
 
 
