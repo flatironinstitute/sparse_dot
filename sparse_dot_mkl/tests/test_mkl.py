@@ -854,7 +854,7 @@ class TestInAPool(unittest.TestCase):
                 npt.assert_array_almost_equal(res.A, mat3_np)
 
 
-def run():
+def execute_package():
     unittest.main(module='sparse_dot_mkl.tests.test_mkl')
 
 
