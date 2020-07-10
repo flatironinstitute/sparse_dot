@@ -1,6 +1,14 @@
+import os
 import warnings
 import ctypes as _ctypes
 import ctypes.util as _ctypes_util
+
+# Workaround for this stupid sklearn thing
+if 'KMP_INIT_AT_FORK' in os.environ:
+    _sklearn_env = os.environ['KMP_INIT_AT_FORK']
+    del os.environ['KMP_INIT_AT_FORK']
+else:
+    _sklearn_env = None
 
 # Load mkl_spblas through the libmkl_rt common interface
 _libmkl = None
@@ -806,3 +814,6 @@ def _empirical_set_dtype():
 
 if MKL.MKL_INT is None:
     _empirical_set_dtype()
+
+if _sklearn_env is not None:
+    os.environ['KMP_INIT_AT_FORK'] = _sklearn_env
