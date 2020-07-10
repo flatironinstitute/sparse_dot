@@ -2,7 +2,14 @@ import os
 
 os.environ["MKL_NUM_THREADS"] = "1"
 
+# Make sure sklearn isn't breaking anything
+try:
+    import sklearn
+except ImportError:
+    pass
+
 import unittest
+import multiprocessing
 import numpy as np
 import numpy.testing as npt
 import scipy.sparse as _spsparse
@@ -833,6 +840,18 @@ class TestFailureConditions(unittest.TestCase):
     def test_lets_be_honest_this_is_just_to_make_codecov_bigger(self):
         with self.assertRaises(NotImplementedError):
             MKL()
+
+
+class TestInAPool(unittest.TestCase):
+
+    def test_pool(self):
+        mat1 = MATRIX_1.copy()
+        mat2 = MATRIX_2.copy()
+        mat3_np = np.dot(mat1.A, mat2.A)
+
+        with multiprocessing.Pool(2) as pool:
+            for res in pool.starmap(dot_product_mkl, [(mat1, mat2)] * 4):
+                npt.assert_array_almost_equal(res.A, mat3_np)
 
 
 def run():
