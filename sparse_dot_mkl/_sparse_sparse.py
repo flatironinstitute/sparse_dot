@@ -29,30 +29,10 @@ def _matmul_mkl(sp_ref_a, sp_ref_b):
 
     # Check return
     if ret_val != 0:
-        raise ValueError("mkl_sparse_spmm returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
-
-    return ref_handle
-
-
-def _syrk_mkl(sp_ref_a):
-    """
-    Dot product an MKL object with its transpose and return a handle to the result
-
-    :param sp_ref_a: Sparse matrix A handle
-    :type sp_ref_a: sparse_matrix_t
-    :return: Sparse matrix handle that is the dot product A * A.T
-    :rtype: sparse_matrix_t
-    """
-
-    ref_handle = sparse_matrix_t()
-
-    ret_val = MKL._mkl_sparse_syrk(_ctypes.c_int(10),
-                                   sp_ref_a,
-                                   _ctypes.byref(ref_handle))
-
-    # Check return
-    if ret_val != 0:
-        raise ValueError("mkl_sparse_spmm returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
+        _err_msg = "mkl_sparse_spmm returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val])
+        if ret_val == 2:
+            _err_msg += "\nTry changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
+        raise ValueError(_err_msg)
 
     return ref_handle
 

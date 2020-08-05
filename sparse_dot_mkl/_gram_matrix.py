@@ -36,7 +36,10 @@ def _gram_matrix_sparse(matrix_a, aat=False, reorder_output=False):
 
     # Check return
     if ret_val != 0:
-        raise ValueError("mkl_sparse_syrk returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
+        _err_msg = "mkl_sparse_syrk returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val])
+        if ret_val == 2:
+            _err_msg += "\nTry changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
+        raise ValueError(_err_msg)
 
     if reorder_output:
         _order_mkl_handle(ref_handle)
@@ -92,8 +95,8 @@ def _gram_matrix_sparse_to_dense(matrix_a, aat=False, scalar=1.):
 
     # Check return
     if ret_val != 0:
-        err_msg = "{fn} returned {v} ({e})".format(fn=func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
-        raise ValueError(err_msg)
+        _err_msg = "{fn} returned {v} ({e})".format(fn=func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
+        raise ValueError(_err_msg)
 
     _destroy_mkl_handle(sp_ref_a)
 
