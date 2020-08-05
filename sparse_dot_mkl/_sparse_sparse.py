@@ -31,7 +31,7 @@ def _matmul_mkl(sp_ref_a, sp_ref_b):
     if ret_val != 0:
         _err_msg = "mkl_sparse_spmm returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val])
         if ret_val == 2:
-            _err_msg += "\nTry changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
+            _err_msg += "; Try changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
         raise ValueError(_err_msg)
 
     return ref_handle

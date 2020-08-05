@@ -38,7 +38,7 @@ def _gram_matrix_sparse(matrix_a, aat=False, reorder_output=False):
     if ret_val != 0:
         _err_msg = "mkl_sparse_syrk returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val])
         if ret_val == 2:
-            _err_msg += "\nTry changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
+            _err_msg += "; Try changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
         raise ValueError(_err_msg)
 
     if reorder_output:
