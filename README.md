@@ -44,7 +44,7 @@ Scipy matrix multiplication does not produce ordered outputs, so this defaults t
 
 `out` is an optional reference to an output array to which the product of the matrix multiplication will be added. 
 This must have the exact kind that would be returned if it was not used.
-Specifically it must have the correct shape, dtype, and column- or row-major orientation.
+Specifically it must have the correct shape, dtype, and column- or row-major order.
 It must be contiguous. A ValueError will be raised if any attribute of this array is incorrect.
 Note that this function will return a reference to this array even if `out` is set.
 
