@@ -14,7 +14,7 @@ intermediate conversion (also multithreaded).
 Three functions are explicitly available - `dot_product_mkl`, `gram_matrix_mkl`, and `sparse_qr_solve_mkl`: 
 
 #### dot_product_mkl
-`dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False)`
+`dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False, out=None, out_scalar=None)`
 
 `matrix_a` and `matrix_b` are either numpy arrays (1d or 2d) or scipy sparse matrices (CSR or CSC).
 Sparse COO or BSR matrices are not supported. 
@@ -41,6 +41,16 @@ It has no effect if the output is a dense array.
 Input sparse matrices may be reordered without warning in place. 
 This will not change data, only the way it is stored.
 Scipy matrix multiplication does not produce ordered outputs, so this defaults to `False`.
+
+`out` is an optional reference to an output array to which the product of the matrix multiplication will be added. 
+This must have the exact kind that would be returned if it was not used.
+Specifically it must have the correct shape, dtype, and column- or row-major orientation.
+It must be contiguous. A ValueError will be raised if any attribute of this array is incorrect.
+Note that this function will return a reference to this array even if `out` is set.
+
+`out_scalar` is an optional elemenet-wise scaling of `out`, if `out` is provided.
+It will multiply `out` prior to adding the matrix multiplication such that 
+`out := matrix_a * matrix_b + out_scalar * out`
 
 #### sparse_qr_solve_mkl
 `sparse_qr_solve_mkl(matrix_a, matrix_b, cast=False, debug=False)`

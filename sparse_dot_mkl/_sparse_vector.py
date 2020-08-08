@@ -1,11 +1,12 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
-                                           _destroy_mkl_handle, matrix_descr, RETURN_CODES, _is_dense_vector)
+                                           _destroy_mkl_handle, matrix_descr, RETURN_CODES, _is_dense_vector,
+                                           _out_matrix)
 
 import numpy as np
 import ctypes as _ctypes
 
 
-def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False):
+def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False, out=None, out_scalar=None, out_t=None):
     """
     Multiply together a sparse matrix and a dense vector
 
@@ -17,6 +18,10 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False):
     :type scalar: float
     :param transpose: Return AT (dot) B instead of A (dot) B.
     :type transpose: bool
+    :param out: Add the dot product to this array if provided.
+    :type out: np.ndarray, None
+    :param out_scalar: Multiply the out array by this scalar if provided.
+    :type out_scalar: float, None
     :return: A (dot) B as a dense array
     :rtype: np.ndarray
     """
@@ -26,7 +31,7 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False):
 
     if _empty_output_check(matrix_a, vector_b):
         final_dtype = np.float64 if matrix_a.dtype != vector_b.dtype or matrix_a.dtype != np.float32 else np.float32
-        return np.zeros(output_shape, dtype=final_dtype)
+        return _out_matrix(output_shape, final_dtype, out_arr=out)
 
     mkl_a, dbl = _create_mkl_sparse(matrix_a)
     vector_b = vector_b.ravel()
@@ -36,14 +41,14 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False):
     output_dtype = np.float64 if dbl else np.float32
     func = MKL._mkl_sparse_d_mv if dbl else MKL._mkl_sparse_s_mv
 
-    output_arr = np.zeros(output_shape, dtype=output_dtype)
+    output_arr = _out_matrix(output_shape, output_dtype, out_arr=out, out_t=out_t)
 
     ret_val = func(11 if transpose else 10,
                    scalar,
                    mkl_a,
                    matrix_descr(),
                    vector_b,
-                   1.,
+                   float(out_scalar) if out_scalar is not None else 1.,
                    output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)))
 
     # Check return
@@ -56,7 +61,7 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False):
     return output_arr
 
 
-def _sparse_dot_vector(mv_a, mv_b, cast=False, dprint=print, scalar=1.):
+def _sparse_dot_vector(mv_a, mv_b, cast=False, dprint=print, scalar=1., out=None, out_scalar=None):
     """
     Multiply a sparse matrix by a dense vector.
     The matrix must be CSR or CSC format.
@@ -74,7 +79,10 @@ def _sparse_dot_vector(mv_a, mv_b, cast=False, dprint=print, scalar=1.):
     :type cast: bool
     :param dprint: A function that will handle debug strings. Defaults to print.
     :type dprint: function
-
+    :param out: Add the dot product to this array if provided.
+    :type out: np.ndarray, None
+    :param out_scalar: Multiply the out array by this scalar if provided.
+    :type out_scalar: float, None
     :return: A (dot) B as a dense matrix
     :rtype: np.ndarray
     """
@@ -83,6 +91,7 @@ def _sparse_dot_vector(mv_a, mv_b, cast=False, dprint=print, scalar=1.):
     mv_a, mv_b = _type_check(mv_a, mv_b, cast=cast, dprint=dprint)
 
     if _is_dense_vector(mv_b):
-        return _sparse_dense_vector_mult(mv_a, mv_b, scalar=scalar)
+        return _sparse_dense_vector_mult(mv_a, mv_b, scalar=scalar, out=out, out_scalar=out_scalar)
     elif _is_dense_vector(mv_a):
-        return _sparse_dense_vector_mult(mv_b, mv_a.T, scalar=scalar, transpose=True).T
+        return _sparse_dense_vector_mult(mv_b, mv_a.T, scalar=scalar, transpose=True,
+                                         out=out.T if out is not None else out, out_scalar=out_scalar, out_t=True).T

@@ -1,3 +1,11 @@
+### Version 0.6.0
+
+* Added an `out` parameter that will add a matrix multiplication to an already-allocated dense array
+
+### Version 0.5.4
+
+* Updated error message for a specific sparse product multiplication failure
+
 ### Version 0.5.3
 
 * Fixed a bug that was hanging MKL threads if scikit-learn was imported prior to sparse_dot_mkl and 

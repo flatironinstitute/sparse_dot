@@ -1,6 +1,7 @@
 from sparse_dot_mkl._mkl_interface import (MKL, sparse_matrix_t, RETURN_CODES, _create_mkl_sparse,
                                            _export_mkl, _order_mkl_handle, _destroy_mkl_handle, _type_check,
-                                           _get_numpy_layout, _convert_to_csr, _empty_output_check, LAYOUT_CODE_C)
+                                           _get_numpy_layout, _convert_to_csr, _empty_output_check, LAYOUT_CODE_C,
+                                           _out_matrix)
 
 import scipy.sparse as _sps
 import ctypes as _ctypes
@@ -52,7 +53,7 @@ def _gram_matrix_sparse(matrix_a, aat=False, reorder_output=False):
     return output_arr
 
 
-def _gram_matrix_sparse_to_dense(matrix_a, aat=False, scalar=1.):
+def _gram_matrix_sparse_to_dense(matrix_a, aat=False, scalar=1., out=None, out_scalar=None):
     """
     Calculate the gram matrix aTa for sparse matrix and return a dense matrix
 
@@ -77,7 +78,7 @@ def _gram_matrix_sparse_to_dense(matrix_a, aat=False, scalar=1.):
     output_ctype = _ctypes.c_double if double_prec else _ctypes.c_float
     out_dim = matrix_a.shape[0] if aat else matrix_a.shape[1]
 
-    output_arr = np.zeros((out_dim, out_dim), dtype=out_dtype, order="C")
+    output_arr = _out_matrix((out_dim, out_dim), out_dtype, order="C", out_arr=out)
     _, output_ld = _get_numpy_layout(output_arr)
 
     if _empty_output_check(matrix_a, matrix_a):
@@ -88,7 +89,7 @@ def _gram_matrix_sparse_to_dense(matrix_a, aat=False, scalar=1.):
     ret_val = func(10 if aat else 11,
                    sp_ref_a,
                    scalar,
-                   1.,
+                   float(out_scalar) if out_scalar is not None else 1.,
                    output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
                    LAYOUT_CODE_C,
                    output_ld)
@@ -103,13 +104,13 @@ def _gram_matrix_sparse_to_dense(matrix_a, aat=False, scalar=1.):
     # This fixes a specific bug in mkl_sparse_d_syrkd which returns a full matrix
     # This stupid thing only happens with specific flags
     # I could probably leave it but it's pretty annoying
-    if not aat:
+    if not aat and out is None:
         output_arr[np.tril_indices(output_arr.shape[0], k=-1)] = 0.
 
     return output_arr
 
 
-def _gram_matrix_dense_to_dense(matrix_a, aat=False, scalar=1.):
+def _gram_matrix_dense_to_dense(matrix_a, aat=False, scalar=1., out=None, out_scalar=None):
     """
     Calculate the gram matrix aTa for dense matrix and return a dense matrix
 
@@ -119,6 +120,10 @@ def _gram_matrix_dense_to_dense(matrix_a, aat=False, scalar=1.):
     :type aat: bool
     :param scalar: Multiply output by a scalar value
     :type scalar: float
+    :param out: Add the dot product to this array if provided.
+    :type out: np.ndarray, None
+    :param out_scalar: Multiply the out array by this scalar if provided.
+    :type out_scalar: float, None
     :return: Dense matrix
     :rtype: numpy.ndarray
     """
@@ -135,7 +140,7 @@ def _gram_matrix_dense_to_dense(matrix_a, aat=False, scalar=1.):
     output_ctype = _ctypes.c_double if double_precision else _ctypes.c_float
 
     # Allocate an array for outputs and set functions and types for float or doubles
-    output_arr = np.zeros((n, n), dtype=matrix_a.dtype, order="C" if layout_a == LAYOUT_CODE_C else "F")
+    output_arr = _out_matrix((n, n), matrix_a.dtype, order="C" if layout_a == LAYOUT_CODE_C else "F", out_arr=out)
 
     func(layout_a,
          121,
@@ -145,14 +150,15 @@ def _gram_matrix_dense_to_dense(matrix_a, aat=False, scalar=1.):
          scalar,
          matrix_a,
          ld_a,
-         1.,
+         float(out_scalar) if out_scalar is not None else 1.,
          output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
          n)
 
     return output_arr
 
 
-def _gram_matrix(matrix, transpose=False, cast=False, dense=False, reorder_output=False, dprint=print):
+def _gram_matrix(matrix, transpose=False, cast=False, dense=False, reorder_output=False, dprint=print, out=None,
+                 out_scalar=None):
     """
     Calculate a gram matrix (AT (dot) A) from a sparse matrix.
 
@@ -164,6 +170,10 @@ def _gram_matrix(matrix, transpose=False, cast=False, dense=False, reorder_outpu
     :type cast: bool
     :param dense: Produce a dense matrix output instead of a sparse matrix
     :type dense: bool
+    :param out: Add the dot product to this array if provided.
+    :type out: np.ndarray, None
+    :param out_scalar: Multiply the out array by this scalar if provided.
+    :type out_scalar: float, None
     :return: Gram matrix
     :rtype: scipy.sparse.csr_matrix, np.ndarray
     """
@@ -182,9 +192,11 @@ def _gram_matrix(matrix, transpose=False, cast=False, dense=False, reorder_outpu
     if _sps.isspmatrix_csc(matrix) and not cast:
         raise ValueError("gram_matrix cannot use a CSC matrix unless cast=True")
     elif not _sps.isspmatrix(matrix):
-        return _gram_matrix_dense_to_dense(matrix, aat=transpose)
+        return _gram_matrix_dense_to_dense(matrix, aat=transpose, out=out, out_scalar=out_scalar)
     elif dense:
-        return _gram_matrix_sparse_to_dense(matrix, aat=transpose)
+        return _gram_matrix_sparse_to_dense(matrix, aat=transpose,  out=out, out_scalar=out_scalar)
+    elif out is not None:
+        raise ValueError("out argument cannot be used with sparse (dot) sparse matrix multiplication")
     else:
         return _gram_matrix_sparse(matrix, aat=transpose, reorder_output=reorder_output)
 

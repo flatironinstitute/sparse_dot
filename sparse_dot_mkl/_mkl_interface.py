@@ -43,6 +43,7 @@ except ImportError:
     def get_version():
         return None
 
+
     def get_version_string():
         return None
 
@@ -307,7 +308,6 @@ class MKL:
                 _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
                 _ctypes.POINTER(_ctypes.POINTER(prec_type))]
 
-
     @staticmethod
     def _cblas_gemm_argtypes(prec_type):
         return [_ctypes.c_int,
@@ -380,7 +380,7 @@ class MKL:
                 prec_type,
                 _ctypes.POINTER(prec_type),
                 MKL.MKL_INT]
-      
+
     @staticmethod
     def _mkl_sparse_qr_solve(prec_type):
         return [_ctypes.c_int,
@@ -746,6 +746,62 @@ def _type_check(matrix_a, matrix_b=None, cast=False, dprint=print):
         err_msg = "Matrix data types must be in concordance; {a} and {b} provided".format(a=matrix_a.dtype,
                                                                                           b=matrix_b.dtype)
         raise ValueError(err_msg)
+
+
+def _out_matrix(shape, dtype, order="C", out_arr=None, out_t=False):
+    """
+    Create an all-zero matrix or check to make sure that the provided output array matches
+
+    :param shape: Required output shape
+    :type shape: tuple(int)
+    :param dtype: Required output data type
+    :type dtype: np.dtype
+    :param order: Array order (row or column-major)
+    :type order: str
+    :param out_arr: Provided output array
+    :type out_arr: np.ndarray
+    :param out_t: Out array has been transposed 
+    :type out_t: bool
+    :return: Array
+    :rtype: np.ndarray
+    """
+
+    out_t = False if out_t is None else out_t
+
+    # If there's no output array allocate a new array and return it
+    if out_arr is None:
+        return np.zeros(shape, dtype=dtype, order=order)
+
+    # Check and make sure the order is correct
+    # Note 1d arrays have both flags set
+    _order_match = out_arr.flags['C_CONTIGUOUS'] if order == "C" else out_arr.flags['F_CONTIGUOUS']
+
+    # If there are any incompatible parameters, raise an error with the provided and required array parameters
+    # Flip them if out_T is set so that the original values and the values which would have to be provided are correct
+    if shape != out_arr.shape or dtype != out_arr.dtype or not _order_match or not out_arr.data.contiguous:
+        if not out_t or out_arr.ndim == 1:
+            _err_shape, _req_shape = out_arr.shape, shape
+            _err_order, _req_order = "C" if out_arr.flags['C_CONTIGUOUS'] else "F", order
+        else:
+            _err_shape, _req_shape = out_arr.shape[::-1], shape[::-1]
+            _err_order = "F" if out_arr.flags['C_CONTIGUOUS'] and not out_arr.flags['F_CONTIGUOUS'] else "C"
+            _req_order = "C" if order == "F" else "F"
+
+        try:
+            _req_dtype = dtype.__name__
+        except AttributeError:
+            _req_dtype = dtype.name
+
+        _err_msg = "Provided out array is "
+        _err_msg += "{s} {d} [{o}_{c}]".format(s=_err_shape, d=out_arr.dtype, o=_err_order,
+                                               c="CONTIGUOUS" if out_arr.data.contiguous else "NONCONTIGUOUS")
+
+        _err_msg += "; product requires {s} {d} [{o}_{c}]".format(s=_req_shape, d=_req_dtype, o=_req_order,
+                                                                  c="CONTIGUOUS")
+        raise ValueError(_err_msg)
+
+    else:
+        return out_arr
 
 
 def _is_dense_vector(m_or_v):

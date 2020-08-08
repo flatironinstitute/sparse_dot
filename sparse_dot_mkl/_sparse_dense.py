@@ -1,28 +1,12 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
                                            _destroy_mkl_handle, matrix_descr, RETURN_CODES, _convert_to_csr,
-                                           _get_numpy_layout, LAYOUT_CODE_C, LAYOUT_CODE_F)
+                                           _get_numpy_layout, LAYOUT_CODE_C, LAYOUT_CODE_F, _out_matrix)
 import numpy as np
 import ctypes as _ctypes
 import scipy.sparse as _spsparse
 
 
-def _dense_sparse_matmul(matrix_a, matrix_b, scalar=1.):
-    """
-    Calculate BT (dot) AT and then transpose this product. It will be equal to A (dot) B
-
-    :param matrix_a: Left (A) matrix
-    :type matrix_a: np.ndarray
-    :param matrix_b: Right (B) matrix
-    :type matrix_b: sp.spmatrix.csr, sp.spmatrix.csc
-    :param scalar: float
-    :return: A (dot) B as a dense array in either column-major or row-major format
-    :rtype: np.ndarray
-    """
-
-    return _sparse_dense_matmul(matrix_b, matrix_a.T, scalar=scalar, transpose=True).T
-
-
-def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False):
+def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False, out=None, out_scalar=None, out_t=None):
     """
     Multiply together a sparse and a dense matrix
     mkl_sparse_?_mm requires the left (A) matrix to be sparse and the right (B) matrix to be dense
@@ -37,6 +21,10 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False):
     :type scalar: float
     :param transpose: Return AT (dot) B instead of A (dot) B.
     :type transpose: bool
+    :param out: Add the dot product to this array if provided.
+    :type out: np.ndarray, None
+    :param out_scalar: Multiply the out array by this scalar if provided.
+    :type out_scalar: float, None
     :return: A (dot) B as a dense array in either column-major or row-major format
     :rtype: np.ndarray
     """
@@ -58,7 +46,9 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False):
     func = MKL._mkl_sparse_d_mm if dbl else MKL._mkl_sparse_s_mm
 
     # Allocate an output array
-    output_arr = np.zeros(output_shape, dtype=output_dtype, order="C" if layout_b == LAYOUT_CODE_C else "F")
+    output_arr = _out_matrix(output_shape, output_dtype, order="C" if layout_b == LAYOUT_CODE_C else "F",
+                             out_arr=out, out_t=out_t)
+
     _, output_ld = _get_numpy_layout(output_arr)
 
     ret_val = func(11 if transpose else 10,
@@ -69,7 +59,7 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False):
                    matrix_b,
                    output_shape[1],
                    ld_b,
-                   1.,
+                   float(out_scalar) if out_scalar is not None else 1.,
                    output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
                    output_ld)
 
@@ -83,7 +73,7 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False):
     return output_arr
 
 
-def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1.):
+def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1., out=None, out_scalar=None):
     """
     Multiply together a dense and a sparse matrix.
     If the sparse matrix is not CSR, it may need to be reordered, depending on the order of the dense array.
@@ -99,6 +89,10 @@ def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1.):
     :type cast: bool
     :param dprint: A function that will handle debug strings. Defaults to print.
     :type dprint: function
+    :param out: Add the dot product to this array if provided.
+    :type out: np.ndarray, None
+    :param out_scalar: Multiply the out array by this scalar if provided.
+    :type out_scalar: float, None
 
     :return: A (dot) B as a dense matrix
     :rtype: np.ndarray
@@ -109,13 +103,14 @@ def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1.):
     if _empty_output_check(matrix_a, matrix_b):
         dprint("Skipping multiplication because A (dot) B must yield an empty matrix")
         final_dtype = np.float64 if matrix_a.dtype != matrix_b.dtype or matrix_a.dtype != np.float32 else np.float32
-        return np.zeros((matrix_a.shape[0], matrix_b.shape[1]), dtype=final_dtype)
+        return _out_matrix((matrix_a.shape[0], matrix_b.shape[1]), final_dtype, out_arr=out)
 
     matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast, dprint=dprint)
 
     if sum([_spsparse.isspmatrix(matrix_a), _spsparse.isspmatrix(matrix_b)]) != 1:
         raise ValueError("_sparse_dot_dense takes one sparse and one dense array")
     elif _spsparse.isspmatrix(matrix_a):
-        return _sparse_dense_matmul(matrix_a, matrix_b, scalar=scalar)
+        return _sparse_dense_matmul(matrix_a, matrix_b, scalar=scalar, out=out, out_scalar=out_scalar)
     elif _spsparse.isspmatrix(matrix_b):
-        return _dense_sparse_matmul(matrix_a, matrix_b, scalar=scalar)
+        return _sparse_dense_matmul(matrix_b, matrix_a.T, scalar=scalar, transpose=True,
+                                    out=out.T if out is not None else out, out_scalar=out_scalar, out_t=True).T

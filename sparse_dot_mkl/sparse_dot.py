@@ -9,7 +9,8 @@ import scipy.sparse as _spsparse
 import numpy as _np
 
 
-def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False):
+def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False,
+                    out=None, out_scalar=None):
     """
     Multiply together matrixes using the intel Math Kernel Library.
     This currently only supports float32 and float64 data
@@ -35,6 +36,10 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     :type dense: bool
     :param debug: Should debug and timing messages be printed. Defaults to false.
     :type debug: bool
+    :param out: Add the dot product to this array if provided.
+    :type out: np.ndarray, None
+    :param out_scalar: Multiply the out array by this scalar if provided.
+    :type out_scalar: float, None
     :return: Matrix that is the result of A * B in input-dependent format
     :rtype: scipy.sparse.csr_matrix, scipy.sparse.csc_matrix, np.ndarray
     """
@@ -49,32 +54,38 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     num_sparse = sum((_spsparse.issparse(matrix_a), _spsparse.issparse(matrix_b)))
 
     # SPARSE (DOT) SPARSE #
-    if num_sparse == 2:
+    if num_sparse == 2 and out is not None:
+        raise ValueError("out argument cannot be used with sparse (dot) sparse matrix multiplication")
+
+    elif num_sparse == 2:
         return _sds(matrix_a, matrix_b, cast=cast, reorder_output=reorder_output, dense=dense, dprint=dprint)
 
     # SPARSE (DOT) VECTOR #
     elif num_sparse == 1 and _is_dense_vector(matrix_a) and (matrix_a.ndim == 1 or matrix_a.shape[0] == 1):
-        return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint)
+        return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint, out=out, out_scalar=out_scalar)
 
     # SPARSE (DOT) VECTOR #
     elif num_sparse == 1 and _is_dense_vector(matrix_b) and (matrix_b.ndim == 1 or matrix_b.shape[1] == 1):
-        return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint)
+        return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint, out=out, out_scalar=out_scalar)
 
     # SPARSE (DOT) DENSE & DENSE (DOT) SPARSE #
     elif num_sparse == 1:
-        return _sdd(matrix_a, matrix_b, cast=cast, dprint=dprint)
+        return _sdd(matrix_a, matrix_b, cast=cast, dprint=dprint, out=out, out_scalar=out_scalar)
 
     # SPECIAL CASE OF VECTOR (DOT) VECTOR #
     # THIS IS JUST EASIER THAN GETTING THIS EDGE CONDITION RIGHT IN MKL #
     elif _is_dense_vector(matrix_a) and _is_dense_vector(matrix_b) and (matrix_a.ndim == 1 or matrix_b.ndim == 1):
-        return _np.dot(matrix_a, matrix_b)
+        if out_scalar is not None:
+            out *= out_scalar
+        return _np.dot(matrix_a, matrix_b, out=out)
 
     # DENSE (DOT) DENSE
     else:
-        return _ddd(matrix_a, matrix_b, cast=cast, dprint=dprint)
+        return _ddd(matrix_a, matrix_b, cast=cast, dprint=dprint, out=out, out_scalar=out_scalar)
 
 
-def gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=False, reorder_output=False):
+def gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=False, reorder_output=False,
+                    out=None, out_scalar=None):
     """
     Calculate a gram matrix (AT (dot) A) matrix.
     Note that this should calculate only the upper triangular matrix.
@@ -94,6 +105,10 @@ def gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=Fals
     :param reorder_output: Should the array indices be reordered using MKL
     The scipy sparse dot product does not yield ordered column indices so this defaults to False
     :type reorder_output: bool
+    :param out: Add the dot product to this array if provided.
+    :type out: np.ndarray, None
+    :param out_scalar: Multiply the out array by this scalar if provided.
+    :type out_scalar: float, None
     :return: Gram matrix
     :rtype: scipy.sparse.csr_matrix, np.ndarray"""
     
@@ -104,7 +119,8 @@ def gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=Fals
     elif debug:
         dprint(get_version_string())
 
-    return _gm(matrix, transpose=transpose, cast=cast, dense=dense, reorder_output=reorder_output)
+    return _gm(matrix, transpose=transpose, cast=cast, dense=dense, reorder_output=reorder_output,
+               out=out, out_scalar=out_scalar)
 
 
 def sparse_qr_solve_mkl(matrix_a, matrix_b, cast=False, debug=False):
