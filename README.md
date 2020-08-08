@@ -48,7 +48,7 @@ Specifically it must have the correct shape, dtype, and column- or row-major ori
 It must be contiguous. A ValueError will be raised if any attribute of this array is incorrect.
 Note that this function will return a reference to this array even if `out` is set.
 
-`out_scalar` is an optional elemenet-wise scaling of `out`, if `out` is provided.
+`out_scalar` is an optional element-wise scaling of `out`, if `out` is provided.
 It will multiply `out` prior to adding the matrix multiplication such that 
 `out := matrix_a * matrix_b + out_scalar * out`
 
