@@ -27,7 +27,7 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False, ou
     """
 
     output_shape = matrix_a.shape[1] if transpose else matrix_a.shape[0]
-    output_shape = (output_shape, ) if vector_b.ndim == 1 else (output_shape, 1)
+    output_shape = (output_shape,) if vector_b.ndim == 1 else (output_shape, 1)
 
     if _empty_output_check(matrix_a, vector_b):
         final_dtype = np.float64 if matrix_a.dtype != vector_b.dtype or matrix_a.dtype != np.float32 else np.float32
@@ -92,6 +92,11 @@ def _sparse_dot_vector(mv_a, mv_b, cast=False, dprint=print, scalar=1., out=None
 
     if _is_dense_vector(mv_b):
         return _sparse_dense_vector_mult(mv_a, mv_b, scalar=scalar, out=out, out_scalar=out_scalar)
-    elif _is_dense_vector(mv_a):
-        return _sparse_dense_vector_mult(mv_b, mv_a.T, scalar=scalar, transpose=True,
-                                         out=out.T if out is not None else out, out_scalar=out_scalar, out_t=True).T
+    elif _is_dense_vector(mv_a) and out is None:
+        return _sparse_dense_vector_mult(mv_b, mv_a.T, scalar=scalar, transpose=True).T
+    elif _is_dense_vector(mv_a) and out is not None:
+        _ = _sparse_dense_vector_mult(mv_b, mv_a.T, scalar=scalar, transpose=True,
+                                      out=out.T, out_scalar=out_scalar, out_t=True).T
+        return out
+    else:
+        raise ValueError("Neither mv_a or mv_b is a dense vector")

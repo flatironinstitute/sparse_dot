@@ -111,6 +111,9 @@ def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1., o
         raise ValueError("_sparse_dot_dense takes one sparse and one dense array")
     elif _spsparse.isspmatrix(matrix_a):
         return _sparse_dense_matmul(matrix_a, matrix_b, scalar=scalar, out=out, out_scalar=out_scalar)
-    elif _spsparse.isspmatrix(matrix_b):
-        return _sparse_dense_matmul(matrix_b, matrix_a.T, scalar=scalar, transpose=True,
-                                    out=out.T if out is not None else out, out_scalar=out_scalar, out_t=True).T
+    elif _spsparse.isspmatrix(matrix_b) and out is not None:
+        _ = _sparse_dense_matmul(matrix_b, matrix_a.T, scalar=scalar, transpose=True,
+                                 out=out.T, out_scalar=out_scalar, out_t=True).T
+        return out
+    elif _spsparse.isspmatrix(matrix_b) and out is None:
+        return _sparse_dense_matmul(matrix_b, matrix_a.T, scalar=scalar, transpose=True).T

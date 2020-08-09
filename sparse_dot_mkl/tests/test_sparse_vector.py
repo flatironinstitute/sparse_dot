@@ -28,9 +28,12 @@ class TestSparseVectorMultiplication(unittest.TestCase):
         mat3_np = np.dot(self.mat1_d, self.mat2_d)
         mat3_np += 2
 
-        mat3 = dot_product_mkl(self.mat1, self.mat2, cast=True, out=np.ones(mat3_np.shape), out_scalar=2)
+        out = np.ones(mat3_np.shape)
+        mat3 = dot_product_mkl(self.mat1, self.mat2, cast=True, out=out, out_scalar=2)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
+        npt.assert_array_almost_equal(mat3_np, out)
+        self.assertEqual(id(mat3), id(out))
 
     def test_mult_1d_float32(self):
         d1, d2 = self.mat1.astype(np.float32), self.mat2
