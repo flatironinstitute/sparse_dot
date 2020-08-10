@@ -451,18 +451,28 @@ def _check_scipy_index_typing(sparse_matrix):
         sparse_matrix.indices = sparse_matrix.indices.astype(MKL.MKL_INT_NUMPY)
 
 
-def _get_numpy_layout(numpy_arr):
+def _get_numpy_layout(numpy_arr, second_arr=None):
     """
     Get the array layout code for a dense array in C or F order.
     Raises a ValueError if the array is not contiguous.
 
     :param numpy_arr: Numpy dense array
     :type numpy_arr: np.ndarray
+    :param second_arr: Numpy dense array; if numpy_arr is 1d (and therefore both C and F order), use this order
+    :type second_arr: np.ndarray, None
     :return: The layout code for MKL and the leading dimension
     :rtype: int, int
     """
 
-    if numpy_arr.flags.c_contiguous:
+    # Return the second array order if the first is ambiguous
+    if numpy_arr.flags.c_contiguous and numpy_arr.flags.f_contiguous and second_arr is not None:
+        if second_arr.flags.c_contiguous:
+            return LAYOUT_CODE_C, numpy_arr.shape[1]
+        elif second_arr.flags.f_contiguous:
+            return LAYOUT_CODE_F, numpy_arr.shape[0]
+
+    # Return the first order array otherwise
+    elif numpy_arr.flags.c_contiguous:
         return LAYOUT_CODE_C, numpy_arr.shape[1]
     elif numpy_arr.flags.f_contiguous:
         return LAYOUT_CODE_F, numpy_arr.shape[0]

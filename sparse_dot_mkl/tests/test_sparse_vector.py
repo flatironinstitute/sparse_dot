@@ -47,10 +47,12 @@ class TestSparseVectorMultiplication(unittest.TestCase):
         mat3_np = np.dot(self.mat1_d, self.mat2_d)
         mat3_np += 2
 
+        out = np.ones(mat3_np.shape, dtype=np.float32)
         mat3 = dot_product_mkl(self.mat1.astype(np.float32), self.mat2.astype(np.float32), cast=False,
-                               out=np.ones(mat3_np.shape, dtype=np.float32), out_scalar=2)
+                               out=out, out_scalar=2)
 
-        npt.assert_array_almost_equal(mat3_np, mat3, decimal=5)
+        npt.assert_array_almost_equal(mat3_np, out, decimal=5)
+        self.assertEqual(id(out), id(mat3))
 
         with self.assertRaises(ValueError):
             mat3 = dot_product_mkl(self.mat1.astype(np.float32), self.mat2.astype(np.float32), cast=True,
@@ -72,10 +74,12 @@ class TestSparseVectorMultiplication(unittest.TestCase):
         mat3_np = np.dot(self.make_2d(self.mat1_d), self.make_2d(self.mat2_d))
         mat3_np += 2
 
+        out = np.ones(mat3_np.shape, dtype=np.float64)
         mat3 = dot_product_mkl(self.make_2d(self.mat1.astype(np.float64)), self.make_2d(self.mat2), cast=True,
-                               out=np.ones(mat3_np.shape), out_scalar=2)
+                               out=out, out_scalar=2)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
+        self.assertEqual(id(out), id(mat3))
 
         with self.assertRaises(ValueError):
             mat3 = dot_product_mkl(self.make_2d(self.mat1.astype(np.float64)), self.make_2d(self.mat2), cast=True,
@@ -103,10 +107,12 @@ class TestSparseVectorMultiplication(unittest.TestCase):
         mat3_np = np.dot(self.make_2d(self.mat1_d), self.make_2d(self.mat2_d))
         mat3_np += 2
 
+        out = np.ones(mat3_np.shape, dtype=np.float32)
         mat3 = dot_product_mkl(self.make_2d(self.mat1.astype(np.float32)), self.make_2d(self.mat2.astype(np.float32)),
-                               out=np.ones(mat3_np.shape).astype(np.float32), out_scalar=2)
+                               out=out, out_scalar=2)
 
         npt.assert_array_almost_equal(mat3_np, mat3, decimal=5)
+        self.assertEqual(id(out), id(mat3))
 
 
 class TestVectorSparseMultiplication(TestSparseVectorMultiplication):
@@ -129,6 +135,13 @@ class TestVectorSparseMultiplication(TestSparseVectorMultiplication):
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
+        mat3_np += 2.
+        out = np.ones(mat3_np.shape)
+        mat3 = dot_product_mkl(d1, d2, out=out, out_scalar=2.)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+        self.assertEqual(id(out), id(mat3))
+
     def test_mult_outer_product_sd(self):
         d1, d2 = _spsparse.csr_matrix(self.mat1.reshape(-1, 1)), self.mat2_d[:, 0].reshape(1, -1).copy()
 
@@ -136,6 +149,13 @@ class TestVectorSparseMultiplication(TestSparseVectorMultiplication):
         mat3_np = np.dot(d1.A, d2)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
+
+        mat3_np += 2.
+        out = np.ones(mat3_np.shape)
+        mat3 = dot_product_mkl(d1, d2, out=out, out_scalar=2.)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+        self.assertEqual(id(out), id(mat3))
 
 
 class TestVectorVectorMultplication(unittest.TestCase):

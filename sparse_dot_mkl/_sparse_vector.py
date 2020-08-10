@@ -96,7 +96,7 @@ def _sparse_dot_vector(mv_a, mv_b, cast=False, dprint=print, scalar=1., out=None
         return _sparse_dense_vector_mult(mv_b, mv_a.T, scalar=scalar, transpose=True).T
     elif _is_dense_vector(mv_a) and out is not None:
         _ = _sparse_dense_vector_mult(mv_b, mv_a.T, scalar=scalar, transpose=True,
-                                      out=out.T, out_scalar=out_scalar, out_t=True).T
+                                      out=out.T, out_scalar=out_scalar, out_t=True)
         return out
     else:
         raise ValueError("Neither mv_a or mv_b is a dense vector")

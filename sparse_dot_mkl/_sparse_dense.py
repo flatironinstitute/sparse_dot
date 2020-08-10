@@ -30,7 +30,7 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False, out=Non
     """
 
     output_shape = (matrix_a.shape[1] if transpose else matrix_a.shape[0], matrix_b.shape[1])
-    layout_b, ld_b = _get_numpy_layout(matrix_b)
+    layout_b, ld_b = _get_numpy_layout(matrix_b, second_arr=out)
 
     # Prep MKL handles and check that matrixes are compatible types
     # MKL requires CSR format if the dense array is column-major
@@ -113,7 +113,7 @@ def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1., o
         return _sparse_dense_matmul(matrix_a, matrix_b, scalar=scalar, out=out, out_scalar=out_scalar)
     elif _spsparse.isspmatrix(matrix_b) and out is not None:
         _ = _sparse_dense_matmul(matrix_b, matrix_a.T, scalar=scalar, transpose=True,
-                                 out=out.T, out_scalar=out_scalar, out_t=True).T
+                                 out=out.T, out_scalar=out_scalar, out_t=True)
         return out
     elif _spsparse.isspmatrix(matrix_b) and out is None:
         return _sparse_dense_matmul(matrix_b, matrix_a.T, scalar=scalar, transpose=True).T
