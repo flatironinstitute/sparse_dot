@@ -62,20 +62,23 @@ class TestDenseDenseMultiplication(unittest.TestCase):
         mat3 = dot_product_mkl(d1, d2, out=np.ones(mat3_np.shape, dtype=np.float64, order="C"), out_scalar=3)
         npt.assert_array_almost_equal(mat3_np + 3., mat3)
 
-    def test_out_fails(self):
+    def test_fails(self):
         mat3_np = np.dot(self.mat1, self.mat2)
         n, m = mat3_np.shape
 
         with self.assertRaises(ValueError):
-            non_contig_out = np.ones((n + 10, m + 10))
+            dot_product_mkl(self.mat1[0:10, 0:20], self.mat2[0:20, 0:10])
+
+        with self.assertRaises(ValueError):
+            non_contig_out = np.ones((n + 10, m + 10), order=self.order)
             dot_product_mkl(self.mat1, self.mat2, out=non_contig_out[0:n, 0:m], out_scalar=3)
 
         with self.assertRaises(ValueError):
-            non_float_out = np.ones((n, m), dtype=np.int32)
+            non_float_out = np.ones((n, m), dtype=np.int32, order=self.order)
             dot_product_mkl(self.mat1, self.mat2, out=non_float_out, out_scalar=3)
 
         with self.assertRaises(ValueError):
-            non_shape_out = np.ones((n, m)).T
+            non_shape_out = np.ones((n, m), order=self.order).T
             dot_product_mkl(self.mat1, self.mat2, out=non_shape_out, out_scalar=3)
 
 
