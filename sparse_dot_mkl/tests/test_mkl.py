@@ -135,6 +135,10 @@ class TestFailureConditions(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             MKL()
 
+    def test_bsr_not_square_blocks(self):
+        with self.assertRaises(ValueError):
+            _create_mkl_sparse(self.mat1.tobsr(blocksize=(10, 5)))
+
 
 class TestHandles(unittest.TestCase):
 

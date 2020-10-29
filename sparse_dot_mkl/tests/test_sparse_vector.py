@@ -115,7 +115,30 @@ class TestSparseVectorMultiplication(unittest.TestCase):
         self.assertEqual(id(out), id(mat3))
 
 
+class TestSparseVectorMultiplicationCSC(TestSparseVectorMultiplication):
+
+    def setUp(self):
+        self.mat1 = _spsparse.csc_matrix(MATRIX_1).copy()
+        self.mat2 = VECTOR.copy()
+
+        self.mat1_d = np.asarray(MATRIX_1.A, order="C")
+        self.mat2_d = VECTOR.copy()
+
+
+class TestSparseVectorMultiplicationBSR(TestSparseVectorMultiplication):
+
+    def setUp(self):
+        self.mat1 = _spsparse.bsr_matrix(MATRIX_1, blocksize=(10, 10)).copy()
+        self.mat2 = VECTOR.copy()
+
+        self.mat1_d = np.asarray(MATRIX_1.A, order="C")
+        self.mat2_d = VECTOR.copy()
+
+
 class TestVectorSparseMultiplication(TestSparseVectorMultiplication):
+
+    sparse_func = _spsparse.csr_matrix
+    sparse_args = {}
 
     def setUp(self):
         self.mat2 = MATRIX_2.copy()
@@ -128,7 +151,7 @@ class TestVectorSparseMultiplication(TestSparseVectorMultiplication):
         return arr.reshape(1, -1) if arr.ndim == 1 else arr
 
     def test_mult_outer_product_ds(self):
-        d1, d2 = self.mat1.reshape(-1, 1), _spsparse.csr_matrix(self.mat2_d[:, 0].reshape(1, -1))
+        d1, d2 = self.mat1.reshape(-1, 1), self.sparse_func(self.mat2_d[:, 0].reshape(1, -1))
 
         mat3 = dot_product_mkl(d1, d2)
         mat3_np = np.dot(d1, d2.A)
@@ -143,7 +166,7 @@ class TestVectorSparseMultiplication(TestSparseVectorMultiplication):
         self.assertEqual(id(out), id(mat3))
 
     def test_mult_outer_product_sd(self):
-        d1, d2 = _spsparse.csr_matrix(self.mat1.reshape(-1, 1)), self.mat2_d[:, 0].reshape(1, -1).copy()
+        d1, d2 = self.sparse_func(self.mat1.reshape(-1, 1)), self.mat2_d[:, 0].reshape(1, -1).copy()
 
         mat3 = dot_product_mkl(d1, d2)
         mat3_np = np.dot(d1.A, d2)
@@ -156,6 +179,16 @@ class TestVectorSparseMultiplication(TestSparseVectorMultiplication):
 
         npt.assert_array_almost_equal(mat3_np, mat3)
         self.assertEqual(id(out), id(mat3))
+
+
+class TestVectorSparseMultiplicationCSC(TestVectorSparseMultiplication):
+
+    sparse_func = _spsparse.csc_matrix
+
+
+class TestVectorSparseMultiplicationBSR(TestVectorSparseMultiplication):
+
+    sparse_func = _spsparse.bsr_matrix
 
 
 class TestVectorVectorMultplication(unittest.TestCase):

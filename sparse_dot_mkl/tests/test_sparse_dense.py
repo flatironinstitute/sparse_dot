@@ -74,6 +74,20 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(mat3_np + 3., mat3)
         self.assertEqual(id(mat3), id(out))
 
+    def test_float32_bsr_sparse(self):
+        d1, d2 = self.mat1_d.astype(np.float32), self.mat2.astype(np.float32).tobsr(blocksize=(10, 10))
+        mat3_np = np.dot(d1, d2.A)
+
+        mat3 = dot_product_mkl(d1, d2)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+        npt.assert_array_almost_equal(d2.A, self.mat2_d)
+
+        out = np.ones(mat3_np.shape, dtype=np.float32, order=self.order)
+        mat3 = dot_product_mkl(d1, d2, out=out, out_scalar=3.)
+        npt.assert_array_almost_equal(mat3_np + 3., mat3)
+        self.assertEqual(id(mat3), id(out))
+
     def test_float64_csc_sparse(self):
         d1, d2 = self.mat1_d, self.mat2.tocsc()
 
@@ -88,8 +102,36 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(mat3_np + 3., mat3)
         self.assertEqual(id(mat3), id(out))
 
+    def test_float64_bsr_sparse(self):
+        d1, d2 = self.mat1_d, self.mat2.tobsr(blocksize=(10, 10))
+
+        mat3 = dot_product_mkl(d1, d2)
+        mat3_np = np.dot(d1, d2.A)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+        npt.assert_array_almost_equal(d2.A, self.mat2_d)
+
+        out = np.ones(mat3_np.shape, dtype=np.float64, order=self.order)
+        mat3 = dot_product_mkl(d1, d2, out=out, out_scalar=3.)
+        npt.assert_array_almost_equal(mat3_np + 3., mat3)
+        self.assertEqual(id(mat3), id(out))
+
     def test_float64_cast_csc_sparse(self):
         d1, d2 = self.mat1_d.astype(np.float32), self.mat2.tocsc()
+
+        mat3 = dot_product_mkl(d1, d2, cast=True)
+        mat3_np = np.dot(d1, d2.A)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+        npt.assert_array_almost_equal(d2.A, self.mat2_d)
+
+        out = np.ones(mat3_np.shape, dtype=np.float64, order=self.order)
+        mat3 = dot_product_mkl(d1, d2, out=out, out_scalar=3., cast=True)
+        npt.assert_array_almost_equal(mat3_np + 3., mat3)
+        self.assertEqual(id(mat3), id(out))
+
+    def test_float64_cast_bsc_sparse(self):
+        d1, d2 = self.mat1_d.astype(np.float32), self.mat2.tobsr(blocksize=(10, 10))
 
         mat3 = dot_product_mkl(d1, d2, cast=True)
         mat3_np = np.dot(d1, d2.A)
@@ -142,8 +184,36 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(mat3_np + 3., mat3)
         self.assertEqual(id(mat3), id(out))
 
+    def test_float64_a_bsr_sparse(self):
+        d1, d2 = self.mat1.tobsr(blocksize=(10, 10)), self.mat2_d
+
+        mat3 = dot_product_mkl(d1, d2)
+        mat3_np = np.dot(d1.A, d2)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+        npt.assert_array_almost_equal(d1.A, self.mat1_d)
+
+        out = np.ones(mat3_np.shape, dtype=np.float64, order=self.order)
+        mat3 = dot_product_mkl(d1, d2, out=out, out_scalar=3)
+        npt.assert_array_almost_equal(mat3_np + 3., mat3)
+        self.assertEqual(id(mat3), id(out))
+
     def test_float32_a_csc_sparse(self):
         d1, d2 = self.mat1.astype(np.float32).tocsc(), self.mat2_d.astype(np.float32)
+
+        mat3 = dot_product_mkl(d1, d2)
+        mat3_np = np.dot(d1.A, d2)
+
+        npt.assert_array_almost_equal(mat3_np, mat3)
+        npt.assert_array_almost_equal(d1.A, self.mat1_d)
+
+        out = np.ones(mat3_np.shape, dtype=np.float32, order=self.order)
+        mat3 = dot_product_mkl(d1, d2, out=out, out_scalar=3.)
+        npt.assert_array_almost_equal(mat3_np + 3., mat3)
+        self.assertEqual(id(mat3), id(out))
+
+    def test_float32_a_bsr_sparse(self):
+        d1, d2 = self.mat1.astype(np.float32).tobsr(blocksize=(10, 10)), self.mat2_d.astype(np.float32)
 
         mat3 = dot_product_mkl(d1, d2)
         mat3_np = np.dot(d1.A, d2)
