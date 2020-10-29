@@ -4,9 +4,10 @@ from sparse_dot_mkl._dense_dense import _dense_dot_dense as _ddd
 from sparse_dot_mkl._sparse_vector import _sparse_dot_vector as _sdv
 from sparse_dot_mkl._gram_matrix import _gram_matrix as _gm
 from sparse_dot_mkl._sparse_qr_solver import sparse_qr_solver as _qrs
-from sparse_dot_mkl._mkl_interface import get_version_string, _is_dense_vector
+from sparse_dot_mkl._mkl_interface import get_version_string, set_debug_mode, _is_dense_vector
 import scipy.sparse as _spsparse
 import numpy as _np
+import warnings
 
 
 def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False,
@@ -44,12 +45,7 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     :rtype: scipy.sparse.csr_matrix, scipy.sparse.csc_matrix, np.ndarray
     """
 
-    dprint = print if debug else lambda *x: x
-
-    if get_version_string() is None and debug:
-        dprint("mkl-service must be installed to get full debug messaging")
-    elif debug:
-        dprint(get_version_string())
+    warnings.warn("Set debug mode with sparse_dot_mkl.set_debug_mode(True)", DeprecationWarning) if debug else None
 
     num_sparse = sum((_spsparse.issparse(matrix_a), _spsparse.issparse(matrix_b)))
 
@@ -58,19 +54,19 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
         raise ValueError("out argument cannot be used with sparse (dot) sparse matrix multiplication")
 
     elif num_sparse == 2:
-        return _sds(matrix_a, matrix_b, cast=cast, reorder_output=reorder_output, dense=dense, dprint=dprint)
+        return _sds(matrix_a, matrix_b, cast=cast, reorder_output=reorder_output, dense=dense)
 
     # SPARSE (DOT) VECTOR #
     elif num_sparse == 1 and _is_dense_vector(matrix_a) and (matrix_a.ndim == 1 or matrix_a.shape[0] == 1):
-        return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint, out=out, out_scalar=out_scalar)
+        return _sdv(matrix_a, matrix_b, cast=cast, out=out, out_scalar=out_scalar)
 
     # SPARSE (DOT) VECTOR #
     elif num_sparse == 1 and _is_dense_vector(matrix_b) and (matrix_b.ndim == 1 or matrix_b.shape[1] == 1):
-        return _sdv(matrix_a, matrix_b, cast=cast, dprint=dprint, out=out, out_scalar=out_scalar)
+        return _sdv(matrix_a, matrix_b, cast=cast, out=out, out_scalar=out_scalar)
 
     # SPARSE (DOT) DENSE & DENSE (DOT) SPARSE #
     elif num_sparse == 1:
-        return _sdd(matrix_a, matrix_b, cast=cast, dprint=dprint, out=out, out_scalar=out_scalar)
+        return _sdd(matrix_a, matrix_b, cast=cast, out=out, out_scalar=out_scalar)
 
     # SPECIAL CASE OF VECTOR (DOT) VECTOR #
     # THIS IS JUST EASIER THAN GETTING THIS EDGE CONDITION RIGHT IN MKL #
@@ -81,7 +77,7 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
 
     # DENSE (DOT) DENSE
     else:
-        return _ddd(matrix_a, matrix_b, cast=cast, dprint=dprint, out=out, out_scalar=out_scalar)
+        return _ddd(matrix_a, matrix_b, cast=cast, out=out, out_scalar=out_scalar)
 
 
 def gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=False, reorder_output=False,
@@ -111,13 +107,8 @@ def gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=Fals
     :type out_scalar: float, None
     :return: Gram matrix
     :rtype: scipy.sparse.csr_matrix, np.ndarray"""
-    
-    dprint = print if debug else lambda *x: x
 
-    if get_version_string() is None and debug:
-        dprint("mkl-service must be installed to get full debug messaging")
-    elif debug:
-        dprint(get_version_string())
+    warnings.warn("Set debug mode with sparse_dot_mkl.set_debug_mode(True)", DeprecationWarning) if debug else None
 
     return _gm(matrix, transpose=transpose, cast=cast, dense=dense, reorder_output=reorder_output,
                out=out, out_scalar=out_scalar)
@@ -140,15 +131,10 @@ def sparse_qr_solve_mkl(matrix_a, matrix_b, cast=False, debug=False):
     :return: Dense array X
     :rtype: np.ndarray
     """
-    
-    dprint = print if debug else lambda *x: x
-    
-    if get_version_string() is None and debug:
-        dprint("mkl-service must be installed to get full debug messaging")
-    elif debug:
-        dprint(get_version_string())
-        
-    return _qrs(matrix_a, matrix_b, cast=cast, dprint=dprint)
+
+    warnings.warn("Set debug mode with sparse_dot_mkl.set_debug_mode(True)", DeprecationWarning) if debug else None
+
+    return _qrs(matrix_a, matrix_b, cast=cast)
 
   
 # Alias for backwards compatibility

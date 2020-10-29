@@ -1,4 +1,5 @@
 import os
+import time
 import warnings
 import ctypes as _ctypes
 import ctypes.util as _ctypes_util
@@ -63,6 +64,7 @@ class MKL:
 
     MKL_INT = None
     MKL_INT_NUMPY = None
+    MKL_DEBUG = False
 
     # Import function for creating a MKL CSR object
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-csr
@@ -484,6 +486,57 @@ SPARSE_OPERATION_TRANSPOSE = 11
 SPARSE_INDEX_BASE_ZERO = 0
 SPARSE_INDEX_BASE_ONE = 1
 
+# ILP64 message
+ILP64_MSG = " Try changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
+
+
+def set_debug_mode(debug_bool):
+    """
+    Activate or deactivate debug mode
+
+    :param debug_bool: True to be printy. False to be quiet.
+    :type debug_bool: bool
+    """
+
+    MKL.MKL_DEBUG = debug_bool
+
+
+def print_mkl_debug():
+
+    if not MKL.MKL_DEBUG:
+        return
+
+    if get_version_string() is None:
+        print("mkl-service must be installed to get full debug messaging")
+    else:
+        print(get_version_string())
+
+    print("MKL linked: {fn}".format(fn=_libmkl._name))
+    print("MKL interface {np} | {c}".format(np=MKL.MKL_INT_NUMPY, c=MKL.MKL_INT))
+    print("Set int32 interface with env MKL_INTERFACE_LAYER=LP64")
+    print("Set int64 interface with env MKL_INTERFACE_LAYER=ILP64")
+
+
+def debug_print(msg):
+
+    if not MKL.MKL_DEBUG:
+        return
+    else:
+        print(msg)
+
+
+def debug_timer(msg=None, old_time=None):
+
+    if not MKL.MKL_DEBUG:
+        return
+
+    t0 = time.time()
+
+    if old_time is not None and msg is not None:
+        print(msg + ": {0:.6f} seconds".format(t0 - old_time))
+
+    return t0
+
 
 def _check_scipy_index_typing(sparse_matrix):
     """
@@ -827,7 +880,7 @@ def _allocate_for_export(double_precision):
     return ordering, nrows, ncols, indptrb, indptren, indices, data
 
 
-def _check_return_value(ret_val, func_name, extra_msg=None):
+def _check_return_value(ret_val, func_name):
     """
     Check the return value from a sparse function
 
@@ -838,11 +891,13 @@ def _check_return_value(ret_val, func_name, extra_msg=None):
 
     if ret_val != 0:
         err_msg = "{fn} returned {v} ({e})".format(fn=func_name, v=ret_val, e=RETURN_CODES[ret_val])
-        if extra_msg is not None:
-            err_msg += extra_msg
+        if ret_val == 2:
+            err_msg += "; " + ILP64_MSG
         raise ValueError(err_msg)
+    elif MKL.MKL_DEBUG:
+        print("{fn} returned {v} ({e})".format(fn=func_name, v=ret_val, e=RETURN_CODES[ret_val]))
     else:
-        return True
+        return
 
 
 def _destroy_mkl_handle(ref_handle):
@@ -854,9 +909,7 @@ def _destroy_mkl_handle(ref_handle):
     """
 
     ret_val = MKL._mkl_sparse_destroy(ref_handle)
-
-    if ret_val != 0:
-        raise ValueError("mkl_sparse_destroy returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
+    _check_return_value(ret_val, "mkl_sparse_destroy")
 
 
 def _order_mkl_handle(ref_handle):
@@ -868,9 +921,7 @@ def _order_mkl_handle(ref_handle):
     """
 
     ret_val = MKL._mkl_sparse_order(ref_handle)
-
-    if ret_val != 0:
-        raise ValueError("mkl_sparse_order returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
+    _check_return_value(ret_val, "mkl_sparse_order")
 
 
 def _convert_to_csr(ref_handle, destroy_original=False):
@@ -885,13 +936,15 @@ def _convert_to_csr(ref_handle, destroy_original=False):
     csr_ref = sparse_matrix_t()
     ret_val = MKL._mkl_sparse_convert_csr(ref_handle, _ctypes.c_int(10), _ctypes.byref(csr_ref))
 
-    if ret_val != 0:
+    try:
+        _check_return_value(ret_val, "mkl_sparse_convert_csr")
+    except ValueError:
         try:
             _destroy_mkl_handle(csr_ref)
         except ValueError:
             pass
 
-        raise ValueError("mkl_sparse_convert_csr returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val]))
+        raise
 
     if destroy_original:
         _destroy_mkl_handle(ref_handle)
@@ -928,7 +981,7 @@ def _cast_to_float64(matrix):
     return matrix.astype(np.float64) if matrix.dtype != np.float64 else matrix
 
 
-def _type_check(matrix_a, matrix_b=None, cast=False, dprint=print):
+def _type_check(matrix_a, matrix_b=None, cast=False):
     """
     Make sure that both matrices are single precision floats or both are double precision floats
     If not, convert to double precision floats if cast is True, or raise an error if cast is False
@@ -950,8 +1003,7 @@ def _type_check(matrix_a, matrix_b=None, cast=False, dprint=print):
         return matrix_a, matrix_b
 
     elif (matrix_a.dtype != np.float64 or matrix_b.dtype != np.float64) and cast:
-        dprint("Recasting matrix data types {a} and {b} to np.float64".format(a=matrix_a.dtype,
-                                                                              b=matrix_b.dtype))
+        debug_print("Recasting matrix data types {a} and {b} to np.float64".format(a=matrix_a.dtype, b=matrix_b.dtype))
         return _cast_to_float64(matrix_a), _cast_to_float64(matrix_b)
 
     elif matrix_a.dtype != np.float64 or matrix_b.dtype != np.float64:
@@ -1051,9 +1103,9 @@ def _empty_output_check(matrix_a, matrix_b):
         return True
 
     # The sparse array is empty
-    elif _spsparse.issparse(matrix_a) and min(matrix_a.data.shape[0], matrix_a.indices.shape[0]) == 0:
+    elif _spsparse.issparse(matrix_a) and min(matrix_a.data.size, matrix_a.indices.size) == 0:
         return True
-    elif _spsparse.issparse(matrix_b) and min(matrix_b.data.shape[0], matrix_b.indices.shape[0]) == 0:
+    elif _spsparse.issparse(matrix_b) and min(matrix_b.data.size, matrix_b.indices.size) == 0:
         return True
 
     # Neither trivial condition
