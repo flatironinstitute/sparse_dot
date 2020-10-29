@@ -4,7 +4,7 @@ from sparse_dot_mkl._dense_dense import _dense_dot_dense as _ddd
 from sparse_dot_mkl._sparse_vector import _sparse_dot_vector as _sdv
 from sparse_dot_mkl._gram_matrix import _gram_matrix as _gm
 from sparse_dot_mkl._sparse_qr_solver import sparse_qr_solver as _qrs
-from sparse_dot_mkl._mkl_interface import get_version_string, set_debug_mode, _is_dense_vector
+from sparse_dot_mkl._mkl_interface import print_mkl_debug, _is_dense_vector, set_debug_mode, get_version_string
 import scipy.sparse as _spsparse
 import numpy as _np
 import warnings
@@ -46,6 +46,7 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     """
 
     warnings.warn("Set debug mode with sparse_dot_mkl.set_debug_mode(True)", DeprecationWarning) if debug else None
+    print_mkl_debug()
 
     num_sparse = sum((_spsparse.issparse(matrix_a), _spsparse.issparse(matrix_b)))
 
@@ -109,6 +110,7 @@ def gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=Fals
     :rtype: scipy.sparse.csr_matrix, np.ndarray"""
 
     warnings.warn("Set debug mode with sparse_dot_mkl.set_debug_mode(True)", DeprecationWarning) if debug else None
+    print_mkl_debug()
 
     return _gm(matrix, transpose=transpose, cast=cast, dense=dense, reorder_output=reorder_output,
                out=out, out_scalar=out_scalar)
@@ -133,6 +135,7 @@ def sparse_qr_solve_mkl(matrix_a, matrix_b, cast=False, debug=False):
     """
 
     warnings.warn("Set debug mode with sparse_dot_mkl.set_debug_mode(True)", DeprecationWarning) if debug else None
+    print_mkl_debug()
 
     return _qrs(matrix_a, matrix_b, cast=cast)
 

@@ -3,7 +3,7 @@ import numpy as np
 import numpy.testing as npt
 import scipy.sparse as _spsparse
 from sparse_dot_mkl import dot_product_mkl
-from sparse_dot_mkl._mkl_interface import _create_mkl_sparse, _export_mkl, sparse_matrix_t
+from sparse_dot_mkl._mkl_interface import _create_mkl_sparse, _export_mkl, sparse_matrix_t, set_debug_mode
 from sparse_dot_mkl._sparse_sparse import _matmul_mkl
 from sparse_dot_mkl.tests.test_mkl import MATRIX_1, MATRIX_2, make_matrixes
 
@@ -19,6 +19,8 @@ class TestMultiplicationCSR(unittest.TestCase):
         self.mat2 = self.sparse_func(MATRIX_2, **self.sparse_args).copy()
 
     def test_spmm_success(self):
+        set_debug_mode(True)
+
         ref_1, precision_1 = _create_mkl_sparse(self.mat1)
         ref_2, precision_2 = _create_mkl_sparse(self.mat2)
 
@@ -33,6 +35,8 @@ class TestMultiplicationCSR(unittest.TestCase):
 
         npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
         npt.assert_array_almost_equal(mat3_np, mat3.A)
+
+        set_debug_mode(False)
 
     def test_spmm_success_float32(self):
         self.mat1.data = self.mat1.data.astype(np.float32)

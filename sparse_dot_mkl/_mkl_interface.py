@@ -502,6 +502,9 @@ def set_debug_mode(debug_bool):
 
 
 def print_mkl_debug():
+    """
+    Print the MKL interface status if debug mode is on
+    """
 
     if not MKL.MKL_DEBUG:
         return
@@ -518,6 +521,11 @@ def print_mkl_debug():
 
 
 def debug_print(msg):
+    """
+    Print a message if debug mode is on
+    :param msg: Message
+    :type msg: str
+    """
 
     if not MKL.MKL_DEBUG:
         return
@@ -526,6 +534,13 @@ def debug_print(msg):
 
 
 def debug_timer(msg=None, old_time=None):
+    """
+    Print a message with timing information if debug mode is on
+    :param msg: Message
+    :type msg: str
+    :param old_time: Time to calculate difference for
+    :type old_time: float
+    """
 
     if not MKL.MKL_DEBUG:
         return
