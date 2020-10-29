@@ -1,6 +1,6 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
                                            _destroy_mkl_handle, matrix_descr, RETURN_CODES, _is_dense_vector,
-                                           _out_matrix, _check_return_value)
+                                           _out_matrix, _check_return_value, _is_allowed_sparse_format)
 
 import numpy as np
 import ctypes as _ctypes
@@ -86,7 +86,9 @@ def _sparse_dot_vector(mv_a, mv_b, cast=False, scalar=1., out=None, out_scalar=N
     _sanity_check(mv_a, mv_b, allow_vector=True)
     mv_a, mv_b = _type_check(mv_a, mv_b, cast=cast)
 
-    if _is_dense_vector(mv_b):
+    if not _is_allowed_sparse_format(mv_a) or not _is_allowed_sparse_format(mv_b):
+        raise ValueError("Only CSR, CSC, and BSR-type sparse matrices are supported")
+    elif _is_dense_vector(mv_b):
         return _sparse_dense_vector_mult(mv_a, mv_b, scalar=scalar, out=out, out_scalar=out_scalar)
     elif _is_dense_vector(mv_a) and out is None:
         return _sparse_dense_vector_mult(mv_b, mv_a.T, scalar=scalar, transpose=True).T

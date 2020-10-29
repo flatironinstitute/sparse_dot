@@ -1107,7 +1107,16 @@ def _is_double(arr):
 
 
 def _is_allowed_sparse_format(matrix):
-    return _spsparse.isspmatrix_csr(matrix) or _spsparse.isspmatrix_csc(matrix) or _spsparse.isspmatrix_bsr(matrix)
+    """
+    Return True if the matrix is dense or a sparse format we can turn into an MKL object. False otherwise.
+    :param matrix:
+    :return:
+    :rtype: bool
+    """
+    if _spsparse.isspmatrix(matrix):
+        return _spsparse.isspmatrix_csr(matrix) or _spsparse.isspmatrix_csc(matrix) or _spsparse.isspmatrix_bsr(matrix)
+    else:
+        return True
 
 
 def _empty_output_check(matrix_a, matrix_b):

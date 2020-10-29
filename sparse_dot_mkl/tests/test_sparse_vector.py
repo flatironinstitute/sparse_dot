@@ -135,6 +135,26 @@ class TestSparseVectorMultiplicationBSR(TestSparseVectorMultiplication):
         self.mat2_d = VECTOR.copy()
 
 
+class TestSparseVectorMultiplicationCOO(unittest.TestCase):
+
+    def setUp(self):
+        self.mat1 = _spsparse.coo_matrix(MATRIX_1).copy()
+        self.mat2 = VECTOR.copy()
+
+        self.mat1_d = np.asarray(MATRIX_1.A, order="C")
+        self.mat2_d = VECTOR.copy()
+
+    def make_2d(self, arr):
+        return arr.reshape(-1, 1) if arr.ndim == 1 else arr
+
+    def test_fails(self):
+        with self.assertRaises(ValueError):
+            dot_product_mkl(self.mat1, self.make_2d(self.mat2), cast=True)
+
+        with self.assertRaises(ValueError):
+            dot_product_mkl(self.make_2d(self.mat2), self.mat1.T, cast=True)
+
+
 class TestVectorSparseMultiplication(TestSparseVectorMultiplication):
 
     sparse_func = _spsparse.csr_matrix
