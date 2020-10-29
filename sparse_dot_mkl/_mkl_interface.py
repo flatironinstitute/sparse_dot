@@ -80,6 +80,14 @@ class MKL:
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-csc
     _mkl_sparse_s_create_csc = _libmkl.mkl_sparse_s_create_csc
 
+    # Import function for creating a MKL BSR object
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-bsr
+    _mkl_sparse_d_create_bsr = _libmkl.mkl_sparse_d_create_bsr
+
+    # Import function for creating a MKL BSR object
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-bsr
+    _mkl_sparse_s_create_bsr = _libmkl.mkl_sparse_s_create_bsr
+
     # Export function for exporting a MKL CSR object
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-csr
     _mkl_sparse_d_export_csr = _libmkl.mkl_sparse_d_export_csr
@@ -95,6 +103,14 @@ class MKL:
     # Export function for exporting a MKL CSC object
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-csc
     _mkl_sparse_s_export_csc = _libmkl.mkl_sparse_s_export_csc
+
+    # Export function for exporting a MKL BSR object
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-bsr
+    _mkl_sparse_d_export_bsr = _libmkl.mkl_sparse_d_export_bsr
+
+    # Export function for exporting a MKL BSR object
+    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-bsr
+    _mkl_sparse_s_export_bsr = _libmkl.mkl_sparse_s_export_bsr
 
     # Import function for matmul
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-spmm
@@ -201,17 +217,26 @@ class MKL:
         cls._mkl_sparse_s_create_csc.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_create_csc.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_d_export_csr.argtypes = cls._mkl_export_create_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_create_bsr.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_s_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_create_bsr.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_d_export_csr.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_export_csr.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_export_csr.argtypes = cls._mkl_export_create_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_export_csr.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_export_csr.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_d_export_csc.argtypes = cls._mkl_export_create_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_export_csc.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_export_csc.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_export_csr.argtypes = cls._mkl_export_create_argtypes(_ctypes.c_float)
-        cls._mkl_sparse_s_export_csr.restypes = _ctypes.c_int
+        cls._mkl_sparse_s_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_export_bsr.restypes = _ctypes.c_int
+
+        cls._mkl_sparse_s_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_export_bsr.restypes = _ctypes.c_int
 
         cls._mkl_sparse_spmm.argtypes = [_ctypes.c_int,
                                          sparse_matrix_t,
@@ -298,9 +323,35 @@ class MKL:
                 ndpointer(dtype=prec_type, ndim=1, flags='C_CONTIGUOUS')]
 
     @staticmethod
-    def _mkl_export_create_argtypes(prec_type):
+    def _mkl_sparse_create_bsr_argtypes(prec_type):
+        return [_ctypes.POINTER(sparse_matrix_t),
+                _ctypes.c_int,
+                _ctypes.c_int,
+                MKL.MKL_INT,
+                MKL.MKL_INT,
+                MKL.MKL_INT,
+                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
+                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
+                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
+                ndpointer(dtype=prec_type, ndim=3, flags='C_CONTIGUOUS')]
+
+    @staticmethod
+    def _mkl_sparse_export_argtypes(prec_type):
         return [sparse_matrix_t,
                 _ctypes.POINTER(_ctypes.c_int),
+                _ctypes.POINTER(MKL.MKL_INT),
+                _ctypes.POINTER(MKL.MKL_INT),
+                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+                _ctypes.POINTER(_ctypes.POINTER(prec_type))]
+
+    @staticmethod
+    def _mkl_sparse_export_bsr_argtypes(prec_type):
+        return [sparse_matrix_t,
+                _ctypes.POINTER(_ctypes.c_int),
+                _ctypes.POINTER(_ctypes.c_int),
+                _ctypes.POINTER(MKL.MKL_INT),
                 _ctypes.POINTER(MKL.MKL_INT),
                 _ctypes.POINTER(MKL.MKL_INT),
                 _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
@@ -429,6 +480,10 @@ LAYOUT_CODE_F = 102
 SPARSE_OPERATION_NON_TRANSPOSE = 10
 SPARSE_OPERATION_TRANSPOSE = 11
 
+# Define index codes
+SPARSE_INDEX_BASE_ZERO = 0
+SPARSE_INDEX_BASE_ONE = 1
+
 
 def _check_scipy_index_typing(sparse_matrix):
     """
@@ -493,34 +548,34 @@ def _create_mkl_sparse(matrix):
     :rtype: sparse_matrix_t, float
     """
 
-    # Figure out which dtype for data
-    if matrix.dtype == np.float32:
-        double_precision = False
-    elif matrix.dtype == np.float64:
-        double_precision = True
-    else:
-        raise ValueError("Only float32 or float64 dtypes are supported")
+    double_precision = _is_double(matrix)
 
     # Figure out which matrix creation function to use
     if _spsparse.isspmatrix_csr(matrix):
+        _check_scipy_index_typing(matrix)
+        assert matrix.data.shape[0] == matrix.indices.shape[0]
         assert matrix.indptr.shape[0] == matrix.shape[0] + 1
         handle_func = MKL._mkl_sparse_d_create_csr if double_precision else MKL._mkl_sparse_s_create_csr
+
     elif _spsparse.isspmatrix_csc(matrix):
+        _check_scipy_index_typing(matrix)
+        assert matrix.data.shape[0] == matrix.indices.shape[0]
         assert matrix.indptr.shape[0] == matrix.shape[1] + 1
         handle_func = MKL._mkl_sparse_d_create_csc if double_precision else MKL._mkl_sparse_s_create_csc
+
+    elif _spsparse.isspmatrix_bsr(matrix):
+        _check_scipy_index_typing(matrix)
+        return _create_mkl_sparse_bsr(matrix), double_precision
+
     else:
-        raise ValueError("Matrix is not CSC or CSR")
+        raise ValueError("Matrix is not CSC, CSR, or BSR")
 
-    # Make sure indices are of the correct integer type
-    _check_scipy_index_typing(matrix)
-    assert matrix.data.shape[0] == matrix.indices.shape[0]
-
-    return _pass_mkl_handle(matrix, handle_func), double_precision
+    return _pass_mkl_handle_csr_csc(matrix, handle_func), double_precision
 
 
-def _pass_mkl_handle(data, handle_func):
+def _pass_mkl_handle_csr_csc(data, handle_func):
     """
-    Create MKL internal representation
+    Create MKL internal representation for CSR or CSC matrix
 
     :param data: Sparse data
     :type data: scipy.sparse.spmatrix
@@ -533,7 +588,7 @@ def _pass_mkl_handle(data, handle_func):
 
     # Load into a MKL data structure and check return
     ret_val = handle_func(_ctypes.byref(ref),
-                          _ctypes.c_int(0),
+                          _ctypes.c_int(SPARSE_INDEX_BASE_ZERO),
                           MKL.MKL_INT(data.shape[0]),
                           MKL.MKL_INT(data.shape[1]),
                           data.indptr[0:-1],
@@ -542,16 +597,65 @@ def _pass_mkl_handle(data, handle_func):
                           data.data)
 
     # Check return
-    if ret_val != 0:
-        err_msg = "{fn} returned {v} ({e})".format(fn=handle_func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
-        raise ValueError(err_msg)
+    _check_return_value(ret_val, handle_func.__name__)
+
+    return ref
+
+
+def _create_mkl_sparse_bsr(matrix):
+    """
+    Create MKL internal representation for BSR matrix
+
+    :param matrix: Sparse data
+    :type matrix: scipy.sparse.bsr_matrix
+    :return ref: Handle for the MKL internal representation
+    :rtype: sparse_matrix_t
+    """
+
+    double_precision = _is_double(matrix)
+    handle_func = MKL._mkl_sparse_d_create_bsr if double_precision else MKL._mkl_sparse_s_create_bsr
+
+    # Get the blocksize and check that the blocks are square
+    _blocksize = matrix.blocksize[0]
+
+    if _blocksize != matrix.blocksize[1]:
+        _err = "MKL BSR representation requires square blocks; {n} blocks provided".format(n=matrix.blocksize)
+        raise ValueError(_err)
+
+    if (matrix.shape[0] % _blocksize != 0) or (matrix.shape[1] % _blocksize != 0):
+        _err = "BSR blocks {n} do not align with dims {m}".format(n=matrix.blocksize, m=matrix.shape)
+        raise ValueError(_err)
+
+    _block_rows = int(matrix.shape[0] / _blocksize)
+    _block_cols = int(matrix.shape[1] / _blocksize)
+
+    # Get the data block array structure
+    _layout, _ = _get_numpy_layout(matrix.data)
+
+    # Create a pointer for the output matrix
+    ref = sparse_matrix_t()
+
+    # Load into a MKL data structure and check return
+    ret_val = handle_func(_ctypes.byref(ref),
+                          _ctypes.c_int(SPARSE_INDEX_BASE_ZERO),
+                          _ctypes.c_int(_layout),
+                          MKL.MKL_INT(_block_rows),
+                          MKL.MKL_INT(_block_cols),
+                          MKL.MKL_INT(_blocksize),
+                          matrix.indptr[0:-1],
+                          matrix.indptr[1:],
+                          matrix.indices,
+                          matrix.data)
+
+    # Check return
+    _check_return_value(ret_val, handle_func.__name__)
 
     return ref
 
 
 def _export_mkl(csr_mkl_handle, double_precision, output_type="csr"):
     """
-    Export a MKL sparse handle
+    Export a MKL sparse handle of CSR or CSC type
 
     :param csr_mkl_handle: Handle for the MKL internal representation
     :type csr_mkl_handle: sparse_matrix_t
@@ -565,15 +669,6 @@ def _export_mkl(csr_mkl_handle, double_precision, output_type="csr"):
     :rtype: scipy.spmatrix
     """
 
-    # Create the pointers for the output data
-    indptrb = _ctypes.POINTER(MKL.MKL_INT)()
-    indptren = _ctypes.POINTER(MKL.MKL_INT)()
-    indices = _ctypes.POINTER(MKL.MKL_INT)()
-
-    ordering = _ctypes.c_int()
-    nrows = MKL.MKL_INT()
-    ncols = MKL.MKL_INT()
-
     output_type = output_type.lower()
 
     if output_type == "csr":
@@ -582,15 +677,14 @@ def _export_mkl(csr_mkl_handle, double_precision, output_type="csr"):
     elif output_type == "csc":
         out_func = MKL._mkl_sparse_d_export_csc if double_precision else MKL._mkl_sparse_s_export_csc
         sp_matrix_constructor = _spsparse.csc_matrix
+    elif output_type == "bsr":
+        return _export_mkl_sparse_bsr(csr_mkl_handle, double_precision)
     else:
-        raise ValueError("Only CSR and CSC output types are supported")
+        raise ValueError("Only CSR, CSC, and BSR output types are supported")
 
-    if double_precision:
-        data = _ctypes.POINTER(_ctypes.c_double)()
-        final_dtype = np.float64
-    else:
-        data = _ctypes.POINTER(_ctypes.c_float)()
-        final_dtype = np.float32
+    # Allocate for output
+    ordering, nrows, ncols, indptrb, indptren, indices, data = _allocate_for_export(double_precision)
+    final_dtype = np.float64 if double_precision else np.float32
 
     ret_val = out_func(csr_mkl_handle,
                        _ctypes.byref(ordering),
@@ -602,17 +696,14 @@ def _export_mkl(csr_mkl_handle, double_precision, output_type="csr"):
                        _ctypes.byref(data))
 
     # Check return
-    if ret_val != 0:
-        err_msg = "{fn} returned {v} ({e})".format(fn=out_func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
-        raise ValueError(err_msg)
+    _check_return_value(ret_val, out_func.__name__)
 
     # Check ordering
     if ordering.value != 0:
         raise ValueError("1-indexing (F-style) is not supported")
 
     # Get matrix dims
-    ncols = ncols.value
-    nrows = nrows.value
+    ncols, nrows = ncols.value, nrows.value
 
     # If any axis is 0 return an empty matrix
     if nrows == 0 or ncols == 0:
@@ -641,6 +732,117 @@ def _export_mkl(csr_mkl_handle, double_precision, output_type="csr"):
 
     # Pack and return the matrix
     return sp_matrix_constructor((data, indices, indptren), shape=(nrows, ncols))
+
+
+def _export_mkl_sparse_bsr(bsr_mkl_handle, double_precision):
+    """
+    Export a BSR matrix from MKL's internal representation to scipy
+
+    :param bsr_mkl_handle: MKL internal representation
+    :type bsr_mkl_handle: sparse_matrix_t
+    :param double_precision: Use float64 if True, float32 if False. This MUST match the underlying float type - this
+        defines a memory view, it does not cast.
+    :type double_precision: bool
+    :return: Sparse BSR matrix
+    :rtype:
+    """
+
+    # Allocate for output
+    ordering, nrows, ncols, indptrb, indptren, indices, data = _allocate_for_export(double_precision)
+    block_layout = _ctypes.c_int()
+    block_size = MKL.MKL_INT()
+
+    # Set output
+    out_func = MKL._mkl_sparse_d_export_bsr if double_precision else MKL._mkl_sparse_s_export_bsr
+    final_dtype = np.float64 if double_precision else np.float32
+
+    ret_val = out_func(bsr_mkl_handle,
+                       _ctypes.byref(ordering),
+                       _ctypes.byref(block_layout),
+                       _ctypes.byref(nrows),
+                       _ctypes.byref(ncols),
+                       _ctypes.byref(block_size),
+                       _ctypes.byref(indptrb),
+                       _ctypes.byref(indptren),
+                       _ctypes.byref(indices),
+                       _ctypes.byref(data))
+
+    # Check return
+    _check_return_value(ret_val, out_func.__name__)
+
+    # Get matrix dims
+    ncols, nrows, block_size = ncols.value, nrows.value, block_size.value
+    index_dim, block_dims = nrows, (block_size, block_size)
+    ncols, nrows = ncols * block_size, nrows * block_size
+
+    # If any axis is 0 return an empty matrix
+    if nrows == 0 or ncols == 0:
+        return _spsparse.bsr_matrix((nrows, ncols), dtype=final_dtype, blocksize=block_dims)
+
+    ordering = "F" if ordering.value == LAYOUT_CODE_F else "C"
+
+    # Construct a numpy array and add 0 to first position for scipy.sparse's 3-array indexing
+    indptrb = as_array(indptrb, shape=(index_dim,))
+    indptren = as_array(indptren, shape=(index_dim,))
+
+    indptren = np.insert(indptren, 0, indptrb[0])
+
+    nnz_blocks = (indptren[-1] - indptrb[0])
+
+    # If there's no non-zero data, return an empty matrix
+    if nnz_blocks == 0:
+        return _spsparse.bsr_matrix((nrows, ncols), dtype=final_dtype, blocksize=block_dims)
+    elif nnz_blocks < 0 or (nnz_blocks * (block_size ** 2)) > ncols * nrows:
+        nnz = nnz_blocks * (block_size ** 2)
+        _err = "Matrix ({m} x {n}) is attempting to index {z} elements as {b} {bs} blocks"
+        _err = _err.format(m=nrows, n=ncols, z=nnz, b=nnz_blocks, bs=(block_size, block_size))
+        raise ValueError(_err)
+
+    data = np.array(as_array(data, shape=(nnz_blocks, block_size, block_size)), copy=True, order=ordering,
+                    dtype=final_dtype)
+    indices = np.array(as_array(indices, shape=(nnz_blocks,)), copy=True)
+
+    return _spsparse.bsr_matrix((data, indices, indptren), shape=(nrows, ncols), blocksize=block_dims)
+
+
+def _allocate_for_export(double_precision):
+    """
+    Get pointers for output from MKL internal representation
+    :param double_precision: Allocate an output pointer of doubles
+    :type double_precision: bool
+    :return: ordering, nrows, ncols, indptrb, indptren, indices, data
+    :rtype: c_int, MKL_INT, MKL_INT, MKL_INT*, MKL_INT*, MKL_INT*, c_float|c_double*
+    """
+    # Create the pointers for the output data
+    indptrb = _ctypes.POINTER(MKL.MKL_INT)()
+    indptren = _ctypes.POINTER(MKL.MKL_INT)()
+    indices = _ctypes.POINTER(MKL.MKL_INT)()
+
+    ordering = _ctypes.c_int()
+    nrows = MKL.MKL_INT()
+    ncols = MKL.MKL_INT()
+
+    data = _ctypes.POINTER(_ctypes.c_double)() if double_precision else _ctypes.POINTER(_ctypes.c_float)()
+
+    return ordering, nrows, ncols, indptrb, indptren, indices, data
+
+
+def _check_return_value(ret_val, func_name, extra_msg=None):
+    """
+    Check the return value from a sparse function
+
+    :param ret_val:
+    :param func_name:
+    :return:
+    """
+
+    if ret_val != 0:
+        err_msg = "{fn} returned {v} ({e})".format(fn=func_name, v=ret_val, e=RETURN_CODES[ret_val])
+        if extra_msg is not None:
+            err_msg += extra_msg
+        raise ValueError(err_msg)
+    else:
+        return True
 
 
 def _destroy_mkl_handle(ref_handle):
@@ -816,6 +1018,29 @@ def _out_matrix(shape, dtype, order="C", out_arr=None, out_t=False):
 
 def _is_dense_vector(m_or_v):
     return not _spsparse.issparse(m_or_v) and ((m_or_v.ndim == 1) or ((m_or_v.ndim == 2) and min(m_or_v.shape) == 1))
+
+
+def _is_double(arr):
+    """
+    Return true if the array is doubles, false if singles, and raise an error if it's neither.
+
+    :param arr:
+    :type arr: np.ndarray, scipy.sparse.spmatrix
+    :return:
+    :rtype: bool
+    """
+
+    # Figure out which dtype for data
+    if arr.dtype == np.float32:
+        return False
+    elif arr.dtype == np.float64:
+        return True
+    else:
+        raise ValueError("Only float32 or float64 dtypes are supported")
+
+
+def _is_allowed_sparse_format(matrix):
+    return _spsparse.isspmatrix_csr(matrix) or _spsparse.isspmatrix_csc(matrix) or _spsparse.isspmatrix_bsr(matrix)
 
 
 def _empty_output_check(matrix_a, matrix_b):

@@ -1,11 +1,11 @@
 from sparse_dot_mkl._mkl_interface import (MKL, sparse_matrix_t, RETURN_CODES, _create_mkl_sparse,
                                            _export_mkl, _order_mkl_handle, _destroy_mkl_handle, _type_check,
-                                           _empty_output_check, _sanity_check)
+                                           _empty_output_check, _sanity_check, _is_allowed_sparse_format)
 import ctypes as _ctypes
 import numpy as np
 import time
 import scipy.sparse as _spsparse
-from scipy.sparse import isspmatrix_csr as is_csr, isspmatrix_csc as is_csc
+from scipy.sparse import isspmatrix_csr as is_csr, isspmatrix_csc as is_csc, isspmatrix_bsr as is_bsr
 
 
 def _matmul_mkl(sp_ref_a, sp_ref_b):
@@ -103,15 +103,17 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
     """
 
     # Check for allowed sparse matrix types
+    if not _is_allowed_sparse_format(matrix_a) or not _is_allowed_sparse_format(matrix_b):
+        raise ValueError("Both input matrices to dot_product_mkl must be CSR, CSC, or BSR; COO is not supported")
 
-    if is_csr(matrix_a) and (is_csc(matrix_b) or is_csr(matrix_b)):
-        default_output = _spsparse.csr_matrix
-        output_type = "csr"
-    elif is_csc(matrix_a) and (is_csc(matrix_b) or is_csr(matrix_b)):
-        default_output = _spsparse.csc_matrix
-        output_type = "csc"
+    if is_csr(matrix_a):
+        default_output, output_type = _spsparse.csr_matrix, "csr"
+    elif is_csc(matrix_a):
+        default_output, output_type = _spsparse.csc_matrix, "csc"
+    elif is_bsr(matrix_a):
+        default_output, output_type = _spsparse.bsr_matrix, "bsr"
     else:
-        raise ValueError("Both input matrices to dot_product_mkl must be CSR or CSC; COO and BSR are not supported")
+        raise ValueError("Both input matrices to dot_product_mkl must be CSR, CSC, or BSR; COO is not supported")
 
     # Override output if dense flag is set
     default_output = default_output if not dense else np.zeros
