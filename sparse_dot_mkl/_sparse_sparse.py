@@ -95,7 +95,7 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
 
     # Check for allowed sparse matrix types
     if not _is_allowed_sparse_format(matrix_a) or not _is_allowed_sparse_format(matrix_b):
-        raise ValueError("Both input matrices to dot_product_mkl must be CSR, CSC, or BSR; COO is not supported")
+        raise ValueError("Input matrices to dot_product_mkl must be CSR, CSC, or BSR; COO is not supported")
 
     if is_csr(matrix_a):
         default_output, output_type = _spsparse.csr_matrix, "csr"
@@ -104,7 +104,7 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
     elif is_bsr(matrix_a):
         default_output, output_type = _spsparse.bsr_matrix, "bsr"
     else:
-        raise ValueError("Both input matrices to dot_product_mkl must be CSR, CSC, or BSR; COO is not supported")
+        raise ValueError("Input matrices to dot_product_mkl must be CSR, CSC, or BSR; COO is not supported")
 
     # Override output if dense flag is set
     default_output = default_output if not dense else np.zeros

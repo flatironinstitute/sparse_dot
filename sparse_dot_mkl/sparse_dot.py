@@ -35,7 +35,7 @@ def dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=Fa
     This does not require any copy and is memory efficient if the output array density is > 50%
     Note that this flag has no effect if one input array is dense; then the output will always be dense
     :type dense: bool
-    :param debug: Should debug and timing messages be printed. Defaults to false.
+    :param debug: Deprecated debug flag. Use `sparse_dot_mkl.set_debug_mode(True)`
     :type debug: bool
     :param out: Add the dot product to this array if provided.
     :type out: np.ndarray, None
@@ -97,7 +97,7 @@ def gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=Fals
     :type cast: bool
     :param dense: Produce a dense matrix output instead of a sparse matrix
     :type dense: bool
-    :param debug: Should debug and timing messages be printed. Defaults to false.
+    :param debug: Deprecated debug flag. Use `sparse_dot_mkl.set_debug_mode(True)`
     :type debug: bool
     :param reorder_output: Should the array indices be reordered using MKL
     The scipy sparse dot product does not yield ordered column indices so this defaults to False
@@ -128,7 +128,7 @@ def sparse_qr_solve_mkl(matrix_a, matrix_b, cast=False, debug=False):
     and should a CSR matrix be cast to a CSC matrix.
     Defaults to False
     :type cast: bool
-    :param debug: Should debug messages be printed. Defaults to false.
+    :param debug: Deprecated debug flag. Use `sparse_dot_mkl.set_debug_mode(True)`
     :type debug: bool
     :return: Dense array X
     :rtype: np.ndarray

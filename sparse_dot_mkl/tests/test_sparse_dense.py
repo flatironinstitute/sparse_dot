@@ -130,7 +130,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         npt.assert_array_almost_equal(mat3_np + 3., mat3)
         self.assertEqual(id(mat3), id(out))
 
-    def test_float64_cast_bsc_sparse(self):
+    def test_float64_cast_bsr_sparse(self):
         d1, d2 = self.mat1_d.astype(np.float32), self.mat2.tobsr(blocksize=(10, 10))
 
         mat3 = dot_product_mkl(d1, d2, cast=True)
