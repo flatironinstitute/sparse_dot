@@ -1,11 +1,11 @@
-from sparse_dot_mkl._mkl_interface import (MKL, sparse_matrix_t, RETURN_CODES, _create_mkl_sparse,
+from sparse_dot_mkl._mkl_interface import (MKL, sparse_matrix_t, _create_mkl_sparse, debug_print, debug_timer,
                                            _export_mkl, _order_mkl_handle, _destroy_mkl_handle, _type_check,
-                                           _empty_output_check, _sanity_check)
+                                           _empty_output_check, _sanity_check, _is_allowed_sparse_format,
+                                           _check_return_value)
 import ctypes as _ctypes
 import numpy as np
-import time
 import scipy.sparse as _spsparse
-from scipy.sparse import isspmatrix_csr as is_csr, isspmatrix_csc as is_csc
+from scipy.sparse import isspmatrix_csr as is_csr, isspmatrix_csc as is_csc, isspmatrix_bsr as is_bsr
 
 
 def _matmul_mkl(sp_ref_a, sp_ref_b):
@@ -28,12 +28,7 @@ def _matmul_mkl(sp_ref_a, sp_ref_b):
                                    _ctypes.byref(ref_handle))
 
     # Check return
-    if ret_val != 0:
-        _err_msg = "mkl_sparse_spmm returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val])
-        if ret_val == 2:
-            _err_msg += "; Try changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
-        raise ValueError(_err_msg)
-
+    _check_return_value(ret_val, "mkl_sparse_spmm")
     return ref_handle
 
 
@@ -68,14 +63,12 @@ def _matmul_mkl_dense(sp_ref_a, sp_ref_b, output_shape, double_precision):
                    output_shape[1])
 
     # Check return
-    if ret_val != 0:
-        err_msg = "{fn} returned {v} ({e})".format(fn=func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
-        raise ValueError(err_msg)
+    _check_return_value(ret_val, func.__name__)
 
     return output_arr
 
 
-def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, dense=False, dprint=print):
+def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, dense=False):
     """
     Multiply together two scipy sparse matrixes using the intel Math Kernel Library.
     This currently only supports float32 and float64 data
@@ -96,22 +89,22 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
     :param dense: Should the matrix multiplication yield a dense numpy array
     This does not require any copy and is memory efficient if the output array density is > 50%
     :type dense: bool
-    :param dprint: Should debug and timing messages be printed. Defaults to false.
-    :type dprint: function
     :return: Sparse matrix that is the result of A * B in CSR format
     :rtype: scipy.sparse.csr_matrix
     """
 
     # Check for allowed sparse matrix types
+    if not _is_allowed_sparse_format(matrix_a) or not _is_allowed_sparse_format(matrix_b):
+        raise ValueError("Input matrices to dot_product_mkl must be CSR, CSC, or BSR; COO is not supported")
 
-    if is_csr(matrix_a) and (is_csc(matrix_b) or is_csr(matrix_b)):
-        default_output = _spsparse.csr_matrix
-        output_type = "csr"
-    elif is_csc(matrix_a) and (is_csc(matrix_b) or is_csr(matrix_b)):
-        default_output = _spsparse.csc_matrix
-        output_type = "csc"
+    if is_csr(matrix_a):
+        default_output, output_type = _spsparse.csr_matrix, "csr"
+    elif is_csc(matrix_a):
+        default_output, output_type = _spsparse.csc_matrix, "csc"
+    elif is_bsr(matrix_a):
+        default_output, output_type = _spsparse.bsr_matrix, "bsr"
     else:
-        raise ValueError("Both input matrices to dot_product_mkl must be CSR or CSC; COO and BSR are not supported")
+        raise ValueError("Input matrices to dot_product_mkl must be CSR, CSC, or BSR; COO is not supported")
 
     # Override output if dense flag is set
     default_output = default_output if not dense else np.zeros
@@ -121,28 +114,26 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
 
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix_a, matrix_b):
-        dprint("Skipping multiplication because A (dot) B must yield an empty matrix")
+        debug_print("Skipping multiplication because A (dot) B must yield an empty matrix")
         final_dtype = np.float64 if matrix_a.dtype != matrix_b.dtype or matrix_a.dtype != np.float32 else np.float32
         return default_output((matrix_a.shape[0], matrix_b.shape[1]), dtype=final_dtype)
 
     # Check dtypes
-    matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast, dprint=dprint)
+    matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast)
 
-    t0 = time.time()
+    t = debug_timer()
 
     # Create intel MKL objects
     mkl_a, a_dbl = _create_mkl_sparse(matrix_a)
     mkl_b, b_dbl = _create_mkl_sparse(matrix_b)
 
-    t1 = time.time()
-    dprint("Created MKL sparse handles: {0:.6f} seconds".format(t1 - t0))
+    t = debug_timer("Created MKL sparse handles", t)
 
     # Call spmmd for dense output directly if the dense flag is set
     if dense:
         dense_arr = _matmul_mkl_dense(mkl_a, mkl_b, (matrix_a.shape[0], matrix_b.shape[1]), a_dbl or b_dbl)
 
-        t2 = time.time()
-        dprint("Multiplied matrices: {0:.6f} seconds".format(t2 - t1))
+        debug_timer("Multiplied matrices", t)
 
         _destroy_mkl_handle(mkl_a)
         _destroy_mkl_handle(mkl_b)
@@ -157,20 +148,18 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
         _destroy_mkl_handle(mkl_a)
         _destroy_mkl_handle(mkl_b)
 
-        t2 = time.time()
-        dprint("Multiplied matrices: {0:.6f} seconds".format(t2 - t1))
+        t = debug_timer("Multiplied matrices", t)
 
         # Reorder
         if reorder_output:
             _order_mkl_handle(mkl_c)
 
-            dprint("Reordered indicies: {0:.6f} seconds".format(time.time() - t2))
-            t2 = time.time()
+            t = debug_timer("Reordered output indices", t)
 
         # Extract
         python_c = _export_mkl(mkl_c, a_dbl or b_dbl, output_type=output_type)
         _destroy_mkl_handle(mkl_c)
 
-        dprint("Created python handle: {0:.6f} seconds".format(time.time() - t2))
+        debug_timer("Created python handle", t)
 
         return python_c

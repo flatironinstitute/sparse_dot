@@ -1,5 +1,5 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _type_check, _sanity_check, _empty_output_check, _get_numpy_layout,
-                                           LAYOUT_CODE_C, LAYOUT_CODE_F, _out_matrix)
+                                           LAYOUT_CODE_C, LAYOUT_CODE_F, _out_matrix, debug_print)
 
 import numpy as np
 import ctypes as _ctypes
@@ -50,17 +50,17 @@ def _dense_matmul(matrix_a, matrix_b, double_precision, scalar=1., out=None, out
     return output_arr.ravel() if flatten_output else output_arr
 
 
-def _dense_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1., out=None, out_scalar=None):
+def _dense_dot_dense(matrix_a, matrix_b, cast=False, scalar=1., out=None, out_scalar=None):
 
     _sanity_check(matrix_a, matrix_b, allow_vector=True)
 
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix_a, matrix_b):
-        dprint("Skipping multiplication because A (dot) B must yield an empty matrix")
+        debug_print("Skipping multiplication because A (dot) B must yield an empty matrix")
         final_dtype = np.float64 if matrix_a.dtype != matrix_b.dtype or matrix_a.dtype != np.float32 else np.float32
         return _out_matrix((matrix_a.shape[0], matrix_b.shape[1]), final_dtype, out_arr=out)
 
-    matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast, dprint=dprint)
+    matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast)
 
     a_dbl, b_dbl = matrix_a.dtype == np.float64, matrix_b.dtype == np.float64
 

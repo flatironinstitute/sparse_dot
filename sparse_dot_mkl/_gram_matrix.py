@@ -1,7 +1,7 @@
-from sparse_dot_mkl._mkl_interface import (MKL, sparse_matrix_t, RETURN_CODES, _create_mkl_sparse,
+from sparse_dot_mkl._mkl_interface import (MKL, sparse_matrix_t, _create_mkl_sparse,
                                            _export_mkl, _order_mkl_handle, _destroy_mkl_handle, _type_check,
                                            _get_numpy_layout, _convert_to_csr, _empty_output_check, LAYOUT_CODE_C,
-                                           _out_matrix)
+                                           _out_matrix, _check_return_value, debug_print)
 
 import scipy.sparse as _sps
 import ctypes as _ctypes
@@ -36,11 +36,7 @@ def _gram_matrix_sparse(matrix_a, aat=False, reorder_output=False):
                                    _ctypes.byref(ref_handle))
 
     # Check return
-    if ret_val != 0:
-        _err_msg = "mkl_sparse_syrk returned {v} ({e})".format(v=ret_val, e=RETURN_CODES[ret_val])
-        if ret_val == 2:
-            _err_msg += "; Try changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
-        raise ValueError(_err_msg)
+    _check_return_value(ret_val, "mkl_sparse_syrk")
 
     if reorder_output:
         _order_mkl_handle(ref_handle)
@@ -95,9 +91,7 @@ def _gram_matrix_sparse_to_dense(matrix_a, aat=False, scalar=1., out=None, out_s
                    output_ld)
 
     # Check return
-    if ret_val != 0:
-        _err_msg = "{fn} returned {v} ({e})".format(fn=func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
-        raise ValueError(_err_msg)
+    _check_return_value(ret_val, func.__name__)
 
     _destroy_mkl_handle(sp_ref_a)
 
@@ -157,8 +151,7 @@ def _gram_matrix_dense_to_dense(matrix_a, aat=False, scalar=1., out=None, out_sc
     return output_arr
 
 
-def _gram_matrix(matrix, transpose=False, cast=False, dense=False, reorder_output=False, dprint=print, out=None,
-                 out_scalar=None):
+def _gram_matrix(matrix, transpose=False, cast=False, dense=False, reorder_output=False, out=None, out_scalar=None):
     """
     Calculate a gram matrix (AT (dot) A) from a sparse matrix.
 
@@ -180,12 +173,12 @@ def _gram_matrix(matrix, transpose=False, cast=False, dense=False, reorder_outpu
 
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix, matrix):
-        dprint("Skipping multiplication because AT (dot) A must yield an empty matrix")
+        debug_print("Skipping multiplication because AT (dot) A must yield an empty matrix")
         output_shape = (matrix.shape[1], matrix.shape[1]) if transpose else (matrix.shape[0], matrix.shape[0])
         output_func = _sps.csr_matrix if _sps.isspmatrix(matrix) else np.zeros
         return output_func(output_shape, dtype=matrix.dtype)
 
-    matrix = _type_check(matrix, cast=cast, dprint=dprint)
+    matrix = _type_check(matrix, cast=cast)
 
     if _sps.isspmatrix(matrix) and not (_sps.isspmatrix_csr(matrix) or _sps.isspmatrix_csc(matrix)):
         raise ValueError("gram_matrix requires sparse matrix to be CSR or CSC format")

@@ -1,6 +1,6 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _get_numpy_layout, _type_check, _create_mkl_sparse,
                                            _destroy_mkl_handle, matrix_descr, RETURN_CODES, _convert_to_csr,
-                                           LAYOUT_CODE_C)
+                                           _check_return_value, LAYOUT_CODE_C)
 
 import numpy as np
 import ctypes as _ctypes
@@ -31,9 +31,7 @@ def _sparse_qr(matrix_a, matrix_b):
     ret_val_r = MKL._mkl_sparse_qr_reorder(mkl_a, matrix_descr())
 
     # Check return
-    if ret_val_r != 0:
-        err_msg = "mkl_sparse_qr_reorder returned {v} ({e})".format(v=ret_val_r, e=RETURN_CODES[ret_val_r])
-        raise ValueError(err_msg)
+    _check_return_value(ret_val_r, "mkl_sparse_qr_reorder")
 
     # QR Factorize ##
     factorize_func = MKL._mkl_sparse_d_qr_factorize if dbl else MKL._mkl_sparse_s_qr_factorize
@@ -41,9 +39,7 @@ def _sparse_qr(matrix_a, matrix_b):
     ret_val_f = factorize_func(mkl_a, None)
 
     # Check return
-    if ret_val_f != 0:
-        err_msg = "{fn} returned {v} ({e})".format(fn=factorize_func.__name__, v=ret_val_f, e=RETURN_CODES[ret_val_f])
-        raise ValueError(err_msg)
+    _check_return_value(ret_val_f, factorize_func.__name__)
 
     # QR Solve ##
     output_dtype = np.float64 if dbl else np.float32
@@ -65,22 +61,19 @@ def _sparse_qr(matrix_a, matrix_b):
                            ld_b)
 
     # Check return
-    if ret_val_s != 0:
-        err_msg = "{fn} returned {v} ({e})".format(fn=solve_func.__name__, v=ret_val_s, e=RETURN_CODES[ret_val_s])
-        raise ValueError(err_msg)
+    _check_return_value(ret_val_s, solve_func.__name__)
 
     _destroy_mkl_handle(mkl_a)
 
     return output_arr
 
 
-def sparse_qr_solver(matrix_a, matrix_b, cast=False, dprint=print):
+def sparse_qr_solver(matrix_a, matrix_b, cast=False):
     """
 
     :param matrix_a:
     :param matrix_b:
     :param cast:
-    :param dprint:
     :return:
     """
 
@@ -92,6 +85,6 @@ def sparse_qr_solver(matrix_a, matrix_b, cast=False, dprint=print):
         err_msg = "Bad matrix shapes for AX=B solver: A {sha} & B {shb}".format(sha=matrix_a.shape, shb=matrix_b.shape)
         raise ValueError(err_msg)
     else:
-        matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast, dprint=dprint)
+        matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast)
         x_arr = _sparse_qr(matrix_a, matrix_b if matrix_b.ndim == 2 else matrix_b.reshape(-1, 1))
         return x_arr if matrix_b.ndim == 2 else x_arr.ravel()

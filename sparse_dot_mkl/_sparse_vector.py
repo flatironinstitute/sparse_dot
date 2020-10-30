@@ -1,6 +1,6 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
                                            _destroy_mkl_handle, matrix_descr, RETURN_CODES, _is_dense_vector,
-                                           _out_matrix)
+                                           _out_matrix, _check_return_value, _is_allowed_sparse_format)
 
 import numpy as np
 import ctypes as _ctypes
@@ -52,16 +52,14 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False, ou
                    output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)))
 
     # Check return
-    if ret_val != 0:
-        err_msg = "{fn} returned {v} ({e})".format(fn=func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
-        raise ValueError(err_msg)
+    _check_return_value(ret_val, func.__name__)
 
     _destroy_mkl_handle(mkl_a)
 
     return output_arr
 
 
-def _sparse_dot_vector(mv_a, mv_b, cast=False, dprint=print, scalar=1., out=None, out_scalar=None):
+def _sparse_dot_vector(mv_a, mv_b, cast=False, scalar=1., out=None, out_scalar=None):
     """
     Multiply a sparse matrix by a dense vector.
     The matrix must be CSR or CSC format.
@@ -77,8 +75,6 @@ def _sparse_dot_vector(mv_a, mv_b, cast=False, dprint=print, scalar=1., out=None
     :param cast: Convert values to compatible floats if True. Raise an error if they are not compatible if False.
     Defaults to False.
     :type cast: bool
-    :param dprint: A function that will handle debug strings. Defaults to print.
-    :type dprint: function
     :param out: Add the dot product to this array if provided.
     :type out: np.ndarray, None
     :param out_scalar: Multiply the out array by this scalar if provided.
@@ -88,9 +84,11 @@ def _sparse_dot_vector(mv_a, mv_b, cast=False, dprint=print, scalar=1., out=None
     """
 
     _sanity_check(mv_a, mv_b, allow_vector=True)
-    mv_a, mv_b = _type_check(mv_a, mv_b, cast=cast, dprint=dprint)
+    mv_a, mv_b = _type_check(mv_a, mv_b, cast=cast)
 
-    if _is_dense_vector(mv_b):
+    if not _is_allowed_sparse_format(mv_a) or not _is_allowed_sparse_format(mv_b):
+        raise ValueError("Only CSR, CSC, and BSR-type sparse matrices are supported")
+    elif _is_dense_vector(mv_b):
         return _sparse_dense_vector_mult(mv_a, mv_b, scalar=scalar, out=out, out_scalar=out_scalar)
     elif _is_dense_vector(mv_a) and out is None:
         return _sparse_dense_vector_mult(mv_b, mv_a.T, scalar=scalar, transpose=True).T

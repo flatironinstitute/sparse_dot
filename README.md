@@ -16,8 +16,9 @@ Three functions are explicitly available - `dot_product_mkl`, `gram_matrix_mkl`,
 #### dot_product_mkl
 `dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False, out=None, out_scalar=None)`
 
-`matrix_a` and `matrix_b` are either numpy arrays (1d or 2d) or scipy sparse matrices (CSR or CSC).
-Sparse COO or BSR matrices are not supported. 
+`matrix_a` and `matrix_b` are either numpy arrays (1d or 2d) or scipy sparse matrices (CSR, CSC, or BSR).
+BSR matrices are supported for matrix-matrix multiplication only if one matrix is a dense array or both sparse matrices are BSR.
+Sparse COO matrices are not supported. 
 Numpy arrays must be contiguous. Non-contiguous arrays should be copied to a contiguous array prior to calling this 
 function.
 
@@ -42,7 +43,7 @@ Input sparse matrices may be reordered without warning in place.
 This will not change data, only the way it is stored.
 Scipy matrix multiplication does not produce ordered outputs, so this defaults to `False`.
 
-`out` is an optional reference to an output array to which the product of the matrix multiplication will be added. 
+`out` is an optional reference to a dense output array to which the product of the matrix multiplication will be added. 
 This must be identical in attributes to the array that would be returned if it was not used.
 Specifically it must have the correct shape, dtype, and column- or row-major order and it must be contiguous. A ValueError will be raised if any attribute of this array is incorrect.
 This function will return a reference to the same array object when `out` is set.

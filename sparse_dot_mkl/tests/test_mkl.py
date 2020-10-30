@@ -135,6 +135,92 @@ class TestFailureConditions(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             MKL()
 
+    def test_bsr_not_square_blocks(self):
+        with self.assertRaises(ValueError):
+            _create_mkl_sparse(self.mat1.tobsr(blocksize=(10, 5)))
+
+
+class TestHandles(unittest.TestCase):
+
+    def setUp(self):
+        self.mat1 = MATRIX_1.copy()
+        self.mat2 = MATRIX_2.copy()
+
+    @staticmethod
+    def is_sparse_identical_internal(sparse_1, sparse_2):
+        npt.assert_array_almost_equal(sparse_1.data, sparse_2.data)
+        npt.assert_array_equal(sparse_1.indptr, sparse_2.indptr)
+        npt.assert_array_equal(sparse_1.indices, sparse_2.indices)
+
+    def is_sparse_identical_A(self, sparse_1, sparse_2):
+        npt.assert_array_almost_equal(sparse_1.A, sparse_2.A)
+
+    def test_create_export(self):
+        mat1 = _spsparse.csc_matrix(self.mat1).copy()
+        mat2 = self.mat2.copy()
+        mat3 = mat1.astype(np.float32).copy()
+        mat4 = self.mat2.astype(np.float32).copy()
+
+        ref_1, precision_1 = _create_mkl_sparse(mat1)
+        ref_2, precision_2 = _create_mkl_sparse(mat2)
+        ref_3, precision_3 = _create_mkl_sparse(mat3)
+        ref_4, precision_4 = _create_mkl_sparse(mat4)
+
+        self.assertTrue(precision_1)
+        self.assertTrue(precision_2)
+        self.assertFalse(precision_3)
+        self.assertFalse(precision_4)
+
+        cycle_1 = _export_mkl(ref_1, precision_1, output_type="csc")
+        cycle_2 = _export_mkl(ref_2, precision_2)
+        cycle_3 = _export_mkl(ref_3, precision_3, output_type="csc")
+        cycle_4 = _export_mkl(ref_4, precision_4)
+
+        self.is_sparse_identical_A(self.mat1, cycle_1)
+        self.is_sparse_identical_internal(self.mat2, cycle_2)
+        self.is_sparse_identical_A(self.mat1.astype(np.float32), cycle_3)
+        self.is_sparse_identical_internal(self.mat2.astype(np.float32), cycle_4)
+
+    def test_create_bsr(self):
+        mat1 = _spsparse.bsr_matrix(self.mat1, blocksize=(2, 2))
+        mat3 = mat1.astype(np.float32).copy()
+
+        ref_1, precision_1 = _create_mkl_sparse(mat1)
+        ref_3, precision_3 = _create_mkl_sparse(mat3)
+
+        self.assertTrue(precision_1)
+        self.assertFalse(precision_3)
+
+        cycle_1 = _export_mkl(ref_1, precision_1, output_type="bsr")
+        cycle_3 = _export_mkl(ref_3, precision_3, output_type="bsr")
+
+        self.is_sparse_identical_A(self.mat1, cycle_1)
+        self.is_sparse_identical_internal(mat1, cycle_1)
+        self.is_sparse_identical_A(self.mat1.astype(np.float32), cycle_3)
+        self.is_sparse_identical_internal(mat3, cycle_3)
+
+        npt.assert_array_equal(mat1.data, cycle_1.data)
+        npt.assert_array_equal(mat3.data, cycle_3.data)
+
+    def test_create_convert_bsr(self):
+        mat1 = _spsparse.bsr_matrix(self.mat1, blocksize=(2, 2))
+        mat3 = mat1.astype(np.float32).copy()
+
+        ref_1, precision_1 = _create_mkl_sparse(mat1)
+        ref_3, precision_3 = _create_mkl_sparse(mat3)
+
+        cref_1 = _convert_to_csr(ref_1)
+        cref_3 = _convert_to_csr(ref_3)
+
+        self.assertTrue(precision_1)
+        self.assertFalse(precision_3)
+
+        cycle_1 = _export_mkl(cref_1, precision_1, output_type="csr")
+        cycle_3 = _export_mkl(cref_3, precision_3, output_type="csr")
+
+        self.is_sparse_identical_A(self.mat1, cycle_1)
+        self.is_sparse_identical_A(self.mat1.astype(np.float32), cycle_3)
+
 
 def run():
     unittest.main(module='sparse_dot_mkl.tests.test_mkl')

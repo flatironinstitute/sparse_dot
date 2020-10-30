@@ -1,6 +1,7 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
-                                           _destroy_mkl_handle, matrix_descr, RETURN_CODES, _convert_to_csr,
-                                           _get_numpy_layout, LAYOUT_CODE_C, LAYOUT_CODE_F, _out_matrix)
+                                           _destroy_mkl_handle, matrix_descr, debug_print, _convert_to_csr,
+                                           _get_numpy_layout, _check_return_value, LAYOUT_CODE_C, LAYOUT_CODE_F,
+                                           _out_matrix)
 import numpy as np
 import ctypes as _ctypes
 import scipy.sparse as _spsparse
@@ -64,16 +65,14 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False, out=Non
                    output_ld)
 
     # Check return
-    if ret_val != 0:
-        err_msg = "{fn} returned {v} ({e})".format(fn=func.__name__, v=ret_val, e=RETURN_CODES[ret_val])
-        raise ValueError(err_msg)
+    _check_return_value(ret_val, func.__name__)
 
     _destroy_mkl_handle(mkl_a)
 
     return output_arr
 
 
-def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1., out=None, out_scalar=None):
+def _sparse_dot_dense(matrix_a, matrix_b, cast=False, scalar=1., out=None, out_scalar=None):
     """
     Multiply together a dense and a sparse matrix.
     If the sparse matrix is not CSR, it may need to be reordered, depending on the order of the dense array.
@@ -87,8 +86,6 @@ def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1., o
     :param cast: Convert values to compatible floats if True. Raise an error if they are not compatible if False.
     Defaults to False.
     :type cast: bool
-    :param dprint: A function that will handle debug strings. Defaults to print.
-    :type dprint: function
     :param out: Add the dot product to this array if provided.
     :type out: np.ndarray, None
     :param out_scalar: Multiply the out array by this scalar if provided.
@@ -101,11 +98,11 @@ def _sparse_dot_dense(matrix_a, matrix_b, cast=False, dprint=print, scalar=1., o
 
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix_a, matrix_b):
-        dprint("Skipping multiplication because A (dot) B must yield an empty matrix")
+        debug_print("Skipping multiplication because A (dot) B must yield an empty matrix")
         final_dtype = np.float64 if matrix_a.dtype != matrix_b.dtype or matrix_a.dtype != np.float32 else np.float32
         return _out_matrix((matrix_a.shape[0], matrix_b.shape[1]), final_dtype, out_arr=out)
 
-    matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast, dprint=dprint)
+    matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast)
 
     if sum([_spsparse.isspmatrix(matrix_a), _spsparse.isspmatrix(matrix_b)]) != 1:
         raise ValueError("_sparse_dot_dense takes one sparse and one dense array")

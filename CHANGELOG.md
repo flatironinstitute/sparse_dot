@@ -1,3 +1,9 @@
+### Version 0.7.0
+
+* Added support for block sparse row (BSR) format matrices
+* Added `sparse_dot_mkl.set_debug_mode(True)` as a module-level debug mode flag instead of calling debug mode from 
+`dot_product_mkl`. Added a number of debug messages for troubleshooting during development.
+
 ### Version 0.6.0
 
 * Added an `out` parameter that will add a matrix multiplication to an already-allocated dense array
