@@ -1,3 +1,7 @@
+### Version 0.7.1
+
+* Fixed a bug in sparse * dense multiplication when one of the output array dimensions is 1
+
 ### Version 0.7.0
 
 * Added support for block sparse row (BSR) format matrices
