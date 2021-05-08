@@ -75,7 +75,9 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         self.assertEqual(id(mat3), id(out))
 
     def test_float32_bsr_sparse(self):
-        d1, d2 = self.mat1_d.astype(np.float32), self.mat2.astype(np.float32).tobsr(blocksize=(10, 10))
+
+        bs = min(*self.mat2.shape, 10)
+        d1, d2 = self.mat1_d.astype(np.float32), self.mat2.astype(np.float32).tobsr(blocksize=(bs, bs))
         mat3_np = np.dot(d1, d2.A)
 
         mat3 = dot_product_mkl(d1, d2)
@@ -103,7 +105,8 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         self.assertEqual(id(mat3), id(out))
 
     def test_float64_bsr_sparse(self):
-        d1, d2 = self.mat1_d, self.mat2.tobsr(blocksize=(10, 10))
+        bs = min(*self.mat2.shape, 10)
+        d1, d2 = self.mat1_d, self.mat2.tobsr(blocksize=(bs, bs))
 
         mat3 = dot_product_mkl(d1, d2)
         mat3_np = np.dot(d1, d2.A)
@@ -131,7 +134,9 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         self.assertEqual(id(mat3), id(out))
 
     def test_float64_cast_bsr_sparse(self):
-        d1, d2 = self.mat1_d.astype(np.float32), self.mat2.tobsr(blocksize=(10, 10))
+
+        bs = min(*self.mat2.shape, 10)
+        d1, d2 = self.mat1_d.astype(np.float32), self.mat2.tobsr(blocksize=(bs, bs))
 
         mat3 = dot_product_mkl(d1, d2, cast=True)
         mat3_np = np.dot(d1, d2.A)
@@ -185,7 +190,9 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         self.assertEqual(id(mat3), id(out))
 
     def test_float64_a_bsr_sparse(self):
-        d1, d2 = self.mat1.tobsr(blocksize=(10, 10)), self.mat2_d
+
+        bs = min(*self.mat1.shape, 10)
+        d1, d2 = self.mat1.tobsr(blocksize=(bs, bs)), self.mat2_d
 
         mat3 = dot_product_mkl(d1, d2)
         mat3_np = np.dot(d1.A, d2)
@@ -213,7 +220,9 @@ class TestSparseDenseMultiplication(unittest.TestCase):
         self.assertEqual(id(mat3), id(out))
 
     def test_float32_a_bsr_sparse(self):
-        d1, d2 = self.mat1.astype(np.float32).tobsr(blocksize=(10, 10)), self.mat2_d.astype(np.float32)
+
+        bs = min(*self.mat1.shape, 10)
+        d1, d2 = self.mat1.astype(np.float32).tobsr(blocksize=(bs, bs)), self.mat2_d.astype(np.float32)
 
         mat3 = dot_product_mkl(d1, d2)
         mat3_np = np.dot(d1.A, d2)
@@ -241,6 +250,42 @@ class TestSparseDenseMultiplication(unittest.TestCase):
 
 
 class TestSparseDenseFMultiplication(TestSparseDenseMultiplication):
+
+    order = "F"
+
+    def setUp(self):
+        self.mat1 = MATRIX_1.copy()
+        self.mat2 = MATRIX_2.copy()
+
+        self.mat1_d = np.asarray(MATRIX_1.A, order="F")
+        self.mat2_d = np.asarray(MATRIX_2.A, order="F")
+
+
+class TestSparseVectorDenseCMultiplication(TestSparseDenseMultiplication):
+
+    order = "C"
+
+    def setUp(self):
+        self.mat1 = MATRIX_1.copy()[0, :]
+        self.mat2 = MATRIX_2.copy()
+
+        self.mat1_d = np.asarray(MATRIX_1.A, order="C")[0, :].reshape(1, -1)
+        self.mat2_d = np.asarray(MATRIX_2.A, order="C")
+
+
+class TestSparseVector2DenseCMultiplication(TestSparseDenseMultiplication):
+
+    order = "C"
+
+    def setUp(self):
+        self.mat1 = MATRIX_1.copy()
+        self.mat2 = MATRIX_2.copy()[:, 0]
+
+        self.mat1_d = np.asarray(MATRIX_1.A, order="C")
+        self.mat2_d = np.asarray(MATRIX_2.A, order="C")[:, 0].reshape(-1, 1)
+
+
+class TestSparseVectorDenseFMultiplication(TestSparseDenseMultiplication):
 
     order = "F"
 

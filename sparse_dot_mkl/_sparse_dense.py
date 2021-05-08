@@ -50,7 +50,7 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False, out=Non
     output_arr = _out_matrix(output_shape, output_dtype, order="C" if layout_b == LAYOUT_CODE_C else "F",
                              out_arr=out, out_t=out_t)
 
-    _, output_ld = _get_numpy_layout(output_arr)
+    output_layout, output_ld = _get_numpy_layout(output_arr, second_arr=matrix_b)
 
     ret_val = func(11 if transpose else 10,
                    scalar,
