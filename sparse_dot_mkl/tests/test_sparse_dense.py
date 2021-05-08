@@ -290,8 +290,20 @@ class TestSparseVectorDenseFMultiplication(TestSparseDenseMultiplication):
     order = "F"
 
     def setUp(self):
-        self.mat1 = MATRIX_1.copy()
+        self.mat1 = MATRIX_1.copy()[0, :]
         self.mat2 = MATRIX_2.copy()
 
-        self.mat1_d = np.asarray(MATRIX_1.A, order="F")
+        self.mat1_d = np.asarray(MATRIX_1.A, order="F")[0, :].reshape(1, -1)
         self.mat2_d = np.asarray(MATRIX_2.A, order="F")
+
+
+class TestSparseVector2DenseFMultiplication(TestSparseDenseMultiplication):
+
+    order = "F"
+
+    def setUp(self):
+        self.mat1 = MATRIX_1.copy()
+        self.mat2 = MATRIX_2.copy()[:, 0]
+
+        self.mat1_d = np.asarray(MATRIX_1.A, order="F")
+        self.mat2_d = np.asarray(MATRIX_2.A, order="F")[:, 0].reshape(-1, 1)
