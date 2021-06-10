@@ -202,6 +202,9 @@ class MKL:
     # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-solve
     _mkl_sparse_s_qr_solve = _libmkl.mkl_sparse_s_qr_solve
 
+    # Release internal MKL memory
+    _mkl_free_buffers = _libmkl.MKL_Free_Buffers
+
     @classmethod
     def _set_int_type(cls, c_type, np_type):
         cls.MKL_INT = c_type
@@ -307,6 +310,9 @@ class MKL:
 
         cls._mkl_sparse_s_qr_solve.argtypes = cls._mkl_sparse_qr_solve(_ctypes.c_float)
         cls._mkl_sparse_s_qr_solve.restypes = _ctypes.c_int
+
+        cls._mkl_free_buffers.argtypes = None
+        cls._mkl_free_buffers.restype = None
 
     def __init__(self):
         raise NotImplementedError("This class is not intended to be instanced")
@@ -447,24 +453,6 @@ class MKL:
                 MKL.MKL_INT]
 
 
-# Construct opaque struct & type
-class _sparse_matrix(_ctypes.Structure):
-    pass
-
-
-sparse_matrix_t = _ctypes.POINTER(_sparse_matrix)
-
-
-# Matrix description struct
-class matrix_descr(_ctypes.Structure):
-    _fields_ = [("sparse_matrix_type_t", _ctypes.c_int),
-                ("sparse_fill_mode_t", _ctypes.c_int),
-                ("sparse_diag_type_t", _ctypes.c_int)]
-
-    def __init__(self, sparse_matrix_type_t=20, sparse_fill_mode_t=0, sparse_diag_type_t=0):
-        super(matrix_descr, self).__init__(sparse_matrix_type_t, sparse_fill_mode_t, sparse_diag_type_t)
-
-
 # Define standard return codes
 RETURN_CODES = {0: "SPARSE_STATUS_SUCCESS",
                 1: "SPARSE_STATUS_NOT_INITIALIZED",
@@ -485,6 +473,43 @@ SPARSE_OPERATION_TRANSPOSE = 11
 # Define index codes
 SPARSE_INDEX_BASE_ZERO = 0
 SPARSE_INDEX_BASE_ONE = 1
+
+# Define matrix fill codes
+SPARSE_MATRIX_TYPE_GENERAL = 20
+SPARSE_MATRIX_TYPE_SYMMETRIC = 21
+SPARSE_MATRIX_TYPE_HERMITIAN = 22
+SPARSE_MATRIX_TYPE_TRIANGULAR = 23
+SPARSE_MATRIX_TYPE_DIAGONAL = 24
+SPARSE_MATRIX_TYPE_BLOCK_TRIANGULAR = 25
+SPARSE_MATRIX_TYPE_BLOCK_DIAGONAL = 26
+
+SPARSE_FILL_MODE_LOWER = 40
+SPARSE_FILL_MODE_UPPER = 41
+SPARSE_FILL_MODE_FULL = 42
+
+SPARSE_DIAG_NON_UNIT = 50
+SPARSE_DIAG_UNIT = 51
+
+# Construct opaque struct & type
+class _sparse_matrix(_ctypes.Structure):
+    pass
+
+
+sparse_matrix_t = _ctypes.POINTER(_sparse_matrix)
+
+
+# Matrix description struct
+class matrix_descr(_ctypes.Structure):
+    _fields_ = [("sparse_matrix_type_t", _ctypes.c_int),
+                ("sparse_fill_mode_t", _ctypes.c_int),
+                ("sparse_diag_type_t", _ctypes.c_int)]
+
+    def __init__(self, sparse_matrix_type_t=SPARSE_MATRIX_TYPE_GENERAL,
+                 sparse_fill_mode_t=0,
+                 sparse_diag_type_t=0):
+
+        super(matrix_descr, self).__init__(sparse_matrix_type_t, sparse_fill_mode_t, sparse_diag_type_t)
+
 
 # ILP64 message
 ILP64_MSG = " Try changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
