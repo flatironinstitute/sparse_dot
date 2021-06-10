@@ -1,24 +1,25 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
                                            _destroy_mkl_handle, matrix_descr, RETURN_CODES, _is_dense_vector,
-                                           _out_matrix, _check_return_value, _is_allowed_sparse_format)
+                                           _out_matrix, _check_return_value, _is_allowed_sparse_format, sparse_matrix_t)
 
 import numpy as np
 import ctypes as _ctypes
 
 
-def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False, out=None, out_scalar=None, out_t=None):
+def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False, out=None, out_scalar=None, out_t=None,
+                              matrix_description=None):
     """
     Multiply together a sparse matrix and a dense vector
 
     :param matrix_a: Left (A) matrix
-    :type matrix_a: sp.spmatrix.csr, sp.spmatrix.csc
+    :type matrix_a: sp.spmatrix.csr, sp.spmatrix.csc, mkl_handle
     :param vector_b: Right (B) vector with shape (N, ) or (N, 1)
     :type vector_b: np.ndarray
     :param scalar: A value to multiply the result matrix by. Defaults to 1.
     :type scalar: float
     :param transpose: Return AT (dot) B instead of A (dot) B.
     :type transpose: bool
-    :param out: Add the dot product to this array if provided.
+    :param out: Add the dot product to this array if provided. Required if a mkl_handle is passed to matrix_a.
     :type out: np.ndarray, None
     :param out_scalar: Multiply the out array by this scalar if provided.
     :type out_scalar: float, None
@@ -26,27 +27,38 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False, ou
     :rtype: np.ndarray
     """
 
-    output_shape = matrix_a.shape[1] if transpose else matrix_a.shape[0]
-    output_shape = (output_shape,) if vector_b.ndim == 1 else (output_shape, 1)
+    if isinstance(matrix_a, sparse_matrix_t) and out is None:
+        raise ValueError("Out must be provided if matrix_a is an MKL handle")
 
-    if _empty_output_check(matrix_a, vector_b):
-        final_dtype = np.float64 if matrix_a.dtype != vector_b.dtype or matrix_a.dtype != np.float32 else np.float32
-        return _out_matrix(output_shape, final_dtype, out_arr=out)
+    elif isinstance(matrix_a, sparse_matrix_t):
+        mkl_a, dbl, destroy_a, output_arr = matrix_a, True, False, out
 
-    mkl_a, dbl = _create_mkl_sparse(matrix_a)
+    else:
+        output_shape = matrix_a.shape[1] if transpose else matrix_a.shape[0]
+        output_shape = (output_shape,) if vector_b.ndim == 1 else (output_shape, 1)
+
+        if _empty_output_check(matrix_a, vector_b):
+            final_dtype = np.float64 if matrix_a.dtype != vector_b.dtype or matrix_a.dtype != np.float32 else np.float32
+            return _out_matrix(output_shape, final_dtype, out_arr=out)
+
+        mkl_a, dbl = _create_mkl_sparse(matrix_a)
+        destroy_a = False
+
+        # Set functions and types for float or doubles
+        output_dtype = np.float64 if dbl else np.float32
+        output_arr = _out_matrix(output_shape, output_dtype, out_arr=out, out_t=out_t)
+
     vector_b = vector_b.ravel()
 
-    # Set functions and types for float or doubles
-    output_ctype = _ctypes.c_double if dbl else _ctypes.c_float
-    output_dtype = np.float64 if dbl else np.float32
     func = MKL._mkl_sparse_d_mv if dbl else MKL._mkl_sparse_s_mv
+    output_ctype = _ctypes.c_double if dbl else _ctypes.c_float
 
-    output_arr = _out_matrix(output_shape, output_dtype, out_arr=out, out_t=out_t)
+    matrix_description = matrix_descr() if matrix_description is None else matrix_description
 
     ret_val = func(11 if transpose else 10,
                    scalar,
                    mkl_a,
-                   matrix_descr(),
+                   matrix_description,
                    vector_b,
                    float(out_scalar) if out_scalar is not None else 1.,
                    output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)))
@@ -54,7 +66,8 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False, ou
     # Check return
     _check_return_value(ret_val, func.__name__)
 
-    _destroy_mkl_handle(mkl_a)
+    if destroy_a:
+        _destroy_mkl_handle(mkl_a)
 
     return output_arr
 
