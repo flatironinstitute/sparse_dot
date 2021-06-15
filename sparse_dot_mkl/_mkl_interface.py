@@ -15,12 +15,17 @@ else:
 _libmkl = None
 try:
     _so_file = _ctypes_util.find_library('mkl_rt')
+
+    if _so_file is None:
+        _so_file = _ctypes_util.find_library('mkl_rt.1')
+
     if _so_file is None:
         # For some reason, find_library is not checking LD_LIBRARY_PATH
         # If the ctypes.util approach doesn't work, try this (crude) approach
 
-        # Check each of these library types
-        for so_file in ["libmkl_rt.so", "libmkl_rt.dylib", "mkl_rt.dll"]:
+        # Check each of these library names
+        # Also include derivatives because windows find_library implementation won't match partials
+        for so_file in ["libmkl_rt.so", "libmkl_rt.dylib", "mkl_rt.dll", "mkl_rt.1.dll"]:
             try:
                 _libmkl = _ctypes.cdll.LoadLibrary(so_file)
                 break
