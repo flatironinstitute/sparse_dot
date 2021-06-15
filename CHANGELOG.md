@@ -1,3 +1,8 @@
+### Version 0.7.2
+
+* Corrected ImportError on windows with oneMKL by explicitly library searching for mkl_rt.1.dll
+* Switched test runner from nose to pytest
+
 ### Version 0.7.1
 
 * Fixed a bug in sparse * dense multiplication when one of the output array dimensions is 1

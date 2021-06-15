@@ -28,11 +28,11 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION mkl scikit-learn
   - conda activate test-environment
   - conda list
-  - python -m pip install nose
+  - python -m pip install pytest
   - python -m pip install codecov
   - python setup.py install
 script:
-  - python -m coverage run setup.py test
+  - python -m coverage run -m pytest
 after_success:
   - codecov
 after_failure:
