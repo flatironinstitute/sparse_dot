@@ -3,7 +3,7 @@ from sparse_dot_mkl._sparse_dense import _sparse_dot_dense as _sdd
 from sparse_dot_mkl._dense_dense import _dense_dot_dense as _ddd
 from sparse_dot_mkl._sparse_vector import _sparse_dot_vector as _sdv
 from sparse_dot_mkl._gram_matrix import _gram_matrix as _gm
-from sparse_dot_mkl._sparse_qr_solver import sparse_qr_solver as _qrs
+from sparse_dot_mkl.linalg._sparse_qr_solver import sparse_qr_solver as _qrs
 from sparse_dot_mkl._mkl_interface import print_mkl_debug, _is_dense_vector, set_debug_mode, get_version_string
 import scipy.sparse as _spsparse
 import numpy as _np

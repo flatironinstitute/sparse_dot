@@ -4,8 +4,8 @@ import numpy.testing as npt
 import scipy.sparse as _spsparse
 from scipy.sparse.csr import csr_matrix
 from sparse_dot_mkl._mkl_interface import SPARSE_FILL_MODE_UPPER, SPARSE_DIAG_NON_UNIT, SPARSE_MATRIX_TYPE_SYMMETRIC
-from sparse_dot_mkl.iterative_sparse_solver import CGIterativeSparseSolver
-from sparse_dot_mkl.iterative_sparse_solver import FGMRESIterativeSparseSolver
+from sparse_dot_mkl.linalg import CGIterativeSparseSolver, cg
+from sparse_dot_mkl.linalg import FGMRESIterativeSparseSolver, gmres
 from sparse_dot_mkl.tests.test_mkl import MATRIX_1
 
 test_rhs = np.zeros(8, dtype=float)
@@ -52,6 +52,18 @@ class TestSparseSolverCG(unittest.TestCase):
         npt.assert_array_equal(test_rhs, self.mat2)
         npt.assert_array_almost_equal(x, mat3)
 
+    def test_cg_wrapper_square_perfect(self):
+
+        mat3 = np.linalg.lstsq(self.mat1.A, test_rhs, rcond=None)[0]
+
+        x, _code = cg(self.mat1, self.mat2)
+
+        self.assertEqual(_code, 0)
+
+        npt.assert_array_equal(test_matrix.A, self.mat1.A)
+        npt.assert_array_equal(test_rhs, self.mat2)
+        npt.assert_array_almost_equal(x, mat3)
+
 class TestSparseSolverFGMRES(unittest.TestCase):
 
     def setUp(self):
@@ -62,10 +74,23 @@ class TestSparseSolverFGMRES(unittest.TestCase):
     def test_fgmres_solver_square_perfect(self):
         mat3 = np.linalg.lstsq(self.mat1.A, test_rhs, rcond=None)[0]
 
-        with FGMRESIterativeSparseSolver(self.mat1, self.mat2, x=self.mat3, verbose=False) as cg_solver:
-            cg_solver.set_sparse_matrix_descr(SPARSE_MATRIX_TYPE_SYMMETRIC, SPARSE_FILL_MODE_UPPER, SPARSE_DIAG_NON_UNIT)
-            x = cg_solver.solve()
+        with FGMRESIterativeSparseSolver(self.mat1, self.mat2, x=self.mat3, verbose=False) as fgmres_solver:
+            fgmres_solver.set_sparse_matrix_descr(SPARSE_MATRIX_TYPE_SYMMETRIC, SPARSE_FILL_MODE_UPPER, SPARSE_DIAG_NON_UNIT)
+            x = fgmres_solver.solve()
 
         npt.assert_array_equal(test_matrix.A, self.mat1.A)
         npt.assert_array_equal(test_rhs, self.mat2)
         npt.assert_array_almost_equal(x, mat3)
+
+    def test_fgmres_wrapper_square_perfect(self):
+
+        mat3 = np.linalg.lstsq(self.mat1.A, test_rhs, rcond=None)[0]
+
+        x, _code = gmres(self.mat1, self.mat2)
+
+        self.assertEqual(_code, 0)
+
+        npt.assert_array_equal(test_matrix.A, self.mat1.A)
+        npt.assert_array_equal(test_rhs, self.mat2)
+        npt.assert_array_almost_equal(x, mat3)
+

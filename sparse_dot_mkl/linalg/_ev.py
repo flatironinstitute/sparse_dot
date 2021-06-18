@@ -4,18 +4,12 @@ import scipy.sparse as _sps
 import warnings
 import math
 
-from sparse_dot_mkl._mkl_interface import _create_mkl_sparse, _destroy_mkl_handle, MKL, matrix_descr, _check_return_value
+from sparse_dot_mkl._mkl_interface import _create_mkl_sparse, _destroy_mkl_handle, MKL, matrix_descr, _check_return_value, _order_mkl_handle
 from sparse_dot_mkl.linalg._eigen import _MKL_Eigen
-
-KS_MESSAGES = {
-    -1: "maximum number of iterations has been reached and even the residual norm estimates have not converged",
-    -2: "maximum number of iterations has been reached despite the residual norm estimates have converged (but the true residuals for eigenpairs have not)",
-    -3: "the iterations stagnated and even the residual norm estimates have not converged",
-    -4: "the iterations stagnated while the eigenvalues have converged (but the true residuals for eigenpairs do not)."
-}
+from sparse_dot_mkl.linalg._svd import KS_MESSAGES
 
 
-def _mkl_svd(A, k, whichS="L", whichV="L", solver=None, max_iter=None, E=None, ncv=None, tol=None):
+def _mkl_ev(A, k, which="L", solver=None, max_iter=None, E=None, ncv=None, tol=None):
 
     if not (_sps.isspmatrix_csr(A) or _sps.isspmatrix_bsr(A)):
         _msg = "A must be CSR or BSR format; {t} provided".format(t=type(A))
@@ -47,43 +41,30 @@ def _mkl_svd(A, k, whichS="L", whichV="L", solver=None, max_iter=None, E=None, n
     if max_iter is not None:
         pm[4] = int(ncv)
 
-    # If whichV is None, turn off calculating vectors
-    if whichV is None:
-        pm[6] = 0
-        whichV = "L"
-
-    # Change testing from normed to true residuals if looking for small vectors
-    #if whichS == "S":
-    #    pm[7], pm[8] = 1, 1
-
-
     mkl_A, is_double = _create_mkl_sparse(A)
     mkl_A_desc = matrix_descr()
-
+   
     # Convert char args to ctypes
-    whichS, whichV = _ctypes.c_char(whichS.encode('utf-8')), _ctypes.c_char(whichV.encode('utf-8'))
+    which = _ctypes.c_char(which.encode('utf-8'))
 
-    mkl_func = _MKL_Eigen._mkl_sparse_d_svd if is_double else _MKL_Eigen._mkl_sparse_s_svd
+    mkl_func = _MKL_Eigen._mkl_sparse_d_ev if is_double else _MKL_Eigen._mkl_sparse_s_ev
     output_dtype = np.float64 if is_double else np.float32
 
     # Allocate output arrays
     E = np.zeros((k, ), dtype=output_dtype) if E is None else E
-    XL = np.zeros((A.shape[0], k), dtype=output_dtype, order="F")
-    XR = np.zeros((k, A.shape[1]), dtype=output_dtype)
+    X = np.zeros((A.shape[1], k), dtype=output_dtype, order="F")
     Res = np.zeros((k, ), dtype=output_dtype)
 
     k_found = MKL.MKL_INT(0)
 
-    return_status = mkl_func(_ctypes.byref(whichS),
-                             _ctypes.byref(whichV),
+    return_status = mkl_func(_ctypes.byref(which),
                              pm,
                              mkl_A,
                              mkl_A_desc,
                              k,
                              _ctypes.byref(k_found),
                              E,
-                             XL,
-                             XR,
+                             X,
                              Res)
 
     _check_return_value(return_status, mkl_func.__name__)
@@ -94,12 +75,13 @@ def _mkl_svd(A, k, whichS="L", whichV="L", solver=None, max_iter=None, E=None, n
         _msg = "Krylov-Schur returned {v}: {mg}".format(v=pm[9], mg=KS_MESSAGES[pm[9]])
         warnings.warn(_msg, RuntimeWarning)
 
-    return E, XL, XR, Res, k_found.value
+    return E, X, Res, k_found.value
 
 
-def svds(A, k=6, ncv=None, tol=0, which='LM', v0=None, maxiter=None, return_singular_vectors="u", solver=None):
+def eigs(A, k=6, M=None, sigma=None, which='LM', v0=None, ncv=None, maxiter=None, tol=0, return_eigenvectors=True,
+         Minv=None, OPinv=None, OPpart=None):
     """
-    Compute the largest or smallest k singular values/vectors for a sparse matrix
+    Compute the largest or smallest k eigenvalues & eigenvectors
 
     :param A: Sparse matrix in CSR or BSR format
     :type A: scipy.sprse.spmatrix
@@ -123,28 +105,24 @@ def svds(A, k=6, ncv=None, tol=0, which='LM', v0=None, maxiter=None, return_sing
     :type return_singular_vectors: bool, str, optional
     :param solver: Unused, defaults to None.
     :type solver: str, optional
+    :param sigma: Unused
+    :type sigma: float, optional
+    :param Minv: Unused
+    :type Minv: ndarray, sparse matrix or LinearOperator, optional
+    :param OPinv: Unused
+    :type OPinv: ndarray, sparse matrix or LinearOperator, optional
+    :param OPpart: Unused
+    :type OPpart: str, optional
+
     """
 
     # Switch for which flag
     if which == "LM":
-        whichS = "L"
+        which = "L"
     elif which == "SM":
-        whichS = "S"
+        which = "S"
     else:
         _msg = "which argument must be LM or SM; {v} passed".format(v=which)
-        raise ValueError(_msg)
-
-    if return_singular_vectors == "u":
-        whichV = "L"
-    elif return_singular_vectors == "vh":
-        whichV = "R"
-    elif return_singular_vectors is True:
-        whichV = "L"
-        warnings.warn("svds does not support returning u and vh; only u will be returned", RuntimeWarning)
-    elif return_singular_vectors is False:
-        whichV = None
-    else:
-        _msg = "return_singular_vectors argument must be u or vh; {v} passed".format(v=return_singular_vectors)
         raise ValueError(_msg)
 
     if tol == 0:
@@ -152,14 +130,9 @@ def svds(A, k=6, ncv=None, tol=0, which='LM', v0=None, maxiter=None, return_sing
     else:
         tol = abs(round(math.frexp(tol)[1] / math.log(10, 2)))
 
-    E, XL, XR, Res, k_found = _mkl_svd(A, k, whichS=whichS, whichV = whichV, ncv=ncv, max_iter=maxiter, E=v0, tol=tol)
+    E, X, Res, k_found = _mkl_ev(A, k, which=which, ncv=ncv, max_iter=maxiter, E=v0, tol=tol)
 
-    # Matching undocumented scipy behavior
-    if whichV is None and not return_singular_vectors:
+    if return_eigenvectors:
+        return E, X
+    else:
         return E
-
-    # Matching documented scipy behavior
-    elif whichV == "L":
-        return XL, E, None
-    elif whichV == "R":
-        return None, E, XR

@@ -15,6 +15,11 @@ class _MKL_Eigen:
     _mkl_sparse_d_svd = _libmkl.mkl_sparse_d_svd
     _mkl_sparse_ee_init = _libmkl.mkl_sparse_ee_init
 
+    # Eigensolver
+    # https://software.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-c/top/extended-eigensolver-routines/extended-eigensolver-interfaces-for-extremal-eigenvalues-singular-values/extended-eigensolver-interfaces-to-find-largest-smallest-eigenvalues/mkl-sparse-ev.html
+    _mkl_sparse_s_ev = _libmkl.mkl_sparse_s_ev
+    _mkl_sparse_d_ev = _libmkl.mkl_sparse_d_ev
+
     @classmethod
     def _set_int_type(cls):
         
@@ -27,6 +32,12 @@ class _MKL_Eigen:
         cls._mkl_sparse_ee_init.argtypes = [ndpointer(shape=(128,), ndim=1, dtype=MKL.MKL_INT_NUMPY)]
         cls._mkl_sparse_ee_init.restype = None
 
+        cls._mkl_sparse_s_ev.argtypes = cls._set_ev_argtypes(_ctypes.c_float) 
+        cls._mkl_sparse_s_ev.restype = _ctypes.c_int
+
+        cls._mkl_sparse_d_ev.argtypes = cls._set_ev_argtypes(_ctypes.c_double) 
+        cls._mkl_sparse_d_ev.restype = _ctypes.c_int
+
     @staticmethod
     def _set_svd_argtypes(prec):
         return [_ctypes.POINTER(_ctypes.c_char),
@@ -35,9 +46,21 @@ class _MKL_Eigen:
                 sparse_matrix_t,
                 matrix_descr,
                 MKL.MKL_INT,
-                ndpointer(dtype=MKL.MKL_INT_NUMPY, ndim=1, shape=(1, ), flags="CONTIGUOUS"),
+                _ctypes.POINTER(MKL.MKL_INT),
                 ndpointer(dtype=prec, ndim=1, flags="CONTIGUOUS"),
                 ndpointer(dtype=prec, ndim=2),
+                ndpointer(dtype=prec, ndim=2),
+                ndpointer(dtype=prec, ndim=1, flags="CONTIGUOUS")]
+
+    @staticmethod
+    def _set_ev_argtypes(prec):
+        return [_ctypes.POINTER(_ctypes.c_char),
+                ndpointer(dtype=MKL.MKL_INT_NUMPY, ndim=1, shape=(128, ), flags="CONTIGUOUS"),
+                sparse_matrix_t,
+                matrix_descr,
+                MKL.MKL_INT,
+                _ctypes.POINTER(MKL.MKL_INT),
+                ndpointer(dtype=prec, ndim=1, flags="CONTIGUOUS"),
                 ndpointer(dtype=prec, ndim=2),
                 ndpointer(dtype=prec, ndim=1, flags="CONTIGUOUS")]
 
