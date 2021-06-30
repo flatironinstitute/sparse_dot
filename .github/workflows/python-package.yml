@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Inferelator CI
+name: sparse_dot_mkl CI
 
 on: [push, pull_request]
 
@@ -14,13 +14,23 @@ jobs:
       matrix:
         python-version: [3.7, 3.8, 3.9]
         os: [macos-latest, windows-latest, ubuntu-latest]
+        include:
+        - os: ubuntu-latest
+          CONDA_PATH: $CONDA/bin
+          CONDA_CMD: $CONDA/bin/conda
+        - os: macos-latest
+          CONDA_PATH: $CONDA/bin
+          CONDA_CMD: $CONDA/bin/conda
+        - os: windows-latest
+          CONDA_PATH: $CONDA\bin
+          CONDA_CMD: $CONDA\bin\conda
 
     steps:
     - uses: actions/checkout@v2
     - name: Install conda python & MKL
       run: |
-        echo $CONDA/bin >> $GITHUB_PATH
-        $CONDA/bin/conda install mkl python=${{ matrix.python-version }} 
+        echo ${{matrix.CONDA_PATH}} >> $GITHUB_PATH
+        ${{matrix.CONDA_CMD}} install mkl python=${{ matrix.python-version }} 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
