@@ -8,7 +8,7 @@ on: [push, pull_request]
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, windows-latest, macos-latest]
     strategy:
       fail-fast: false
       matrix:
@@ -22,7 +22,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install MKL
       run: |
-        $CONDA/bin/conda env update mkl --name base
+        $CONDA/bin/conda update mkl --name base
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
