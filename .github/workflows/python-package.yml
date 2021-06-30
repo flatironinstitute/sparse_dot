@@ -19,7 +19,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install conda python & MKL
       run: |
-        $CONDA/bin/conda conda create --name sparse-test mkl python=${{ matrix.python-version }} 
+        $CONDA/bin/conda create --name sparse-test mkl python=${{ matrix.python-version }} 
     - name: Install dependencies
       run: |
         $CONDA/bin/conda activate sparse-test
