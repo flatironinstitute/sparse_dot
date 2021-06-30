@@ -1,2 +1,4 @@
 codecov:
   branch: release
+ignore:
+  - "*/tests/*”
