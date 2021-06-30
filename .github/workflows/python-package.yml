@@ -17,15 +17,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install MKL
+    - name: Install conda python & MKL
       run: |
-        $CONDA/bin/conda install mkl --name base
+        $CONDA/bin/conda conda create --name sparse-test mkl python=${{ matrix.python-version }} 
     - name: Install dependencies
       run: |
+        $CONDA/bin/conda activate sparse-test
         python -m pip install --upgrade pip
         python -m pip install --upgrade numpy scipy pytest coverage
     - name: Test with pytest & coverage
