@@ -1,5 +1,5 @@
 # sparse_dot_mkl
-[![Build Status](https://travis-ci.org/flatironinstitute/sparse_dot.svg?branch=release)](https://travis-ci.org/flatironinstitute/sparse_dot)
+[![Build Status](https://github.com/flatironinstitute/sparse_dot/actions/workflows/python-package.yml/badge.svg)](https://github.com/flatironinstitute/sparse_dot/actions/workflows/python-package.yml/)
 [![codecov](https://codecov.io/gh/flatironinstitute/sparse_dot/branch/release/graph/badge.svg)](https://codecov.io/gh/flatironinstitute/sparse_dot)
 [![PyPI version](https://badge.fury.io/py/sparse-dot-mkl.svg)](https://badge.fury.io/py/sparse-dot-mkl)
 [![Conda version](https://anaconda.org/conda-forge/sparse_dot_mkl/badges/version.svg)](https://anaconda.org/conda-forge/sparse_dot_mkl)
