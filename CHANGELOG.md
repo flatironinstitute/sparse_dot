@@ -1,3 +1,8 @@
+### Version 0.7.3
+
+* Fixed a memory leak when a CSC matrix was multiplied by a dense matrix in column-major format
+* Switched continuous integration from Travis to Github Actions
+
 ### Version 0.7.2
 
 * Corrected ImportError on windows with oneMKL by explicitly library searching for mkl_rt.1.dll
