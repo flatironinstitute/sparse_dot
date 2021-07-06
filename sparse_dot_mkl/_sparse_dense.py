@@ -30,46 +30,54 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False, out=Non
     :rtype: np.ndarray
     """
 
+    _mkl_handles = []
+
     output_shape = (matrix_a.shape[1] if transpose else matrix_a.shape[0], matrix_b.shape[1])
     layout_b, ld_b = _get_numpy_layout(matrix_b, second_arr=out)
 
-    # Prep MKL handles and check that matrixes are compatible types
-    # MKL requires CSR format if the dense array is column-major
-    if layout_b == LAYOUT_CODE_F and not _spsparse.isspmatrix_csr(matrix_a):
-        mkl_non_csr, dbl = _create_mkl_sparse(matrix_a)
-        mkl_a = _convert_to_csr(mkl_non_csr)
-    else:
-        mkl_a, dbl = _create_mkl_sparse(matrix_a)
+    try:
+        # Prep MKL handles and check that matrixes are compatible types
+        # MKL requires CSR format if the dense array is column-major
+        if layout_b == LAYOUT_CODE_F and not _spsparse.isspmatrix_csr(matrix_a):
+            mkl_non_csr, dbl = _create_mkl_sparse(matrix_a)
+            _mkl_handles.append(mkl_non_csr)
+            mkl_a = _convert_to_csr(mkl_non_csr)
+        else:
+            mkl_a, dbl = _create_mkl_sparse(matrix_a)
 
-    # Set functions and types for float or doubles
-    output_ctype = _ctypes.c_double if dbl else _ctypes.c_float
-    output_dtype = np.float64 if dbl else np.float32
-    func = MKL._mkl_sparse_d_mm if dbl else MKL._mkl_sparse_s_mm
+        _mkl_handles.append(mkl_a)
 
-    # Allocate an output array
-    output_arr = _out_matrix(output_shape, output_dtype, order="C" if layout_b == LAYOUT_CODE_C else "F",
-                             out_arr=out, out_t=out_t)
+        # Set functions and types for float or doubles
+        output_ctype = _ctypes.c_double if dbl else _ctypes.c_float
+        output_dtype = np.float64 if dbl else np.float32
+        func = MKL._mkl_sparse_d_mm if dbl else MKL._mkl_sparse_s_mm
 
-    output_layout, output_ld = _get_numpy_layout(output_arr, second_arr=matrix_b)
+        # Allocate an output array
+        output_arr = _out_matrix(output_shape, output_dtype, order="C" if layout_b == LAYOUT_CODE_C else "F",
+                                out_arr=out, out_t=out_t)
 
-    ret_val = func(11 if transpose else 10,
-                   scalar,
-                   mkl_a,
-                   matrix_descr(),
-                   layout_b,
-                   matrix_b,
-                   output_shape[1],
-                   ld_b,
-                   float(out_scalar) if out_scalar is not None else 1.,
-                   output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
-                   output_ld)
+        output_layout, output_ld = _get_numpy_layout(output_arr, second_arr=matrix_b)
 
-    # Check return
-    _check_return_value(ret_val, func.__name__)
+        ret_val = func(11 if transpose else 10,
+                    scalar,
+                    mkl_a,
+                    matrix_descr(),
+                    layout_b,
+                    matrix_b,
+                    output_shape[1],
+                    ld_b,
+                    float(out_scalar) if out_scalar is not None else 1.,
+                    output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
+                    output_ld)
 
-    _destroy_mkl_handle(mkl_a)
+        # Check return
+        _check_return_value(ret_val, func.__name__)
 
-    return output_arr
+        return output_arr
+
+    finally:
+        for _mhandle in _mkl_handles:
+            _destroy_mkl_handle(_mhandle)
 
 
 def _sparse_dot_dense(matrix_a, matrix_b, cast=False, scalar=1., out=None, out_scalar=None):
