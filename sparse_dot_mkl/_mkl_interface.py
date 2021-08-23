@@ -44,13 +44,17 @@ except (OSError, ImportError) as err:
 # Since it's not on PyPi I don't want to make this an actual package dependency
 # So without it just create mock functions and don't do version checking
 try:
-    from mkl import get_version, get_version_string
+    from mkl import get_version, get_version_string, get_max_threads
 except ImportError:
     def get_version():
         return None
 
 
     def get_version_string():
+        return None
+
+    
+    def get_max_threads():
         return None
 
 if get_version() is not None and get_version()["MajorVersion"] < 2020:
@@ -518,6 +522,7 @@ def print_mkl_debug():
         print("mkl-service must be installed to get full debug messaging")
     else:
         print(get_version_string())
+        print("MKL Number of Threads: {n}".format(n=get_max_threads()))
 
     print("MKL linked: {fn}".format(fn=_libmkl._name))
     print("MKL interface {np} | {c}".format(np=MKL.MKL_INT_NUMPY, c=MKL.MKL_INT))
