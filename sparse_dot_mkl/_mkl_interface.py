@@ -66,7 +66,7 @@ import scipy.sparse as _spsparse
 from numpy.ctypeslib import ndpointer, as_array
 
 NUMPY_FLOAT_DTYPES = [np.float32, np.float64]
-
+NUMPY_COMPLEX_DTYPES = [np.csingle, np.cdouble]
 
 class MKL:
     """ This class holds shared object references to C functions with arg and returntypes that can be adjusted"""
@@ -76,139 +76,101 @@ class MKL:
     MKL_DEBUG = False
 
     # Import function for creating a MKL CSR object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-csr
     _mkl_sparse_d_create_csr = _libmkl.mkl_sparse_d_create_csr
-
-    # Import function for creating a MKL CSR object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-csr
     _mkl_sparse_s_create_csr = _libmkl.mkl_sparse_s_create_csr
+    _mkl_sparse_c_create_csr = _libmkl.mkl_sparse_c_create_csr
+    _mkl_sparse_z_create_csr = _libmkl.mkl_sparse_z_create_csr
 
     # Import function for creating a MKL CSC object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-csc
     _mkl_sparse_d_create_csc = _libmkl.mkl_sparse_d_create_csc
-
-    # Import function for creating a MKL CSC object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-csc
     _mkl_sparse_s_create_csc = _libmkl.mkl_sparse_s_create_csc
+    _mkl_sparse_c_create_csc = _libmkl.mkl_sparse_c_create_csc
+    _mkl_sparse_z_create_csc = _libmkl.mkl_sparse_z_create_csc
 
     # Import function for creating a MKL BSR object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-bsr
     _mkl_sparse_d_create_bsr = _libmkl.mkl_sparse_d_create_bsr
-
-    # Import function for creating a MKL BSR object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-create-bsr
     _mkl_sparse_s_create_bsr = _libmkl.mkl_sparse_s_create_bsr
+    _mkl_sparse_c_create_bsr = _libmkl.mkl_sparse_c_create_bsr
+    _mkl_sparse_z_create_bsr = _libmkl.mkl_sparse_z_create_bsr
 
     # Export function for exporting a MKL CSR object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-csr
     _mkl_sparse_d_export_csr = _libmkl.mkl_sparse_d_export_csr
-
-    # Export function for exporting a MKL CSR object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-csr
     _mkl_sparse_s_export_csr = _libmkl.mkl_sparse_s_export_csr
+    _mkl_sparse_c_export_csr = _libmkl.mkl_sparse_c_export_csr
+    _mkl_sparse_z_export_csr = _libmkl.mkl_sparse_z_export_csr
 
     # Export function for exporting a MKL CSC object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-csc
     _mkl_sparse_d_export_csc = _libmkl.mkl_sparse_d_export_csc
-
-    # Export function for exporting a MKL CSC object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-csc
     _mkl_sparse_s_export_csc = _libmkl.mkl_sparse_s_export_csc
+    _mkl_sparse_z_export_csc = _libmkl.mkl_sparse_z_export_csc
+    _mkl_sparse_c_export_csc = _libmkl.mkl_sparse_c_export_csc
 
     # Export function for exporting a MKL BSR object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-bsr
     _mkl_sparse_d_export_bsr = _libmkl.mkl_sparse_d_export_bsr
-
-    # Export function for exporting a MKL BSR object
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-export-bsr
     _mkl_sparse_s_export_bsr = _libmkl.mkl_sparse_s_export_bsr
+    _mkl_sparse_c_export_bsr = _libmkl.mkl_sparse_c_export_bsr
+    _mkl_sparse_z_export_bsr = _libmkl.mkl_sparse_z_export_bsr
 
     # Import function for matmul
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-spmm
     _mkl_sparse_spmm = _libmkl.mkl_sparse_spmm
 
     # Import function for cleaning up MKL objects
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-destroy
     _mkl_sparse_destroy = _libmkl.mkl_sparse_destroy
 
     # Import function for ordering MKL objects
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-order
     _mkl_sparse_order = _libmkl.mkl_sparse_order
 
     # Import function for coverting to CSR
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-convert-csr
     _mkl_sparse_convert_csr = _libmkl.mkl_sparse_convert_csr
 
     # Import function for matmul single dense
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-spmm
     _mkl_sparse_s_spmmd = _libmkl.mkl_sparse_s_spmmd
-
-    # Import function for matmul double dense
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-spmm
     _mkl_sparse_d_spmmd = _libmkl.mkl_sparse_d_spmmd
+    _mkl_sparse_c_spmmd = _libmkl.mkl_sparse_c_spmmd
+    _mkl_sparse_z_spmmd = _libmkl.mkl_sparse_z_spmmd
 
     # Import function for matmul single sparse*dense
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-mm
     _mkl_sparse_s_mm = _libmkl.mkl_sparse_s_mm
-
-    # Import function for matmul double sparse*dense
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-mm
     _mkl_sparse_d_mm = _libmkl.mkl_sparse_d_mm
+    _mkl_sparse_c_mm = _libmkl.mkl_sparse_c_mm
+    _mkl_sparse_z_mm = _libmkl.mkl_sparse_z_mm
 
-    # Import function for matmul single dense*dense
-    # https://software.intel.com/en-us/mkl-developer-reference-c-cblas-gemm
+    # Import function for matmul dense*dense
     _cblas_sgemm = _libmkl.cblas_sgemm
-
-    # Import function for matmul double dense*dense
-    # https://software.intel.com/en-us/mkl-developer-reference-c-cblas-gemm
     _cblas_dgemm = _libmkl.cblas_dgemm
+    _cblas_cgemm = _libmkl.cblas_cgemm
+    _cblas_zgemm = _libmkl.cblas_zgemm
 
     # Import function for matrix * vector
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-mv
     _mkl_sparse_s_mv = _libmkl.mkl_sparse_s_mv
-
-    # Import function for matrix * vector
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-mv
     _mkl_sparse_d_mv = _libmkl.mkl_sparse_d_mv
-
+    _mkl_sparse_c_mv = _libmkl.mkl_sparse_c_mv
+    _mkl_sparse_z_mv = _libmkl.mkl_sparse_z_mv
+    
     # Import function for sparse gram matrix
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-syrk
     _mkl_sparse_syrk = _libmkl.mkl_sparse_syrk
 
     # Import function for dense single gram matrix from sparse
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-syrkd
     _mkl_sparse_s_syrkd = _libmkl.mkl_sparse_s_syrkd
-
-    # Import function for dense double gram matrix from sparse
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-syrkd
     _mkl_sparse_d_syrkd = _libmkl.mkl_sparse_d_syrkd
+    _mkl_sparse_c_syrkd = _libmkl.mkl_sparse_c_syrkd
+    _mkl_sparse_z_syrkd = _libmkl.mkl_sparse_z_syrkd
 
     # Import function for dense single gram matrix
-    # https://software.intel.com/en-us/mkl-developer-reference-c-cblas-syrk
     _cblas_ssyrk = _libmkl.cblas_ssyrk
-
-    # Import function for dense double gram matrix
-    # https://software.intel.com/en-us/mkl-developer-reference-c-cblas-syrk
     _cblas_dsyrk = _libmkl.cblas_dsyrk
+    _cblas_csyrk = _libmkl.cblas_csyrk
+    _cblas_zsyrk = _libmkl.cblas_zsyrk
 
     # Import function for QR solver - reorder
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-reorder
     _mkl_sparse_qr_reorder = _libmkl.mkl_sparse_qr_reorder
 
     # Import function for QR solver - factorize
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-factorize
     _mkl_sparse_d_qr_factorize = _libmkl.mkl_sparse_d_qr_factorize
-
-    # Import function for QR solver - factorize
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-factorize
     _mkl_sparse_s_qr_factorize = _libmkl.mkl_sparse_s_qr_factorize
 
     # Import function for QR solver - solve
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-solve
     _mkl_sparse_d_qr_solve = _libmkl.mkl_sparse_d_qr_solve
-
-    # Import function for QR solver - solve
-    # https://software.intel.com/en-us/mkl-developer-reference-c-mkl-sparse-qr-solve
     _mkl_sparse_s_qr_solve = _libmkl.mkl_sparse_s_qr_solve
 
     @classmethod
@@ -216,39 +178,77 @@ class MKL:
         cls.MKL_INT = c_type
         cls.MKL_INT_NUMPY = np_type
 
+        cls._set_int_type_create()
+        cls._set_int_type_export()
+        cls._set_int_type_sparse_matmul()
+        cls._set_int_type_dense_matmul()
+        cls._set_int_type_vector_mul()
+        cls._set_int_type_qr_solver()
+        cls._set_int_type_misc()
+
+    @classmethod
+    def _set_int_type_create(cls):
+        """Set the correct argtypes for handle creation functions"""
         cls._mkl_sparse_d_create_csr.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_create_csr.restypes = _ctypes.c_int
-
         cls._mkl_sparse_s_create_csr.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_create_csr.restypes = _ctypes.c_int
+        cls._mkl_sparse_c_create_csr.argtypes = cls._mkl_sparse_create_argtypes(np.csingle)
+        cls._mkl_sparse_c_create_csr.restypes = _ctypes.c_int
+        cls._mkl_sparse_z_create_csr.argtypes = cls._mkl_sparse_create_argtypes(np.cdouble)
+        cls._mkl_sparse_z_create_csr.restypes = _ctypes.c_int
 
         cls._mkl_sparse_d_create_csc.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_create_csc.restypes = _ctypes.c_int
-
         cls._mkl_sparse_s_create_csc.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_create_csc.restypes = _ctypes.c_int
+        cls._mkl_sparse_c_create_csc.argtypes = cls._mkl_sparse_create_argtypes(np.csingle)
+        cls._mkl_sparse_c_create_csc.restypes = _ctypes.c_int
+        cls._mkl_sparse_z_create_csc.argtypes = cls._mkl_sparse_create_argtypes(np.cdouble)
+        cls._mkl_sparse_z_create_csc.restypes = _ctypes.c_int
 
         cls._mkl_sparse_d_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_create_bsr.restypes = _ctypes.c_int
-
         cls._mkl_sparse_s_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_create_bsr.restypes = _ctypes.c_int
+        cls._mkl_sparse_c_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(np.csingle)
+        cls._mkl_sparse_c_create_bsr.restypes = _ctypes.c_int
+        cls._mkl_sparse_z_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(np.cdouble)
+        cls._mkl_sparse_z_create_bsr.restypes = _ctypes.c_int
 
+    @classmethod
+    def _set_int_type_export(cls):
+        """Set the correct argtypes for handle export functions"""
         cls._mkl_sparse_d_export_csr.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_export_csr.restypes = _ctypes.c_int
-
         cls._mkl_sparse_s_export_csr.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_export_csr.restypes = _ctypes.c_int
+        cls._mkl_sparse_z_export_csr.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_z_export_csr.restypes = _ctypes.c_int
+        cls._mkl_sparse_c_export_csr.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_c_export_csr.restypes = _ctypes.c_int
 
+        cls._mkl_sparse_s_export_csc.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_export_csc.restypes = _ctypes.c_int
         cls._mkl_sparse_d_export_csc.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_export_csc.restypes = _ctypes.c_int
+        cls._mkl_sparse_c_export_csc.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_c_export_csc.restypes = _ctypes.c_int
+        cls._mkl_sparse_z_export_csc.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_z_export_csc.restypes = _ctypes.c_int
 
         cls._mkl_sparse_s_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_export_bsr.restypes = _ctypes.c_int
+        cls._mkl_sparse_d_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_export_bsr.restypes = _ctypes.c_int
+        cls._mkl_sparse_c_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_c_export_bsr.restypes = _ctypes.c_int
+        cls._mkl_sparse_z_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_z_export_bsr.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_float)
-        cls._mkl_sparse_s_export_bsr.restypes = _ctypes.c_int
-
+    @classmethod
+    def _set_int_type_sparse_matmul(cls):
+        """Set the correct argtypes for sparse (*) sparse functions and sparse (*) dense functions"""
         cls._mkl_sparse_spmm.argtypes = [_ctypes.c_int,
                                          sparse_matrix_t,
                                          sparse_matrix_t,
@@ -257,63 +257,92 @@ class MKL:
 
         cls._mkl_sparse_s_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_spmmd.restypes = _ctypes.c_int
-
         cls._mkl_sparse_d_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(_ctypes.c_double)
         cls._mkl_sparse_d_spmmd.restypes = _ctypes.c_int
+        cls._mkl_sparse_c_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_c_spmmd.restypes = _ctypes.c_int
+        cls._mkl_sparse_z_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_z_spmmd.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_mm.argtypes = cls._mkl_sparse_mm_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_mm.argtypes = cls._mkl_sparse_mm_argtypes(_ctypes.c_float, _ctypes.c_float, _ctypes.c_float)
         cls._mkl_sparse_s_mm.restypes = _ctypes.c_int
-
-        cls._mkl_sparse_d_mm.argtypes = cls._mkl_sparse_mm_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_mm.argtypes = cls._mkl_sparse_mm_argtypes(_ctypes.c_double, _ctypes.c_double, _ctypes.c_double)
         cls._mkl_sparse_d_mm.restypes = _ctypes.c_int
+        cls._mkl_sparse_c_mm.argtypes = cls._mkl_sparse_mm_argtypes(MKL_Complex8, _ctypes.c_float, np.csingle)
+        cls._mkl_sparse_c_mm.restypes = _ctypes.c_int
+        cls._mkl_sparse_z_mm.argtypes = cls._mkl_sparse_mm_argtypes(MKL_Complex16, _ctypes.c_double, np.cdouble)
+        cls._mkl_sparse_z_mm.restypes = _ctypes.c_int
 
+    @classmethod
+    def _set_int_type_dense_matmul(cls):
+        """Set the correct argtypes for dense (*) dense functions"""
         cls._cblas_sgemm.argtypes = cls._cblas_gemm_argtypes(_ctypes.c_float)
         cls._cblas_sgemm.restypes = None
-
         cls._cblas_dgemm.argtypes = cls._cblas_gemm_argtypes(_ctypes.c_double)
         cls._cblas_dgemm.restypes = None
+        cls._cblas_cgemm.argtypes = cls._cblas_gemm_argtypes(_ctypes.c_void_p)
+        cls._cblas_cgemm.restypes = None
+        cls._cblas_zgemm.argtypes = cls._cblas_gemm_argtypes(_ctypes.c_void_p)
+        cls._cblas_zgemm.restypes = None
+    
+    @classmethod
+    def _set_int_type_vector_mul(cls):
+        """Set the correct argtypes for sparse (*) vector functions"""
+        cls._mkl_sparse_s_mv.argtypes = cls._mkl_sparse_mv_argtypes(_ctypes.c_float, np.float32)
+        cls._mkl_sparse_s_mv.restypes = _ctypes.c_int
+        cls._mkl_sparse_d_mv.argtypes = cls._mkl_sparse_mv_argtypes(_ctypes.c_double, np.float64)
+        cls._mkl_sparse_d_mv.restypes = _ctypes.c_int
+        cls._mkl_sparse_c_mv.argtypes = cls._mkl_sparse_mv_argtypes(MKL_Complex8, np.csingle)
+        cls._mkl_sparse_c_mv.restypes = _ctypes.c_int
+        cls._mkl_sparse_z_mv.argtypes = cls._mkl_sparse_mv_argtypes(MKL_Complex16, np.cdouble)
+        cls._mkl_sparse_z_mv.restypes = _ctypes.c_int
 
+    @classmethod
+    def _set_int_type_misc(cls):
         cls._mkl_sparse_destroy.argtypes = [sparse_matrix_t]
         cls._mkl_sparse_destroy.restypes = _ctypes.c_int
 
         cls._mkl_sparse_order.argtypes = [sparse_matrix_t]
         cls._mkl_sparse_order.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_mv.argtypes = cls._mkl_sparse_mv_argtypes(_ctypes.c_float)
-        cls._mkl_sparse_s_mv.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_d_mv.argtypes = cls._mkl_sparse_mv_argtypes(_ctypes.c_double)
-        cls._mkl_sparse_d_mv.restypes = _ctypes.c_int
-
+    @classmethod
+    def _set_int_type_misc(cls):
         cls._mkl_sparse_syrk.argtypes = [_ctypes.c_int,
                                          sparse_matrix_t,
                                          _ctypes.POINTER(sparse_matrix_t)]
         cls._mkl_sparse_syrk.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(_ctypes.c_float, np.float32)
         cls._mkl_sparse_s_syrkd.restypes = _ctypes.c_int
-
-        cls._mkl_sparse_d_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(_ctypes.c_double, np.float64)
         cls._mkl_sparse_d_syrkd.restypes = _ctypes.c_int
+        cls._mkl_sparse_c_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(MKL_Complex8, np.csingle)
+        cls._mkl_sparse_c_syrkd.restypes = _ctypes.c_int
+        cls._mkl_sparse_z_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(MKL_Complex16, np.cdouble)
+        cls._mkl_sparse_z_syrkd.restypes = _ctypes.c_int
 
-        cls._cblas_ssyrk.argtypes = cls._cblas_syrk_argtypes(_ctypes.c_float)
+        cls._cblas_ssyrk.argtypes = cls._cblas_syrk_argtypes(_ctypes.c_float, np.float32)
         cls._cblas_ssyrk.restypes = None
-
-        cls._cblas_dsyrk.argtypes = cls._cblas_syrk_argtypes(_ctypes.c_double)
+        cls._cblas_dsyrk.argtypes = cls._cblas_syrk_argtypes(_ctypes.c_double, np.float64)
         cls._cblas_dsyrk.restypes = None
+        cls._cblas_csyrk.argtypes = cls._cblas_syrk_argtypes(MKL_Complex8, np.csingle, scalar_pointers=True)
+        cls._cblas_csyrk.restypes = None
+        cls._cblas_zsyrk.argtypes = cls._cblas_syrk_argtypes(MKL_Complex16, np.cdouble, scalar_pointers=True)
+        cls._cblas_zsyrk.restypes = None
 
+
+    @classmethod
+    def _set_int_type_qr_solver(cls):
+        """Set the correct argtypes for QR solver functions"""
         cls._mkl_sparse_qr_reorder.argtypes = [sparse_matrix_t, matrix_descr]
         cls._mkl_sparse_qr_reorder.restypes = _ctypes.c_int
-
         cls._mkl_sparse_d_qr_factorize.argtypes = [sparse_matrix_t, _ctypes.POINTER(_ctypes.c_double)]
         cls._mkl_sparse_d_qr_factorize.restypes = _ctypes.c_int
-
         cls._mkl_sparse_s_qr_factorize.argtypes = [sparse_matrix_t, _ctypes.POINTER(_ctypes.c_float)]
         cls._mkl_sparse_s_qr_factorize.restypes = _ctypes.c_int
-
         cls._mkl_sparse_d_qr_solve.argtypes = cls._mkl_sparse_qr_solve(_ctypes.c_double)
         cls._mkl_sparse_d_qr_solve.restypes = _ctypes.c_int
-
         cls._mkl_sparse_s_qr_solve.argtypes = cls._mkl_sparse_qr_solve(_ctypes.c_float)
         cls._mkl_sparse_s_qr_solve.restypes = _ctypes.c_int
 
@@ -371,19 +400,19 @@ class MKL:
                 _ctypes.POINTER(_ctypes.POINTER(prec_type))]
 
     @staticmethod
-    def _cblas_gemm_argtypes(prec_type):
+    def _cblas_gemm_argtypes(prec_type, scalar_pointers=False):
         return [_ctypes.c_int,
                 _ctypes.c_int,
                 _ctypes.c_int,
                 MKL.MKL_INT,
                 MKL.MKL_INT,
                 MKL.MKL_INT,
-                prec_type,
-                ndpointer(dtype=prec_type, ndim=2),
+                _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
+                _ctypes.POINTER(prec_type),
                 MKL.MKL_INT,
-                ndpointer(dtype=prec_type, ndim=2),
+                _ctypes.POINTER(prec_type),
                 MKL.MKL_INT,
-                prec_type,
+                _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
                 _ctypes.POINTER(prec_type),
                 MKL.MKL_INT]
 
@@ -393,54 +422,55 @@ class MKL:
                 sparse_matrix_t,
                 sparse_matrix_t,
                 _ctypes.c_int,
-                _ctypes.POINTER(prec_type), MKL.MKL_INT]
+                _ctypes.POINTER(prec_type), 
+                MKL.MKL_INT]
 
     @staticmethod
-    def _mkl_sparse_mm_argtypes(prec_type):
+    def _mkl_sparse_mm_argtypes(scalar_type, prec_type, np_prec_type):
         return [_ctypes.c_int,
-                prec_type,
+                scalar_type,
                 sparse_matrix_t,
                 matrix_descr,
                 _ctypes.c_int,
-                ndpointer(dtype=prec_type, ndim=2),
+                ndpointer(dtype=np_prec_type, ndim=2),
                 MKL.MKL_INT,
                 MKL.MKL_INT,
-                prec_type,
+                scalar_type,
                 _ctypes.POINTER(prec_type),
                 MKL.MKL_INT]
 
     @staticmethod
-    def _mkl_sparse_mv_argtypes(prec_type):
+    def _mkl_sparse_mv_argtypes(prec_type, np_type):
         return [_ctypes.c_int,
                 prec_type,
                 sparse_matrix_t,
                 matrix_descr,
-                ndpointer(dtype=prec_type, ndim=1),
+                ndpointer(dtype=np_type, ndim=1),
                 prec_type,
-                _ctypes.POINTER(prec_type)]
+                ndpointer(dtype=np_type)]
 
     @staticmethod
-    def _mkl_sparse_syrkd_argtypes(prec_type):
+    def _mkl_sparse_syrkd_argtypes(prec_type, np_type):
         return [_ctypes.c_int,
                 sparse_matrix_t,
                 prec_type,
                 prec_type,
-                _ctypes.POINTER(prec_type),
+                ndpointer(dtype=np_type),
                 _ctypes.c_int,
                 MKL.MKL_INT]
 
     @staticmethod
-    def _cblas_syrk_argtypes(prec_type):
+    def _cblas_syrk_argtypes(prec_type, np_type, scalar_pointers=False):
         return [_ctypes.c_int,
                 _ctypes.c_int,
                 _ctypes.c_int,
                 MKL.MKL_INT,
                 MKL.MKL_INT,
-                prec_type,
-                ndpointer(dtype=prec_type, ndim=2),
+                _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
+                ndpointer(dtype=np_type, ndim=2),
                 MKL.MKL_INT,
-                prec_type,
-                _ctypes.POINTER(prec_type),
+                _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
+                ndpointer(dtype=np_type, ndim=2),
                 MKL.MKL_INT]
 
     @staticmethod
@@ -474,6 +504,25 @@ class matrix_descr(_ctypes.Structure):
         super(matrix_descr, self).__init__(sparse_matrix_type_t, sparse_fill_mode_t, sparse_diag_type_t)
 
 
+# Complex type structs
+# These are the same as the np.csingle and np.cdouble structs
+# They're defined to allow passing complex scalars of specific precisions directly
+class MKL_Complex8(_ctypes.Structure):
+    _fields_ = [("real", _ctypes.c_float),
+                ("imag", _ctypes.c_float)]
+
+    def __init__(self, cplx):
+        super(MKL_Complex8, self).__init__(cplx.real, cplx.imag)
+
+
+class MKL_Complex16(_ctypes.Structure):
+    _fields_ = [("real", _ctypes.c_double),
+                ("imag", _ctypes.c_double)]
+
+    def __init__(self, cplx):
+        super(MKL_Complex16, self).__init__(cplx.real, cplx.imag)
+
+
 # Define standard return codes
 RETURN_CODES = {0: "SPARSE_STATUS_SUCCESS",
                 1: "SPARSE_STATUS_NOT_INITIALIZED",
@@ -498,6 +547,39 @@ SPARSE_INDEX_BASE_ONE = 1
 # ILP64 message
 ILP64_MSG = " Try changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
 
+# Dict keyed by ('sparse_type_str', 'double_precision_bool', 'complex_bool')
+_create_functions = {('csr', False, False): MKL._mkl_sparse_s_create_csr,
+                     ('csr', True, False): MKL._mkl_sparse_d_create_csr,
+                     ('csr', False, True): MKL._mkl_sparse_c_create_csr,
+                     ('csr', True, True): MKL._mkl_sparse_z_create_csr,
+                     ('csc', False, False): MKL._mkl_sparse_s_create_csc,
+                     ('csc', True, False): MKL._mkl_sparse_d_create_csc,
+                     ('csc', False, True): MKL._mkl_sparse_c_create_csc,
+                     ('csc', True, True): MKL._mkl_sparse_z_create_csc,
+                     ('bsr', False, False): MKL._mkl_sparse_s_create_bsr,
+                     ('bsr', True, False): MKL._mkl_sparse_d_create_bsr,
+                     ('bsr', False, True): MKL._mkl_sparse_c_create_bsr,
+                     ('bsr', True, True): MKL._mkl_sparse_z_create_bsr}
+
+# Dict keyed by ('sparse_type_str', 'double_precision_bool', 'complex_bool')
+_export_functions = {('csr', False, False): MKL._mkl_sparse_s_export_csr,
+                     ('csr', True, False): MKL._mkl_sparse_d_export_csr,
+                     ('csr', False, True): MKL._mkl_sparse_c_export_csr,
+                     ('csr', True, True): MKL._mkl_sparse_z_export_csr,
+                     ('csc', False, False): MKL._mkl_sparse_s_export_csc,
+                     ('csc', True, False): MKL._mkl_sparse_d_export_csc,
+                     ('csc', False, True): MKL._mkl_sparse_c_export_csc,
+                     ('csc', True, True): MKL._mkl_sparse_z_export_csc,
+                     ('bsr', False, False): MKL._mkl_sparse_s_export_bsr,
+                     ('bsr', True, False): MKL._mkl_sparse_d_export_bsr,
+                     ('bsr', False, True): MKL._mkl_sparse_c_export_bsr,
+                     ('bsr', True, True): MKL._mkl_sparse_z_export_bsr}
+
+# Dict keyed by ('double_precision_bool', 'complex_bool')
+_output_dtypes = {(False, False): np.float32,
+                 (True, False): np.float64,
+                 (False, True): np.csingle,
+                 (True, True): np.cdouble}
 
 def set_debug_mode(debug_bool):
     """
@@ -622,33 +704,34 @@ def _create_mkl_sparse(matrix):
     :param matrix: Sparse data in CSR or CSC format
     :type matrix: scipy.sparse.spmatrix
 
-    :return ref, double_precision: Handle for the MKL internal representation and boolean for double precision
-    :rtype: sparse_matrix_t, float
+    :return ref, double_precision: Handle for the MKL internal representation and boolean for 
+    double precision and for complex dtype
+    :rtype: sparse_matrix_t, bool, bool
     """
 
-    double_precision = _is_double(matrix)
+    double_precision, complex_type = _is_double(matrix)
 
     # Figure out which matrix creation function to use
     if _spsparse.isspmatrix_csr(matrix):
         _check_scipy_index_typing(matrix)
         assert matrix.data.shape[0] == matrix.indices.shape[0]
         assert matrix.indptr.shape[0] == matrix.shape[0] + 1
-        handle_func = MKL._mkl_sparse_d_create_csr if double_precision else MKL._mkl_sparse_s_create_csr
+        handle_func = _create_functions[('csr', double_precision, complex_type)]
 
     elif _spsparse.isspmatrix_csc(matrix):
         _check_scipy_index_typing(matrix)
         assert matrix.data.shape[0] == matrix.indices.shape[0]
         assert matrix.indptr.shape[0] == matrix.shape[1] + 1
-        handle_func = MKL._mkl_sparse_d_create_csc if double_precision else MKL._mkl_sparse_s_create_csc
+        handle_func = _create_functions[('csc', double_precision, complex_type)]
 
     elif _spsparse.isspmatrix_bsr(matrix):
         _check_scipy_index_typing(matrix)
-        return _create_mkl_sparse_bsr(matrix), double_precision
+        return _create_mkl_sparse_bsr(matrix), double_precision, complex_type
 
     else:
         raise ValueError("Matrix is not CSC, CSR, or BSR")
 
-    return _pass_mkl_handle_csr_csc(matrix, handle_func), double_precision
+    return _pass_mkl_handle_csr_csc(matrix, handle_func), double_precision, complex_type
 
 
 def _pass_mkl_handle_csr_csc(data, handle_func):
@@ -690,8 +773,8 @@ def _create_mkl_sparse_bsr(matrix):
     :rtype: sparse_matrix_t
     """
 
-    double_precision = _is_double(matrix)
-    handle_func = MKL._mkl_sparse_d_create_bsr if double_precision else MKL._mkl_sparse_s_create_bsr
+    double_precision, complex_type = _is_double(matrix)
+    handle_func = _create_functions[('bsr', double_precision, complex_type)]
 
     # Get the blocksize and check that the blocks are square
     _blocksize = matrix.blocksize[0]
@@ -731,7 +814,7 @@ def _create_mkl_sparse_bsr(matrix):
     return ref
 
 
-def _export_mkl(csr_mkl_handle, double_precision, output_type="csr"):
+def _export_mkl(csr_mkl_handle, double_precision, complex_type=False, output_type="csr"):
     """
     Export a MKL sparse handle of CSR or CSC type
 
@@ -749,20 +832,17 @@ def _export_mkl(csr_mkl_handle, double_precision, output_type="csr"):
 
     output_type = output_type.lower()
 
-    if output_type == "csr":
-        out_func = MKL._mkl_sparse_d_export_csr if double_precision else MKL._mkl_sparse_s_export_csr
-        sp_matrix_constructor = _spsparse.csr_matrix
-    elif output_type == "csc":
-        out_func = MKL._mkl_sparse_d_export_csc if double_precision else MKL._mkl_sparse_s_export_csc
-        sp_matrix_constructor = _spsparse.csc_matrix
-    elif output_type == "bsr":
-        return _export_mkl_sparse_bsr(csr_mkl_handle, double_precision)
+    if output_type == "bsr":
+        return _export_mkl_sparse_bsr(csr_mkl_handle, double_precision, complex_type=complex_type)
+    elif output_type == "csr" or output_type == "csc":
+        out_func = _export_functions[(output_type, double_precision, complex_type)]
+        sp_matrix_constructor = _spsparse.csr_matrix if output_type == "csr" else _spsparse.csc_matrix
     else:
         raise ValueError("Only CSR, CSC, and BSR output types are supported")
 
     # Allocate for output
     ordering, nrows, ncols, indptrb, indptren, indices, data = _allocate_for_export(double_precision)
-    final_dtype = np.float64 if double_precision else np.float32
+    final_dtype = _output_dtypes[(double_precision, complex_type)]
 
     ret_val = out_func(csr_mkl_handle,
                        _ctypes.byref(ordering),
@@ -805,14 +885,15 @@ def _export_mkl(csr_mkl_handle, double_precision, output_type="csr"):
         raise ValueError("Matrix ({m} x {n}) is attempting to index {z} elements".format(m=nrows, n=ncols, z=nnz))
 
     # Construct numpy arrays from data pointer and from indicies pointer
-    data = np.array(as_array(data, shape=(nnz,)), copy=True)
+    data = np.array(as_array(data, shape=(nnz * 2 if complex_type else nnz,)), copy=True)
     indices = np.array(as_array(indices, shape=(nnz,)), copy=True)
-
+    
     # Pack and return the matrix
-    return sp_matrix_constructor((data, indices, indptren), shape=(nrows, ncols))
+    return sp_matrix_constructor((data.view(final_dtype) if complex_type else data, indices, indptren),
+                                 shape=(nrows, ncols))
 
 
-def _export_mkl_sparse_bsr(bsr_mkl_handle, double_precision):
+def _export_mkl_sparse_bsr(bsr_mkl_handle, double_precision, complex_type=False):
     """
     Export a BSR matrix from MKL's internal representation to scipy
 
@@ -831,8 +912,8 @@ def _export_mkl_sparse_bsr(bsr_mkl_handle, double_precision):
     block_size = MKL.MKL_INT()
 
     # Set output
-    out_func = MKL._mkl_sparse_d_export_bsr if double_precision else MKL._mkl_sparse_s_export_bsr
-    final_dtype = np.float64 if double_precision else np.float32
+    out_func = _export_functions[('bsr', double_precision, complex_type)]
+    final_dtype = _output_dtypes[(double_precision, complex_type)]
 
     ret_val = out_func(bsr_mkl_handle,
                        _ctypes.byref(ordering),
@@ -866,21 +947,23 @@ def _export_mkl_sparse_bsr(bsr_mkl_handle, double_precision):
     indptren = np.insert(indptren, 0, indptrb[0])
 
     nnz_blocks = (indptren[-1] - indptrb[0])
+    nnz = nnz_blocks * (block_size ** 2)
 
     # If there's no non-zero data, return an empty matrix
     if nnz_blocks == 0:
         return _spsparse.bsr_matrix((nrows, ncols), dtype=final_dtype, blocksize=block_dims)
-    elif nnz_blocks < 0 or (nnz_blocks * (block_size ** 2)) > ncols * nrows:
-        nnz = nnz_blocks * (block_size ** 2)
+    
+    elif nnz_blocks < 0 or nnz > ncols * nrows:
         _err = "Matrix ({m} x {n}) is attempting to index {z} elements as {b} {bs} blocks"
         _err = _err.format(m=nrows, n=ncols, z=nnz, b=nnz_blocks, bs=(block_size, block_size))
         raise ValueError(_err)
 
-    data = np.array(as_array(data, shape=(nnz_blocks, block_size, block_size)), copy=True, order=ordering,
-                    dtype=final_dtype)
+    nnz_row_block = block_size if not complex_type else block_size * 2
+    data = np.array(as_array(data, shape=(nnz_blocks, block_size, nnz_row_block)), copy=True, order=ordering)
     indices = np.array(as_array(indices, shape=(nnz_blocks,)), copy=True)
 
-    return _spsparse.bsr_matrix((data, indices, indptren), shape=(nrows, ncols), blocksize=block_dims)
+    return _spsparse.bsr_matrix((data.view(final_dtype) if complex_type else data, indices, indptren),
+                                shape=(nrows, ncols), blocksize=block_dims)
 
 
 def _allocate_for_export(double_precision):
@@ -1005,6 +1088,9 @@ def _cast_to_float64(matrix):
     """ Make a copy of the array as double precision floats or return the reference if it already is"""
     return matrix.astype(np.float64) if matrix.dtype != np.float64 else matrix
 
+def _cast_to_cdouble(matrix):
+    """ Make a copy of the array as double precision complex floats or return the reference if it already is"""
+    return matrix.astype(np.cdouble) if matrix.dtype != np.cdouble else matrix
 
 def _type_check(matrix_a, matrix_b=None, cast=False):
     """
@@ -1012,30 +1098,56 @@ def _type_check(matrix_a, matrix_b=None, cast=False):
     If not, convert to double precision floats if cast is True, or raise an error if cast is False
     """
 
-    if matrix_b is None and matrix_a.dtype in NUMPY_FLOAT_DTYPES:
+    all_dtypes = NUMPY_FLOAT_DTYPES + NUMPY_COMPLEX_DTYPES
+    _n_complex = np.iscomplexobj(matrix_a) + np.iscomplexobj(matrix_b)
+
+    # If there's no matrix B and matrix A is valid dtype, return it
+    if matrix_b is None and matrix_a.dtype in all_dtypes:
         return matrix_a
+    # If matrix A is complex but not csingle or cdouble, and cast is True, convert it to a cdouble
+    elif matrix_b is None and cast and _n_complex == 1:
+        return _cast_to_cdouble(matrix_a)
+    # If matrix A is real but not float32 or float64, and cast is True, convert it to a float64
     elif matrix_b is None and cast:
         return _cast_to_float64(matrix_a)
+    # Raise an error - the dtype is invalid and cast is False
     elif matrix_b is None:
-        err_msg = "Matrix data type must be float32 or float64; {a} provided".format(a=matrix_a.dtype)
+        err_msg = "Matrix data type must be float32, float64, csingle, or cdouble; {a} provided".format(a=matrix_a.dtype)
         raise ValueError(err_msg)
 
-    # Check dtypes
-    if matrix_a.dtype == np.float32 and matrix_b.dtype == np.float32:
+    # If Matrix A & B have the same valid dtype, return them
+    if matrix_a.dtype in all_dtypes and matrix_a.dtype == matrix_b.dtype:
         return matrix_a, matrix_b
-
-    elif matrix_a.dtype == np.float64 and matrix_b.dtype == np.float64:
-        return matrix_a, matrix_b
-
-    elif (matrix_a.dtype != np.float64 or matrix_b.dtype != np.float64) and cast:
+    # If neither matrix is complex and cast is True, convert to float64s and return them
+    elif cast and _n_complex == 0:
         debug_print("Recasting matrix data types {a} and {b} to np.float64".format(a=matrix_a.dtype, b=matrix_b.dtype))
         return _cast_to_float64(matrix_a), _cast_to_float64(matrix_b)
-
-    elif matrix_a.dtype != np.float64 or matrix_b.dtype != np.float64:
+    # If both matrices are complex and cast is True, convert to cdoubles and return them
+    elif cast and _n_complex == 2:
+        debug_print("Recasting matrix data types {a} and {b} to np.cdouble".format(a=matrix_a.dtype, b=matrix_b.dtype))
+        return _cast_to_cdouble(matrix_a), _cast_to_cdouble(matrix_b)
+    # Can't cast reals and complex matrices together
+    elif cast and _n_complex == 1:
+        err_msg = "Cannot cast reals and complexes together; {a} and {b} provided".format(a=matrix_a.dtype,
+                                                                                          b=matrix_b.dtype)
+        raise ValueError(err_msg)
+    # If cast is False, can't cast anything together
+    elif not cast:
         err_msg = "Matrix data types must be in concordance; {a} and {b} provided".format(a=matrix_a.dtype,
                                                                                           b=matrix_b.dtype)
         raise ValueError(err_msg)
 
+def _mkl_scalar(scalar, complex_type, double_precision):
+    """Turn complex scalars into appropriate precision MKL scalars or leave floats as floats"""
+
+    scalar = 1. if scalar is None else scalar
+
+    if complex_type and double_precision:
+        return MKL_Complex16(complex(scalar))
+    elif complex_type:
+        return MKL_Complex8(complex(scalar))
+    else:
+        return float(scalar)
 
 def _out_matrix(shape, dtype, order="C", out_arr=None, out_t=False):
     """
@@ -1109,11 +1221,15 @@ def _is_double(arr):
 
     # Figure out which dtype for data
     if arr.dtype == np.float32:
-        return False
+        return False, False
     elif arr.dtype == np.float64:
-        return True
-    else:
-        raise ValueError("Only float32 or float64 dtypes are supported")
+        return True, False
+    elif arr.dtype == np.csingle:
+        return False, True
+    elif arr.dtype == np.cdouble:
+        return True, True
+    else: 
+        raise ValueError("Only float32, float64, csingle, and cdouble dtypes are supported")
 
 
 def _is_allowed_sparse_format(matrix):
@@ -1157,7 +1273,7 @@ def _validate_dtype():
     test_array = _spsparse.random(5, 5, density=0.5, format="csc", dtype=np.float32, random_state=50)
     test_comparison = test_array.A
 
-    csc_ref, precision_flag = _create_mkl_sparse(test_array)
+    csc_ref, precision_flag, _ = _create_mkl_sparse(test_array)
 
     try:
         csr_ref = _convert_to_csr(csc_ref)

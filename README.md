@@ -19,12 +19,13 @@ Three functions are explicitly available - `dot_product_mkl`, `gram_matrix_mkl`,
 `matrix_a` and `matrix_b` are either numpy arrays (1d or 2d) or scipy sparse matrices (CSR, CSC, or BSR).
 BSR matrices are supported for matrix-matrix multiplication only if one matrix is a dense array or both sparse matrices are BSR.
 Sparse COO matrices are not supported. 
-Numpy arrays must be contiguous. Non-contiguous arrays should be copied to a contiguous array prior to calling this 
+Numpy arrays must be contiguous. 
+Non-contiguous arrays should be copied to a contiguous array prior to calling this 
 function.
 
-This package only works with float data.
-`cast=True` will convert data to double-precision floats by making an internal copy if necessary.
-If A and B are both single-precision floats they will be used as is.
+This package only works with float or complex float data.
+`cast=True` will convert data to double-precision floats or complex floats by making an internal copy if necessary.
+If A and B are both single-precision floats or complex floats they will be used as is.
 `cast=False` will raise a ValueError if the input arrays are not both double-precision or both single-precision.
 This defaults to `False` on the principle that potentially unsafe dtype conversions should not occur without explicit
 instruction.
@@ -45,7 +46,8 @@ Scipy matrix multiplication does not produce ordered outputs, so this defaults t
 
 `out` is an optional reference to a dense output array to which the product of the matrix multiplication will be added. 
 This must be identical in attributes to the array that would be returned if it was not used.
-Specifically it must have the correct shape, dtype, and column- or row-major order and it must be contiguous. A ValueError will be raised if any attribute of this array is incorrect.
+Specifically it must have the correct shape, dtype, and column- or row-major order and it must be contiguous. 
+A ValueError will be raised if any attribute of this array is incorrect.
 This function will return a reference to the same array object when `out` is set.
 
 `out_scalar` is an optional element-wise scaling of `out`, if `out` is provided.

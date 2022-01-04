@@ -1,3 +1,7 @@
+### Version 0.8.0
+
+* Added support for complex data types
+
 ### Version 0.7.3
 
 * Fixed a memory leak when a CSC matrix was multiplied by a dense matrix in column-major format

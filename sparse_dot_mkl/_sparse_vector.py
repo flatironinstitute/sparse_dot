@@ -1,10 +1,15 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
-                                           _destroy_mkl_handle, matrix_descr, RETURN_CODES, _is_dense_vector,
-                                           _out_matrix, _check_return_value, _is_allowed_sparse_format)
+                                           _destroy_mkl_handle, matrix_descr, _is_dense_vector, _out_matrix, 
+                                           _check_return_value, _is_allowed_sparse_format, _output_dtypes, _mkl_scalar)
 
 import numpy as np
 import ctypes as _ctypes
 
+# Dict keyed by ('double_precision_bool', 'complex_bool')
+_mkl_sp_mv_funcs = {(False, False): MKL._mkl_sparse_s_mv,
+                    (True, False): MKL._mkl_sparse_d_mv,
+                    (False, True): MKL._mkl_sparse_c_mv,
+                    (True, True): MKL._mkl_sparse_z_mv}
 
 def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False, out=None, out_scalar=None, out_t=None):
     """
@@ -33,13 +38,18 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False, ou
         final_dtype = np.float64 if matrix_a.dtype != vector_b.dtype or matrix_a.dtype != np.float32 else np.float32
         return _out_matrix(output_shape, final_dtype, out_arr=out)
 
-    mkl_a, dbl = _create_mkl_sparse(matrix_a)
+    mkl_a, dbl, cplx = _create_mkl_sparse(matrix_a)
     vector_b = vector_b.ravel()
 
     # Set functions and types for float or doubles
-    output_ctype = _ctypes.c_double if dbl else _ctypes.c_float
-    output_dtype = np.float64 if dbl else np.float32
-    func = MKL._mkl_sparse_d_mv if dbl else MKL._mkl_sparse_s_mv
+    output_dtype = _output_dtypes[(dbl, cplx)]
+
+    # Set the MKL function for precision
+    func = _mkl_sp_mv_funcs[(dbl, cplx)]
+
+    # Create a C struct if necessary to be passed
+    scalar = _mkl_scalar(scalar, cplx, dbl)
+    out_scalar = _mkl_scalar(out_scalar, cplx, dbl)
 
     output_arr = _out_matrix(output_shape, output_dtype, out_arr=out, out_t=out_t)
 
@@ -48,8 +58,8 @@ def _sparse_dense_vector_mult(matrix_a, vector_b, scalar=1., transpose=False, ou
                    mkl_a,
                    matrix_descr(),
                    vector_b,
-                   float(out_scalar) if out_scalar is not None else 1.,
-                   output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)))
+                   out_scalar,
+                   output_arr)
 
     # Check return
     _check_return_value(ret_val, func.__name__)

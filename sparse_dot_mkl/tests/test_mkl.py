@@ -18,16 +18,21 @@ from sparse_dot_mkl._mkl_interface import (_create_mkl_sparse, _export_mkl, spar
 
 SEED = 86
 
-
-def make_matrixes(a, b, n, density):
-    m1 = _spsparse.random(a, n, density=density, format="csr", dtype=np.float64, random_state=SEED)
-    m2 = _spsparse.random(n, b, density=density, format="csr", dtype=np.float64, random_state=SEED + 1)
+def make_matrixes(a, b, n, density, dtype=np.float64):
+    m1 = _spsparse.random(a, n, density=density, format="csr", dtype=dtype, random_state=SEED)
+    m2 = _spsparse.random(n, b, density=density, format="csr", dtype=dtype, random_state=SEED + 1)
     return m1, m2
 
+def make_vector(n, complex=False):
+    rng = np.random.default_rng(SEED + 2)
+    if not complex:
+        return rng.random(n).astype(np.float64)
+    else:
+        return rng.random(n) + rng.random(n) * 1j
 
 MATRIX_1, MATRIX_2 = make_matrixes(200, 100, 300, 0.05)
-VECTOR = np.random.rand(300).astype(np.float64)
 MATRIX_1_EMPTY = _spsparse.csr_matrix((200, 300), dtype=np.float64)
+VECTOR = make_vector(300)
 
 
 class TestEmptyConditions(unittest.TestCase):
@@ -81,7 +86,7 @@ class TestFailureConditions(unittest.TestCase):
             _create_mkl_sparse(self.mat1.astype(np.int64))
 
     def test_export_mkl_bad_type(self):
-        mkl_handle, dbl = _create_mkl_sparse(self.mat1)
+        mkl_handle, dbl, cplx = _create_mkl_sparse(self.mat1)
 
         with self.assertRaises(ValueError):
             _export_mkl(mkl_handle, dbl, output_type="coo")
@@ -161,10 +166,10 @@ class TestHandles(unittest.TestCase):
         mat3 = mat1.astype(np.float32).copy()
         mat4 = self.mat2.astype(np.float32).copy()
 
-        ref_1, precision_1 = _create_mkl_sparse(mat1)
-        ref_2, precision_2 = _create_mkl_sparse(mat2)
-        ref_3, precision_3 = _create_mkl_sparse(mat3)
-        ref_4, precision_4 = _create_mkl_sparse(mat4)
+        ref_1, precision_1, cplx_1 = _create_mkl_sparse(mat1)
+        ref_2, precision_2, cplx_2 = _create_mkl_sparse(mat2)
+        ref_3, precision_3, cplx_3 = _create_mkl_sparse(mat3)
+        ref_4, precision_4, cplx_4 = _create_mkl_sparse(mat4)
 
         self.assertTrue(precision_1)
         self.assertTrue(precision_2)
@@ -185,14 +190,14 @@ class TestHandles(unittest.TestCase):
         mat1 = _spsparse.bsr_matrix(self.mat1, blocksize=(2, 2))
         mat3 = mat1.astype(np.float32).copy()
 
-        ref_1, precision_1 = _create_mkl_sparse(mat1)
-        ref_3, precision_3 = _create_mkl_sparse(mat3)
+        ref_1, precision_1, cplx_1 = _create_mkl_sparse(mat1)
+        ref_3, precision_3, cplx_3 = _create_mkl_sparse(mat3)
 
         self.assertTrue(precision_1)
         self.assertFalse(precision_3)
 
-        cycle_1 = _export_mkl(ref_1, precision_1, output_type="bsr")
-        cycle_3 = _export_mkl(ref_3, precision_3, output_type="bsr")
+        cycle_1 = _export_mkl(ref_1, precision_1, complex_type=cplx_1, output_type="bsr")
+        cycle_3 = _export_mkl(ref_3, precision_3, complex_type=cplx_3, output_type="bsr")
 
         self.is_sparse_identical_A(self.mat1, cycle_1)
         self.is_sparse_identical_internal(mat1, cycle_1)
@@ -206,8 +211,8 @@ class TestHandles(unittest.TestCase):
         mat1 = _spsparse.bsr_matrix(self.mat1, blocksize=(2, 2))
         mat3 = mat1.astype(np.float32).copy()
 
-        ref_1, precision_1 = _create_mkl_sparse(mat1)
-        ref_3, precision_3 = _create_mkl_sparse(mat3)
+        ref_1, precision_1, cplx_1 = _create_mkl_sparse(mat1)
+        ref_3, precision_3, cplx_3 = _create_mkl_sparse(mat3)
 
         cref_1 = _convert_to_csr(ref_1)
         cref_3 = _convert_to_csr(ref_3)
@@ -215,8 +220,8 @@ class TestHandles(unittest.TestCase):
         self.assertTrue(precision_1)
         self.assertFalse(precision_3)
 
-        cycle_1 = _export_mkl(cref_1, precision_1, output_type="csr")
-        cycle_3 = _export_mkl(cref_3, precision_3, output_type="csr")
+        cycle_1 = _export_mkl(cref_1, precision_1, complex_type=cplx_1, output_type="csr")
+        cycle_3 = _export_mkl(cref_3, precision_3, complex_type=cplx_3, output_type="csr")
 
         self.is_sparse_identical_A(self.mat1, cycle_1)
         self.is_sparse_identical_A(self.mat1.astype(np.float32), cycle_3)

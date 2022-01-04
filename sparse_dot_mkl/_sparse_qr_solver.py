@@ -19,7 +19,7 @@ def _sparse_qr(matrix_a, matrix_b):
     :rtype: numpy.ndarray
     """
 
-    mkl_a, dbl = _create_mkl_sparse(matrix_a)
+    mkl_a, dbl, cplx = _create_mkl_sparse(matrix_a)
     layout_b, ld_b = _get_numpy_layout(matrix_b)
 
     output_shape = matrix_a.shape[1], matrix_b.shape[1]
