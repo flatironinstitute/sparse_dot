@@ -26,6 +26,9 @@ class TestGramMatrix(unittest.TestCase):
         gram_ut_t[np.tril_indices(gram_ut_t.shape[0], k=-1)] = 0.
         self.gram_ut_t = gram_ut_t
 
+
+class TestGramMatrixSparse(TestGramMatrix):
+
     def test_gram_matrix_sp(self):
         mat2 = gram_matrix_mkl(self.mat1)
         npt.assert_array_almost_equal(mat2.A, self.gram_ut)
@@ -35,16 +38,16 @@ class TestGramMatrix(unittest.TestCase):
 
     def test_gram_matrix_sp_single(self):
         mat2 = gram_matrix_mkl(self.mat1.astype(self.single_dtype))
-        npt.assert_array_almost_equal(mat2.A, self.gram_ut)
+        npt.assert_array_almost_equal(mat2.A, self.gram_ut, decimal=5)
 
     def test_gram_matrix_d_single(self):
         mat2 = gram_matrix_mkl(self.mat1.astype(self.single_dtype), dense=True)
-        npt.assert_array_almost_equal(mat2, self.gram_ut)
+        npt.assert_array_almost_equal(mat2, self.gram_ut, decimal=5)
 
         mat2 = gram_matrix_mkl(self.mat1.astype(self.single_dtype), dense=True,
                                out=np.zeros((self.mat1.shape[1], self.mat1.shape[1]), dtype=self.single_dtype),  out_scalar=1.)
         mat2[np.tril_indices(mat2.shape[0], k=-1)] = 0.
-        npt.assert_array_almost_equal(mat2, self.gram_ut)
+        npt.assert_array_almost_equal(mat2, self.gram_ut, decimal=5)
 
         with self.assertRaises(ValueError):
             mat2 = gram_matrix_mkl(self.mat1.astype(self.single_dtype), dense=True,
@@ -52,7 +55,12 @@ class TestGramMatrix(unittest.TestCase):
                                    out_scalar=1.)
 
     def test_gram_matrix_d(self):
+        print(self.mat1)
+
         mat2 = gram_matrix_mkl(self.mat1, dense=True)
+        print(mat2 - self.gram_ut)
+        print(mat2[np.tril_indices(mat2.shape[0], k=1)])
+
         npt.assert_array_almost_equal(mat2, self.gram_ut)
 
         mat2 = gram_matrix_mkl(self.mat1, dense=True,
@@ -77,6 +85,9 @@ class TestGramMatrix(unittest.TestCase):
         mat2 = gram_matrix_mkl(mat, dense=True, cast=True)
         npt.assert_array_almost_equal(mat.A, self.mat1.A)
         npt.assert_array_almost_equal(mat2, self.gram_ut)
+
+
+class TestGramMatrixDense(TestGramMatrix):
 
     def test_gram_matrix_dd_double(self):
         mat2 = gram_matrix_mkl(self.mat1.A, dense=True)
@@ -113,8 +124,7 @@ class TestGramMatrix(unittest.TestCase):
         npt.assert_array_almost_equal(mat2, self.gram_ut, decimal=5)
 
 
-@unittest.skip
-class TestGramMatrixComplex(TestGramMatrix):
+class _TestGramMatrixComplex:
 
     double_dtype = np.cdouble
     single_dtype = np.csingle
@@ -122,3 +132,23 @@ class TestGramMatrixComplex(TestGramMatrix):
     @classmethod
     def setUpClass(cls):
         cls.MATRIX_1, _ = make_matrixes(200, 100, 300, 0.05, dtype=np.cdouble)
+
+    def setUp(self):
+        self.mat1 = self.MATRIX_1.copy()
+        self.mat1_d = self.MATRIX_1.A
+
+        gram_ut = np.dot(self.MATRIX_1.A.conj().T, self.MATRIX_1.A)
+        gram_ut[np.tril_indices(gram_ut.shape[0], k=-1)] = 0.
+        self.gram_ut = gram_ut
+
+        gram_ut_t = np.dot(self.MATRIX_1.A, self.MATRIX_1.A.conj().T)
+        gram_ut_t[np.tril_indices(gram_ut_t.shape[0], k=-1)] = 0.
+        self.gram_ut_t = gram_ut_t
+
+@unittest.skip
+class TestGramMatrixSparseComplex(_TestGramMatrixComplex, TestGramMatrixSparse):
+    pass
+
+@unittest.skip
+class TestGramMatrixDenseComplex(_TestGramMatrixComplex, TestGramMatrixDense):
+    pass

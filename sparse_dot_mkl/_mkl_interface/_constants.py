@@ -25,8 +25,26 @@ CBLAS_CONJ_TRANS = 113
 SPARSE_INDEX_BASE_ZERO = 0
 SPARSE_INDEX_BASE_ONE = 1
 
+# Define matrix types
+SPARSE_MATRIX_TYPE_GENERAL            = 20   #    General case                    
+SPARSE_MATRIX_TYPE_SYMMETRIC          = 21   #    Triangular part of              
+SPARSE_MATRIX_TYPE_HERMITIAN          = 22   #    the matrix is to be processed   
+SPARSE_MATRIX_TYPE_TRIANGULAR         = 23
+SPARSE_MATRIX_TYPE_DIAGONAL           = 24   # diagonal matrix; only diagonal elements will be processed 
+SPARSE_MATRIX_TYPE_BLOCK_TRIANGULAR   = 25
+SPARSE_MATRIX_TYPE_BLOCK_DIAGONAL     = 26    # block-diagonal matrix; only diagonal blocks will be processed 
+
+# Fill types for SYMMETRIC & HERMITIAN
+SPARSE_FILL_MODE_LOWER  = 40           # lower triangular part of the matrix is stored 
+SPARSE_FILL_MODE_UPPER  = 41           # upper triangular part of the matrix is stored 
+SPARSE_FILL_MODE_FULL   = 42           # upper triangular part of the matrix is stored 
+
+SPARSE_DIAG_NON_UNIT    = 50           # triangular matrix with non-unit diagonal
+SPARSE_DIAG_UNIT        = 51           # triangular matrix with unit diagonal
+
+
 # Define sparse & cblas upper or lower triangle code
-MKL_UPPER = 121,
+MKL_UPPER = 121
 MKL_LOWER = 122
 
 # ILP64 message

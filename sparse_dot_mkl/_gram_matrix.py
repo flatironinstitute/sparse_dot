@@ -1,13 +1,20 @@
 from sparse_dot_mkl._mkl_interface import (MKL, sparse_matrix_t, _create_mkl_sparse,
                                            _export_mkl, _order_mkl_handle, _destroy_mkl_handle, _type_check,
-                                           _get_numpy_layout, _convert_to_csr, _empty_output_check, LAYOUT_CODE_C,
+                                           _get_numpy_layout, _convert_to_csr, _empty_output_check,
                                            _out_matrix, _check_return_value, debug_print, _output_dtypes, _mkl_scalar,
                                            _is_double)
+                                           
+from sparse_dot_mkl._mkl_interface._constants import *
 
 import scipy.sparse as _sps
 import ctypes as _ctypes
 import numpy as np
 
+# Dict keyed by ('transpose_bool', 'complex_bool')
+_mkl_sp_transpose_ops = {(False, False): SPARSE_OPERATION_NON_TRANSPOSE,
+                         (True, False): SPARSE_OPERATION_TRANSPOSE,
+                         (False, True): SPARSE_OPERATION_NON_TRANSPOSE,
+                         (True, True): SPARSE_OPERATION_CONJUGATE_TRANSPOSE}
 
 def _gram_matrix_sparse(matrix_a, aat=False, reorder_output=False):
     """
@@ -32,7 +39,7 @@ def _gram_matrix_sparse(matrix_a, aat=False, reorder_output=False):
 
     ref_handle = sparse_matrix_t()
 
-    ret_val = MKL._mkl_sparse_syrk(10 if aat else 11,
+    ret_val = MKL._mkl_sparse_syrk(_mkl_sp_transpose_ops[(not aat, complex_type)],
                                    sp_ref_a,
                                    _ctypes.byref(ref_handle))
 
@@ -91,7 +98,7 @@ def _gram_matrix_sparse_to_dense(matrix_a, aat=False, scalar=1., out=None, out_s
     scalar = _mkl_scalar(scalar, complex_type, double_prec)
     out_scalar = _mkl_scalar(out_scalar, complex_type, double_prec)
 
-    ret_val = func(10 if aat else 11,
+    ret_val = func(_mkl_sp_transpose_ops[(not aat, complex_type)],
                    sp_ref_a,
                    scalar,
                    out_scalar,
@@ -118,6 +125,12 @@ _mkl_blas_skry_funcs = {(False, False): MKL._cblas_ssyrk,
                         (True, False): MKL._cblas_dsyrk,
                         (False, True): MKL._cblas_csyrk,
                         (True, True): MKL._cblas_zsyrk}
+
+# Dict keyed by ('transpose_bool', 'complex_bool')
+_mkl_cblas_transpose_ops = {(False, False): CBLAS_NO_TRANS,
+                            (True, False): CBLAS_TRANS,
+                            (False, True): CBLAS_NO_TRANS,
+                            (True, True): CBLAS_CONJ_TRANS}
 
 def _gram_matrix_dense_to_dense(matrix_a, aat=False, scalar=1., out=None, out_scalar=None):
     """
@@ -156,8 +169,8 @@ def _gram_matrix_dense_to_dense(matrix_a, aat=False, scalar=1., out=None, out_sc
     out_scalar = _mkl_scalar(out_scalar, complex_type, double_precision)
 
     func(layout_a,
-         121,
-         111 if aat else 112,
+         MKL_UPPER,
+         _mkl_cblas_transpose_ops[(not aat, complex_type)],
          n,
          k,
          scalar if not complex_type else _ctypes.byref(scalar),
