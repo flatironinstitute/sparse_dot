@@ -1,11 +1,17 @@
 from sparse_dot_mkl._mkl_interface import (MKL, _sanity_check, _empty_output_check, _type_check, _create_mkl_sparse,
                                            _destroy_mkl_handle, matrix_descr, debug_print, _convert_to_csr,
                                            _get_numpy_layout, _check_return_value, LAYOUT_CODE_C, LAYOUT_CODE_F,
-                                           _out_matrix)
+                                           _out_matrix, _output_dtypes, _mkl_scalar)
 import numpy as np
 import ctypes as _ctypes
 import scipy.sparse as _spsparse
 
+
+# Dict keyed by ('double_precision_bool', 'complex_bool')
+_mkl_sp_mm_funcs = {(False, False): MKL._mkl_sparse_s_mm,
+                    (True, False): MKL._mkl_sparse_d_mm,
+                    (False, True): MKL._mkl_sparse_c_mm,
+                    (True, True): MKL._mkl_sparse_z_mm}
 
 def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False, out=None, out_scalar=None, out_t=None):
     """
@@ -39,36 +45,41 @@ def _sparse_dense_matmul(matrix_a, matrix_b, scalar=1., transpose=False, out=Non
         # Prep MKL handles and check that matrixes are compatible types
         # MKL requires CSR format if the dense array is column-major
         if layout_b == LAYOUT_CODE_F and not _spsparse.isspmatrix_csr(matrix_a):
-            mkl_non_csr, dbl = _create_mkl_sparse(matrix_a)
+            mkl_non_csr, dbl, cplx = _create_mkl_sparse(matrix_a)
             _mkl_handles.append(mkl_non_csr)
             mkl_a = _convert_to_csr(mkl_non_csr)
         else:
-            mkl_a, dbl = _create_mkl_sparse(matrix_a)
+            mkl_a, dbl, cplx = _create_mkl_sparse(matrix_a)
 
         _mkl_handles.append(mkl_a)
 
         # Set functions and types for float or doubles
         output_ctype = _ctypes.c_double if dbl else _ctypes.c_float
-        output_dtype = np.float64 if dbl else np.float32
-        func = MKL._mkl_sparse_d_mm if dbl else MKL._mkl_sparse_s_mm
+        output_dtype = _output_dtypes[(dbl, cplx)]
+        func = _mkl_sp_mm_funcs[(dbl, cplx)]
 
         # Allocate an output array
-        output_arr = _out_matrix(output_shape, output_dtype, order="C" if layout_b == LAYOUT_CODE_C else "F",
-                                out_arr=out, out_t=out_t)
-
+        output_order = "C" if layout_b == LAYOUT_CODE_C else "F"
+        output_arr = _out_matrix(output_shape, output_dtype, output_order,
+                                 out_arr=out, out_t=out_t)
+        
         output_layout, output_ld = _get_numpy_layout(output_arr, second_arr=matrix_b)
 
+        # Create a C struct if necessary to be passed
+        scalar = _mkl_scalar(scalar, cplx, dbl)
+        out_scalar = _mkl_scalar(out_scalar, cplx, dbl)
+
         ret_val = func(11 if transpose else 10,
-                    scalar,
-                    mkl_a,
-                    matrix_descr(),
-                    layout_b,
-                    matrix_b,
-                    output_shape[1],
-                    ld_b,
-                    float(out_scalar) if out_scalar is not None else 1.,
-                    output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
-                    output_ld)
+                       scalar,
+                       mkl_a,
+                       matrix_descr(),
+                       layout_b,
+                       matrix_b,
+                       output_shape[1],
+                       ld_b,
+                       out_scalar,
+                       output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
+                       output_ld)
 
         # Check return
         _check_return_value(ret_val, func.__name__)

@@ -1,7 +1,7 @@
 from sparse_dot_mkl._mkl_interface import (MKL, sparse_matrix_t, _create_mkl_sparse, debug_print, debug_timer,
                                            _export_mkl, _order_mkl_handle, _destroy_mkl_handle, _type_check,
                                            _empty_output_check, _sanity_check, _is_allowed_sparse_format,
-                                           _check_return_value)
+                                           _check_return_value, _output_dtypes)
 import ctypes as _ctypes
 import numpy as np
 import scipy.sparse as _spsparse
@@ -32,7 +32,13 @@ def _matmul_mkl(sp_ref_a, sp_ref_b):
     return ref_handle
 
 
-def _matmul_mkl_dense(sp_ref_a, sp_ref_b, output_shape, double_precision):
+# Dict keyed by ('double_precision_bool', 'complex_bool')
+_mkl_spmmd_funcs = {(False, False): MKL._mkl_sparse_s_spmmd,
+                    (True, False): MKL._mkl_sparse_d_spmmd,
+                    (False, True): MKL._mkl_sparse_c_spmmd,
+                    (True, True): MKL._mkl_sparse_z_spmmd}
+
+def _matmul_mkl_dense(sp_ref_a, sp_ref_b, output_shape, double_precision, complex_type=False):
     """
     Dot product two MKL objects together into a dense numpy array and return the result
 
@@ -51,9 +57,10 @@ def _matmul_mkl_dense(sp_ref_a, sp_ref_b, output_shape, double_precision):
     """
 
     # Allocate an array for outputs and set functions and types for float or doubles
-    output_arr = np.zeros(output_shape, dtype=np.float64 if double_precision else np.float32)
+    output_arr = np.empty(output_shape, dtype=_output_dtypes[(double_precision, complex_type)])
     output_ctype = _ctypes.c_double if double_precision else _ctypes.c_float
-    func = MKL._mkl_sparse_d_spmmd if double_precision else MKL._mkl_sparse_s_spmmd
+
+    func = _mkl_spmmd_funcs[(double_precision, complex_type)]
 
     ret_val = func(10,
                    sp_ref_a,
@@ -124,14 +131,15 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
     t = debug_timer()
 
     # Create intel MKL objects
-    mkl_a, a_dbl = _create_mkl_sparse(matrix_a)
-    mkl_b, b_dbl = _create_mkl_sparse(matrix_b)
+    mkl_a, a_dbl, a_cplx = _create_mkl_sparse(matrix_a)
+    mkl_b, b_dbl, b_cplx = _create_mkl_sparse(matrix_b)
 
     t = debug_timer("Created MKL sparse handles", t)
 
     # Call spmmd for dense output directly if the dense flag is set
     if dense:
-        dense_arr = _matmul_mkl_dense(mkl_a, mkl_b, (matrix_a.shape[0], matrix_b.shape[1]), a_dbl or b_dbl)
+        dense_arr = _matmul_mkl_dense(mkl_a, mkl_b, (matrix_a.shape[0], matrix_b.shape[1]), a_dbl or b_dbl,
+                                      complex_type=a_cplx)
 
         debug_timer("Multiplied matrices", t)
 
@@ -157,7 +165,7 @@ def _sparse_dot_sparse(matrix_a, matrix_b, cast=False, reorder_output=False, den
             t = debug_timer("Reordered output indices", t)
 
         # Extract
-        python_c = _export_mkl(mkl_c, a_dbl or b_dbl, output_type=output_type)
+        python_c = _export_mkl(mkl_c, a_dbl or b_dbl, complex_type=a_cplx, output_type=output_type)
         _destroy_mkl_handle(mkl_c)
 
         debug_timer("Created python handle", t)
