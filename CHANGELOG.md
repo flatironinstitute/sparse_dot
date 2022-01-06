@@ -1,6 +1,7 @@
 ### Version 0.8.0
 
 * Added support for complex data types
+* Refactored _mkl_interface.py into a subpackage
 
 ### Version 0.7.3
 
