@@ -1,3 +1,7 @@
+### Version 0.8.1
+
+* `cast=True` will now cast to compatible complex floats if one array is complex and one is real
+
 ### Version 0.8.0
 
 * Added support for complex data types

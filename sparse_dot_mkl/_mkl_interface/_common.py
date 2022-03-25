@@ -1,6 +1,6 @@
 from ._cfunctions import MKL, mkl_library_name
 from ._constants import *
-from ._structs import *
+from ._structs import sparse_matrix_t, MKL_Complex8, MKL_Complex16
 
 import numpy as _np
 import ctypes as _ctypes
@@ -572,13 +572,18 @@ def _sanity_check(matrix_a, matrix_b, allow_vector=False):
         raise ValueError(err_msg)
 
 
-def _cast_to_float64(matrix):
+def _cast_to(matrix, dtype):
     """ Make a copy of the array as double precision floats or return the reference if it already is"""
-    return matrix.astype(_np.float64) if matrix.dtype != _np.float64 else matrix
+    return matrix.astype(dtype) if matrix.dtype != dtype else matrix
 
-def _cast_to_cdouble(matrix):
-    """ Make a copy of the array as double precision complex floats or return the reference if it already is"""
-    return matrix.astype(_np.cdouble) if matrix.dtype != _np.cdouble else matrix
+def _is_valid_dtype(matrix, complex_dtype=False, all_dtype=False):
+    """ Check to see if it's a usable float dtype """
+    if all_dtype:
+        return matrix.dtype in NUMPY_FLOAT_DTYPES + NUMPY_COMPLEX_DTYPES
+    elif complex_dtype:
+        return matrix.dtype in NUMPY_COMPLEX_DTYPES
+    else:
+        return matrix.dtype in NUMPY_FLOAT_DTYPES
 
 def _type_check(matrix_a, matrix_b=None, cast=False):
     """
@@ -586,44 +591,54 @@ def _type_check(matrix_a, matrix_b=None, cast=False):
     If not, convert to double precision floats if cast is True, or raise an error if cast is False
     """
 
-    all_dtypes = NUMPY_FLOAT_DTYPES + NUMPY_COMPLEX_DTYPES
     _n_complex = _np.iscomplexobj(matrix_a) + _np.iscomplexobj(matrix_b)
 
     # If there's no matrix B and matrix A is valid dtype, return it
-    if matrix_b is None and matrix_a.dtype in all_dtypes:
+    if matrix_b is None and _is_valid_dtype(matrix_a, all_dtype=True):
         return matrix_a
     # If matrix A is complex but not csingle or cdouble, and cast is True, convert it to a cdouble
     elif matrix_b is None and cast and _n_complex == 1:
-        return _cast_to_cdouble(matrix_a)
+        return _cast_to(matrix_a, _np.cdouble)
     # If matrix A is real but not float32 or float64, and cast is True, convert it to a float64
     elif matrix_b is None and cast:
-        return _cast_to_float64(matrix_a)
+        return _cast_to(matrix_a, _np.float64)
     # Raise an error - the dtype is invalid and cast is False
     elif matrix_b is None:
-        err_msg = "Matrix data type must be float32, float64, csingle, or cdouble; {a} provided".format(a=matrix_a.dtype)
-        raise ValueError(err_msg)
+        _err_msg = f"Matrix data type must be float32, float64, csingle, or cdouble; {matrix_a.dtype} provided"
+        raise ValueError(_err_msg)
 
     # If Matrix A & B have the same valid dtype, return them
-    if matrix_a.dtype in all_dtypes and matrix_a.dtype == matrix_b.dtype:
+    if _is_valid_dtype(matrix_a, all_dtype=True) and matrix_a.dtype == matrix_b.dtype:
         return matrix_a, matrix_b
+
     # If neither matrix is complex and cast is True, convert to float64s and return them
     elif cast and _n_complex == 0:
-        debug_print("Recasting matrix data types {a} and {b} to _np.float64".format(a=matrix_a.dtype, b=matrix_b.dtype))
-        return _cast_to_float64(matrix_a), _cast_to_float64(matrix_b)
+        debug_print(f"Recasting matrix data types {matrix_a.dtype} and {matrix_b.dtype} to _np.float64")
+        return _cast_to(matrix_a, _np.float64), _cast_to(matrix_b, _np.float64)
+
     # If both matrices are complex and cast is True, convert to cdoubles and return them
     elif cast and _n_complex == 2:
-        debug_print("Recasting matrix data types {a} and {b} to _np.cdouble".format(a=matrix_a.dtype, b=matrix_b.dtype))
-        return _cast_to_cdouble(matrix_a), _cast_to_cdouble(matrix_b)
-    # Can't cast reals and complex matrices together
+        debug_print(f"Recasting matrix data types {matrix_a.dtype} and {matrix_b.dtype} to _np.cdouble")
+        return _cast_to(matrix_a, _np.cdouble), _cast_to(matrix_b, _np.cdouble)
+
+    # Cast reals and complex matrices together
+    elif cast and _n_complex == 1 and _is_valid_dtype(matrix_a, complex_dtype=True):
+        debug_print(f"Recasting matrix data type {matrix_b.dtype} to {matrix_a.dtype}")
+        return matrix_a, _cast_to(matrix_b, matrix_a.dtype)
+    elif cast and _n_complex == 1 and _is_valid_dtype(matrix_b, complex_dtype=True):
+        debug_print(f"Recasting matrix data type {matrix_a.dtype} to {matrix_b.dtype}")
+        return _cast_to(matrix_a, matrix_b.dtype), matrix_b
     elif cast and _n_complex == 1:
-        err_msg = "Cannot cast reals and complexes together; {a} and {b} provided".format(a=matrix_a.dtype,
-                                                                                          b=matrix_b.dtype)
-        raise ValueError(err_msg)
+        debug_print(f"Recasting matrix data type {matrix_a.dtype} and {matrix_b.dtype} to _np.cdouble")
+        return _cast_to(matrix_a, _np.cdouble), _cast_to(matrix_b, _np.cdouble)
+
     # If cast is False, can't cast anything together
     elif not cast:
-        err_msg = "Matrix data types must be in concordance; {a} and {b} provided".format(a=matrix_a.dtype,
-                                                                                          b=matrix_b.dtype)
-        raise ValueError(err_msg)
+        raise ValueError(
+            "Matrix data type must be float32, float64, csingle, or cdouble, " +
+            "and must be the same if cast=False; " +
+            f"{matrix_a.dtype} & {matrix_b.dtype} provided"
+        )
 
 def _mkl_scalar(scalar, complex_type, double_precision):
     """Turn complex scalars into appropriate precision MKL scalars or leave floats as floats"""

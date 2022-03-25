@@ -14,7 +14,7 @@ import numpy.testing as npt
 import scipy.sparse as _spsparse
 from sparse_dot_mkl import dot_product_mkl
 from sparse_dot_mkl._mkl_interface import (_create_mkl_sparse, _export_mkl, sparse_matrix_t, _destroy_mkl_handle,
-                                           _convert_to_csr, _order_mkl_handle, MKL)
+                                           _convert_to_csr, _order_mkl_handle, MKL, _type_check)
 
 SEED = 86
 
@@ -225,6 +225,123 @@ class TestHandles(unittest.TestCase):
 
         self.is_sparse_identical_A(self.mat1, cycle_1)
         self.is_sparse_identical_A(self.mat1.astype(np.float32), cycle_3)
+
+
+class TestTypeConversions(unittest.TestCase):
+
+    dtype = np.float32
+    cast_dtype = np.float64
+
+    final_dtype=None
+    always_cast=False
+
+    def setUp(self):
+        self.mat1 = MATRIX_1.copy()
+        self.mat2 = MATRIX_2.copy()
+
+    def test_valid_pairs(self):
+
+        a, b = self.mat1.astype(self.dtype), self.mat2.astype(self.dtype)
+        c, d = _type_check(a, b, cast=self.always_cast)
+
+        if self.always_cast:
+            self.assertNotEqual(id(a), id(c))
+            self.assertNotEqual(id(b), id(d))
+        else:
+            self.assertEqual(id(a), id(c))
+            self.assertEqual(id(b), id(d))
+
+        fd = self.final_dtype if self.final_dtype is not None else self.dtype
+
+        self.assertEqual(c.dtype, fd)
+        self.assertEqual(d.dtype, fd)
+
+    def test_cast_pairs_right(self):
+
+        a, b = self.mat1.astype(self.dtype), self.mat2.astype(self.cast_dtype)
+
+        with self.assertRaises(ValueError):
+            c, d = _type_check(a, b)
+
+        c, d = _type_check(a, b, cast=True)
+
+        self.assertNotEqual(id(a), id(c))
+
+        if self.always_cast:
+            self.assertNotEqual(id(b), id(d))
+        else:
+            self.assertEqual(id(b), id(d))
+
+        fd = self.final_dtype if self.final_dtype is not None else self.cast_dtype
+
+        self.assertEqual(c.dtype, fd)
+        self.assertEqual(d.dtype, fd)
+
+    def test_cast_pairs_left(self):
+
+        a, b = self.mat1.astype(self.cast_dtype), self.mat2.astype(self.dtype)
+
+        with self.assertRaises(ValueError):
+            c, d = _type_check(a, b)
+
+        c, d = _type_check(a, b, cast=True)
+
+        if self.always_cast:
+            self.assertNotEqual(id(a), id(c))
+        else:
+            self.assertEqual(id(a), id(c))
+    
+        self.assertNotEqual(id(b), id(d))
+
+        fd = self.final_dtype if self.final_dtype is not None else self.cast_dtype
+
+        self.assertEqual(c.dtype, fd)
+        self.assertEqual(d.dtype, fd)
+
+
+class TestTypeConversions2(TestTypeConversions):
+
+    dtype = np.csingle
+    cast_dtype = np.cdouble
+
+
+class TestTypeConversions3(TestTypeConversions):
+
+    dtype = np.float32
+    cast_dtype = np.cdouble
+
+
+class TestTypeConversions4(TestTypeConversions):
+
+    dtype = np.float64
+    cast_dtype = np.cdouble
+
+
+class TestTypeConversions5(TestTypeConversions):
+
+    dtype = np.int32
+    cast_dtype = np.float32
+
+    final_dtype = np.float64
+    always_cast = True
+
+
+class TestTypeConversions6(TestTypeConversions):
+
+    dtype = np.int32
+    cast_dtype = np.int64
+
+    final_dtype = np.float64
+    always_cast = True
+
+
+class TestTypeConversions7(TestTypeConversions):
+
+    dtype = np.clongdouble
+    cast_dtype = np.clongdouble
+
+    final_dtype = np.cdouble
+    always_cast = True
 
 
 def run():

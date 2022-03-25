@@ -20,8 +20,9 @@ class TestSparseSolver(unittest.TestCase):
         self.mat3 = self.X.copy()
 
     def test_sparse_solver(self):
-        mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2, debug=True)
-        npt.assert_array_almost_equal(self.mat3, mat3)
+        with self.assertWarns(DeprecationWarning):
+            mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2, debug=True)
+            npt.assert_array_almost_equal(self.mat3, mat3)
 
     def test_sparse_solver_single(self):
         mat3 = sparse_qr_solve_mkl(self.mat1.astype(np.float32), self.mat2.astype(np.float32))

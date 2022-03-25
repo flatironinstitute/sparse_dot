@@ -1,8 +1,7 @@
 import unittest
-from unittest.case import skip
 import numpy as np
 import numpy.testing as npt
-from scipy.sparse.csr import csr_matrix
+from scipy.sparse import csr_matrix
 from sparse_dot_mkl import dot_product_mkl
 from sparse_dot_mkl.tests.test_mkl import MATRIX_1, MATRIX_2, make_matrixes
 
@@ -27,15 +26,16 @@ class TestSparseDenseMultiplication(unittest.TestCase):
     def test_float32_b_sparse(self):
         d1, d2 = self.mat1_d.astype(self.single_dtype), self.mat2.astype(self.single_dtype)
 
-        mat3 = dot_product_mkl(d1, d2, debug=True)
-        mat3_np = np.dot(d1, d2.A)
+        with self.assertWarns(DeprecationWarning):
+            mat3 = dot_product_mkl(d1, d2, debug=True)
+            mat3_np = np.dot(d1, d2.A)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
 
         mat3_np += 3.
         out = np.ones(mat3_np.shape, dtype=self.single_dtype, order=self.order)
 
-        mat3 = dot_product_mkl(d1, d2, out=out, out_scalar=3., debug=True)
+        mat3 = dot_product_mkl(d1, d2, out=out, out_scalar=3.)
         npt.assert_array_almost_equal(mat3_np, mat3)
         npt.assert_array_almost_equal(mat3_np, out)
 
@@ -47,7 +47,7 @@ class TestSparseDenseMultiplication(unittest.TestCase):
     def test_float64_b_sparse(self):
         d1, d2 = self.mat1_d.astype(self.double_dtype), self.mat2.astype(self.double_dtype)
 
-        mat3 = dot_product_mkl(d1, d2, debug=True)
+        mat3 = dot_product_mkl(d1, d2)
         mat3_np = np.dot(d1, d2.A)
 
         npt.assert_array_almost_equal(mat3_np, mat3)
