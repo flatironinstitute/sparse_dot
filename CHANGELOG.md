@@ -1,3 +1,8 @@
+### Version 0.8.2
+
+* Corrected ImportError on windows with oneMKL by explicitly library searching for mkl_rt.{i}.dll,
+  where i is between 1 and 5. That should last till 2026.
+
 ### Version 0.8.1
 
 * `cast=True` will now cast to compatible complex floats if one array is complex and one is real

@@ -1,7 +1,12 @@
 import ctypes as _ctypes
 import ctypes.util as _ctypes_util
 
-from sparse_dot_mkl._mkl_interface._structs import sparse_matrix_t, matrix_descr, MKL_Complex8, MKL_Complex16
+from sparse_dot_mkl._mkl_interface._structs import (
+    sparse_matrix_t,
+    matrix_descr,
+    MKL_Complex8,
+    MKL_Complex16
+)
 
 # Load mkl_spblas through the libmkl_rt common interface
 _libmkl = None
@@ -9,28 +14,51 @@ try:
     _so_file = _ctypes_util.find_library('mkl_rt')
 
     if _so_file is None:
-        _so_file = _ctypes_util.find_library('mkl_rt.1')
+
+        # Apparently this is gonna be an iterative thing
+        # that the MKL library does
+        for i in range(5, 0, -1):
+
+            _so_file = _ctypes_util.find_library(f'mkl_rt.{i}')
+            if _so_file is not None:
+                break
 
     if _so_file is None:
-        # For some reason, find_library is not checking LD_LIBRARY_PATH
-        # If the ctypes.util approach doesn't work, try this (crude) approach
+        # For some reason, find_library is not checking
+        # LD_LIBRARY_PATH
+        # If the ctypes.util approach doesn't work,
+        # try this (crude) approach
 
         # Check each of these library names
-        # Also include derivatives because windows find_library implementation won't match partials
-        for so_file in ["libmkl_rt.so", "libmkl_rt.dylib", "mkl_rt.dll", "mkl_rt.1.dll"]:
+        # Also include derivatives because windows find_library implementation
+        # won't match partials
+        for so_file in [
+            "libmkl_rt.so",
+            "libmkl_rt.dylib",
+            "mkl_rt.dll"
+            ] + [f"mkl_rt.{i}.dll" for i in range(5, 0, -1)]:
+
             try:
+                # If this finds anything, break out of the loop
                 _libmkl = _ctypes.cdll.LoadLibrary(so_file)
                 break
-            except (OSError, ImportError) as err:
+
+            except (OSError, ImportError):
                 pass
 
         if _libmkl is None:
             raise ImportError("mkl_rt not found.")
     else:
         _libmkl = _ctypes.cdll.LoadLibrary(_so_file)
+
+# Couldn't find anything to import
+# Raise the ImportError
 except (OSError, ImportError) as err:
-    _ierr_msg = "Unable to load the MKL libraries through libmkl_rt. Try setting $LD_LIBRARY_PATH. " + str(err)
-    raise ImportError(_ierr_msg)
+    raise ImportError(
+        "Unable to load the MKL libraries through "
+        "libmkl_rt. Try setting $LD_LIBRARY_PATH. " +
+        str(err)
+    )
 
 import numpy as _np
 from numpy.ctypeslib import ndpointer
@@ -116,7 +144,7 @@ class MKL:
     _mkl_sparse_d_mv = _libmkl.mkl_sparse_d_mv
     _mkl_sparse_c_mv = _libmkl.mkl_sparse_c_mv
     _mkl_sparse_z_mv = _libmkl.mkl_sparse_z_mv
-    
+
     # Import function for sparse gram matrix
     _mkl_sparse_syrk = _libmkl.mkl_sparse_syrk
 
@@ -154,6 +182,7 @@ class MKL:
         cls._set_int_type_dense_matmul()
         cls._set_int_type_vector_mul()
         cls._set_int_type_qr_solver()
+        cls._set_int_type_syrk()
         cls._set_int_type_misc()
 
     @classmethod
@@ -254,7 +283,7 @@ class MKL:
         cls._cblas_cgemm.restypes = None
         cls._cblas_zgemm.argtypes = cls._cblas_gemm_argtypes(_ctypes.c_void_p)
         cls._cblas_zgemm.restypes = None
-    
+
     @classmethod
     def _set_int_type_vector_mul(cls):
         """Set the correct argtypes for sparse (*) vector functions"""
@@ -275,9 +304,8 @@ class MKL:
         cls._mkl_sparse_order.argtypes = [sparse_matrix_t]
         cls._mkl_sparse_order.restypes = _ctypes.c_int
 
-
     @classmethod
-    def _set_int_type_misc(cls):
+    def _set_int_type_syrk(cls):
         cls._mkl_sparse_syrk.argtypes = [_ctypes.c_int,
                                          sparse_matrix_t,
                                          _ctypes.POINTER(sparse_matrix_t)]
@@ -392,7 +420,7 @@ class MKL:
                 sparse_matrix_t,
                 sparse_matrix_t,
                 _ctypes.c_int,
-                _ctypes.POINTER(prec_type), 
+                _ctypes.POINTER(prec_type),
                 MKL.MKL_INT]
 
     @staticmethod
