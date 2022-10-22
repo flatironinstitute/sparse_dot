@@ -585,13 +585,23 @@ def _is_valid_dtype(matrix, complex_dtype=False, all_dtype=False):
     else:
         return matrix.dtype in NUMPY_FLOAT_DTYPES
 
-def _type_check(matrix_a, matrix_b=None, cast=False):
+def _type_check(
+    matrix_a,
+    matrix_b=None,
+    cast=False,
+    allow_complex=True
+):
     """
     Make sure that both matrices are single precision floats or both are double precision floats
     If not, convert to double precision floats if cast is True, or raise an error if cast is False
     """
 
     _n_complex = _np.iscomplexobj(matrix_a) + _np.iscomplexobj(matrix_b)
+
+    if not allow_complex and _n_complex > 0:
+        raise ValueError(
+            "Complex datatypes are not supported"
+        ) 
 
     # If there's no matrix B and matrix A is valid dtype, return it
     if matrix_b is None and _is_valid_dtype(matrix_a, all_dtype=True):
@@ -652,9 +662,16 @@ def _mkl_scalar(scalar, complex_type, double_precision):
     else:
         return float(scalar)
 
-def _out_matrix(shape, dtype, order="C", out_arr=None, out_t=False):
+def _out_matrix(
+    shape,
+    dtype,
+    order="C",
+    out_arr=None,
+    out_t=False
+):
     """
-    Create an all-zero matrix or check to make sure that the provided output array matches
+    Create an all-zero matrix or check to make sure that
+    the provided output array matches
 
     :param shape: Required output shape
     :type shape: tuple(int)
@@ -664,7 +681,7 @@ def _out_matrix(shape, dtype, order="C", out_arr=None, out_t=False):
     :type order: str
     :param out_arr: Provided output array
     :type out_arr: _np.ndarray
-    :param out_t: Out array has been transposed 
+    :param out_t: Out array has been transposed
     :type out_t: bool
     :return: Array
     :rtype: _np.ndarray
@@ -678,17 +695,33 @@ def _out_matrix(shape, dtype, order="C", out_arr=None, out_t=False):
 
     # Check and make sure the order is correct
     # Note 1d arrays have both flags set
-    _order_match = out_arr.flags['C_CONTIGUOUS'] if order == "C" else out_arr.flags['F_CONTIGUOUS']
+    if order == "C":
+        _order_match = out_arr.flags['C_CONTIGUOUS']
+    else:
+        _order_match = out_arr.flags['F_CONTIGUOUS']
 
-    # If there are any incompatible parameters, raise an error with the provided and required array parameters
-    # Flip them if out_T is set so that the original values and the values which would have to be provided are correct
-    if shape != out_arr.shape or dtype != out_arr.dtype or not _order_match or not out_arr.data.contiguous:
+    # If there are any incompatible parameters, raise an error
+    # with the provided and required array parameters
+    # Flip them if out_T is set so that the original values and
+    # the values which would have to be provided are correct
+    if (shape != out_arr.shape or
+        dtype != out_arr.dtype or
+        not _order_match or
+        not out_arr.data.contiguous
+    ):
+
+        _c_contig = out_arr.flags['C_CONTIGUOUS']
+        _f_contig = out_arr.flags['F_CONTIGUOUS']
+
         if not out_t or out_arr.ndim == 1:
-            _err_shape, _req_shape = out_arr.shape, shape
-            _err_order, _req_order = "C" if out_arr.flags['C_CONTIGUOUS'] else "F", order
+            _err_shape = out_arr.shape
+            _req_shape = shape
+            _err_order = "C" if _c_contig else "F"
+            _req_order = order
         else:
-            _err_shape, _req_shape = out_arr.shape[::-1], shape[::-1]
-            _err_order = "F" if out_arr.flags['C_CONTIGUOUS'] and not out_arr.flags['F_CONTIGUOUS'] else "C"
+            _err_shape = out_arr.shape[::-1]
+            _req_shape = shape[::-1]
+            _err_order = "F" if _c_contig and not _f_contig else "C"
             _req_order = "C" if order == "F" else "F"
 
         try:
@@ -696,13 +729,13 @@ def _out_matrix(shape, dtype, order="C", out_arr=None, out_t=False):
         except AttributeError:
             _req_dtype = dtype.name
 
-        _err_msg = "Provided out array is "
-        _err_msg += "{s} {d} [{o}_{c}]".format(s=_err_shape, d=out_arr.dtype, o=_err_order,
-                                               c="CONTIGUOUS" if out_arr.data.contiguous else "NONCONTIGUOUS")
-
-        _err_msg += "; product requires {s} {d} [{o}_{c}]".format(s=_req_shape, d=_req_dtype, o=_req_order,
-                                                                  c="CONTIGUOUS")
-        raise ValueError(_err_msg)
+        raise ValueError(
+            "Provided out array is "
+            f"{_err_shape} {out_arr.dtype} [{_err_order}"
+            f"_{'CONTIGUOUS' if out_arr.data.contiguous else 'NONCONTIGUOUS'}]"
+            f" and product requires "
+            f"{_req_shape} {_req_dtype} [{_req_order}_CONTIGUOUS]"
+        )
 
     else:
         return out_arr
@@ -714,12 +747,12 @@ def _is_dense_vector(m_or_v):
 
 def _is_double(arr):
     """
-    Return true if the array is doubles, false if singles, and raise an error if it's neither.
+    Return bools corresponding to float precision & real/complex.
 
-    :param arr:
-    :type arr: _np.ndarray, scipy.sparse.spmatrix
-    :return:
-    :rtype: bool
+    :param arr: 2d array
+    :type arr: np.ndarray, scipy.sparse.spmatrix
+    :return: False(single) or True(double), False(real) or True(complex)
+    :rtype: bool, bool
     """
 
     # Figure out which dtype for data
@@ -731,7 +764,7 @@ def _is_double(arr):
         return False, True
     elif arr.dtype == _np.cdouble:
         return True, True
-    else: 
+    else:
         raise ValueError("Only float32, float64, csingle, and cdouble dtypes are supported")
 
 
