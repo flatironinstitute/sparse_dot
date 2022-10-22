@@ -1,3 +1,7 @@
+### Version 0.8.3
+
+* Explicit error message when complex data is put into the QR solver
+
 ### Version 0.8.2
 
 * Corrected ImportError on windows with oneMKL by explicitly library searching for mkl_rt.{i}.dll,

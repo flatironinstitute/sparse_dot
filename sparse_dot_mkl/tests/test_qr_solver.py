@@ -53,3 +53,13 @@ class TestSparseSolver(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             mat3 = sparse_qr_solve_mkl(self.mat1.tocoo(), self.mat2, cast=True)
+
+        with self.assertRaises(ValueError) as raised:
+            mat4 = sparse_qr_solve_mkl(self.mat1.astype(np.cdouble), self.mat2)
+            self.assertEqual(
+                str(raised.exception),
+                "Complex datatypes are not supported"
+            )
+
+        with self.assertRaises(ValueError):
+            mat5 = sparse_qr_solve_mkl(self.mat1.astype(np.cdouble), self.mat2)
