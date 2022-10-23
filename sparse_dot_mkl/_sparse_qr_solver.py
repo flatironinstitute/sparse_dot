@@ -14,11 +14,13 @@ import numpy as np
 import ctypes as _ctypes
 import scipy.sparse as _spsparse
 
+# Keyed by bool for double-precision
 SOLVE_FUNCS = {
     True: MKL._mkl_sparse_d_qr_solve,
     False: MKL._mkl_sparse_s_qr_solve
 }
 
+# Keyed by bool for double-precision
 FACTORIZE_FUNCS = {
     True: MKL._mkl_sparse_d_qr_factorize,
     False: MKL._mkl_sparse_s_qr_factorize
@@ -31,68 +33,77 @@ def _sparse_qr(
     """
     Solve AX = B for X
 
-    :param matrix_a: Sparse matrix A
-    :type matrix_a: scipy.sparse.csr_matrix
-    :param matrix_b: Dense matrix B
+    :param matrix_a: Sparse matrix A as CSR or CSC [M x N]
+    :type matrix_a: scipy.sparse.spmatrix
+    :param matrix_b: Dense matrix B [M x 1]
     :type matrix_b: numpy.ndarray
-    :return: Dense matrix X
+    :return: Dense matrix X [N x 1]
     :rtype: numpy.ndarray
     """
 
-    mkl_a, dbl, cplx = _create_mkl_sparse(matrix_a)
-    layout_b, ld_b = _get_numpy_layout(matrix_b)
+    _mkl_handles = []
 
-    output_shape = matrix_a.shape[1], matrix_b.shape[1]
+    try:
+        mkl_a, dbl, _ = _create_mkl_sparse(matrix_a)
+        _mkl_handles.append(mkl_a)
 
-    if _spsparse.isspmatrix_csc(matrix_a):
-        mkl_a = _convert_to_csr(mkl_a)
+        layout_b, ld_b = _get_numpy_layout(matrix_b)
 
-    # QR Reorder ##
-    ret_val_r = MKL._mkl_sparse_qr_reorder(mkl_a, matrix_descr())
+        output_shape = matrix_a.shape[1], matrix_b.shape[1]
 
-    # Check return
-    _check_return_value(ret_val_r, "mkl_sparse_qr_reorder")
+        # Convert a CSC matrix to CSR
+        if _spsparse.isspmatrix_csc(matrix_a):
+            mkl_a = _convert_to_csr(mkl_a)
+            _mkl_handles.append(mkl_a)
 
-    # QR Factorize ##
-    factorize_func = FACTORIZE_FUNCS[dbl]
+        # QR Reorder ##
+        ret_val_r = MKL._mkl_sparse_qr_reorder(mkl_a, matrix_descr())
 
-    ret_val_f = factorize_func(mkl_a, None)
+        # Check return
+        _check_return_value(ret_val_r, "mkl_sparse_qr_reorder")
 
-    # Check return
-    _check_return_value(ret_val_f, factorize_func.__name__)
+        # QR Factorize ##
+        factorize_func = FACTORIZE_FUNCS[dbl]
 
-    # QR Solve ##
-    output_dtype = np.float64 if dbl else np.float32
-    output_ctype = _ctypes.c_double if dbl else _ctypes.c_float
+        ret_val_f = factorize_func(mkl_a, None)
 
-    output_arr = np.zeros(
-        output_shape,
-        dtype=output_dtype,
-        order="C" if layout_b == LAYOUT_CODE_C else "F"
-    )
+        # Check return
+        _check_return_value(ret_val_f, factorize_func.__name__)
 
-    layout_out, ld_out = _get_numpy_layout(output_arr)
+        # QR Solve ##
+        output_dtype = np.float64 if dbl else np.float32
+        output_ctype = _ctypes.c_double if dbl else _ctypes.c_float
 
-    solve_func = SOLVE_FUNCS[dbl]
+        output_arr = np.zeros(
+            output_shape,
+            dtype=output_dtype,
+            order="C" if layout_b == LAYOUT_CODE_C else "F"
+        )
 
-    ret_val_s = solve_func(
-        10,
-        mkl_a,
-        None,
-        layout_b,
-        output_shape[1],
-        output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
-        ld_out,
-        matrix_b,
-        ld_b
-    )
+        layout_out, ld_out = _get_numpy_layout(output_arr)
 
-    # Check return
-    _check_return_value(ret_val_s, solve_func.__name__)
+        solve_func = SOLVE_FUNCS[dbl]
 
-    _destroy_mkl_handle(mkl_a)
+        ret_val_s = solve_func(
+            10,
+            mkl_a,
+            None,
+            layout_b,
+            output_shape[1],
+            output_arr.ctypes.data_as(_ctypes.POINTER(output_ctype)),
+            ld_out,
+            matrix_b,
+            ld_b
+        )
 
-    return output_arr
+        # Check return
+        _check_return_value(ret_val_s, solve_func.__name__)
+
+        return output_arr
+
+    finally:
+        for _handle in _mkl_handles:
+            _destroy_mkl_handle(_handle)
 
 
 def sparse_qr_solver(
@@ -101,11 +112,19 @@ def sparse_qr_solver(
     cast=False
 ):
     """
+    Run the MKL QR solver for Ax=B
+    and return x
 
-    :param matrix_a:
-    :param matrix_b:
-    :param cast:
-    :return:
+    :param matrix_a: Sparse matrix A as CSR or CSC [M x N]
+    :type matrix_a: scipy.sparse.spmatrix
+    :param matrix_b: Dense matrix B [M x 1]
+    :type matrix_b: numpy.ndarray
+    :param cast: Convert data to compatible floats and
+        convert CSC matrix to CSR matrix if necessary
+    :raise ValueError: Raise a ValueError if the input matrices
+        cannot be multiplied
+    :return: Dense matrix X [N x 1]
+    :rtype: numpy.ndarray
     """
 
     if _spsparse.isspmatrix_csc(matrix_a) and not cast:

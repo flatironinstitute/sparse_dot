@@ -1,6 +1,7 @@
 ### Version 0.8.3
 
 * Explicit error message when complex data is put into the QR solver
+* Fix edge condition memory leak in the QR solver
 
 ### Version 0.8.2
 

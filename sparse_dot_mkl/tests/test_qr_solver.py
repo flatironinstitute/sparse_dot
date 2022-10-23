@@ -40,26 +40,34 @@ class TestSparseSolver(unittest.TestCase):
         mat3 = sparse_qr_solve_mkl(self.mat1.tocsc(), self.mat2, cast=True)
         npt.assert_array_almost_equal(self.mat3, mat3)
 
+    def test_sparse_solver_cast_CSC_Forder(self):
+        mat3 = sparse_qr_solve_mkl(
+            self.mat1.tocsc(),
+            np.array(self.mat2, order="F"),
+            cast=True
+        )
+        npt.assert_array_almost_equal(self.mat3, mat3)
+
     def test_sparse_solver_1d_d(self):
         mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2.ravel())
         npt.assert_array_almost_equal(self.mat3.ravel(), mat3)
 
     def test_solver_guard_errors(self):
         with self.assertRaises(ValueError):
-            mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2.T)
+            _ = sparse_qr_solve_mkl(self.mat1, self.mat2.T)
 
         with self.assertRaises(ValueError):
-            mat3 = sparse_qr_solve_mkl(self.mat1.tocsc(), self.mat2)
+            _ = sparse_qr_solve_mkl(self.mat1.tocsc(), self.mat2)
 
         with self.assertRaises(ValueError):
-            mat3 = sparse_qr_solve_mkl(self.mat1.tocoo(), self.mat2, cast=True)
+            _ = sparse_qr_solve_mkl(self.mat1.tocoo(), self.mat2, cast=True)
 
         with self.assertRaises(ValueError) as raised:
-            mat4 = sparse_qr_solve_mkl(self.mat1.astype(np.cdouble), self.mat2)
+            _ = sparse_qr_solve_mkl(self.mat1.astype(np.cdouble), self.mat2)
             self.assertEqual(
                 str(raised.exception),
                 "Complex datatypes are not supported"
             )
 
         with self.assertRaises(ValueError):
-            mat5 = sparse_qr_solve_mkl(self.mat1.astype(np.cdouble), self.mat2)
+            _ = sparse_qr_solve_mkl(self.mat1.astype(np.csingle), self.mat2)
