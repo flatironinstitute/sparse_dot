@@ -1,3 +1,6 @@
+import os
+import sys
+
 import ctypes as _ctypes
 import ctypes.util as _ctypes_util
 
@@ -5,21 +8,37 @@ from sparse_dot_mkl._mkl_interface._structs import (
     sparse_matrix_t,
     matrix_descr,
     MKL_Complex8,
-    MKL_Complex16
+    MKL_Complex16,
 )
+
+
+def _try_load_mkl_rt(path):
+    # Check each of these library names
+    # Also include derivatives because windows find_library implementation won't match
+    # partials
+    for so_file in ["libmkl_rt.so", "libmkl_rt.dylib", "mkl_rt.dll"] + [
+        f"mkl_rt.{i}.dll" for i in range(5, 0, -1)
+    ]:
+        try:
+            # If this finds anything, break out of the loop
+            return _ctypes.cdll.LoadLibrary(os.path.join(path, so_file))
+
+        except (OSError, ImportError):
+            pass
+
+    return None
+
 
 # Load mkl_spblas through the libmkl_rt common interface
 _libmkl = None
 try:
-    _so_file = _ctypes_util.find_library('mkl_rt')
+    _so_file = _ctypes_util.find_library("mkl_rt")
 
     if _so_file is None:
-
         # Apparently this is gonna be an iterative thing
         # that the MKL library does
         for i in range(5, 0, -1):
-
-            _so_file = _ctypes_util.find_library(f'mkl_rt.{i}')
+            _so_file = _ctypes_util.find_library(f"mkl_rt.{i}")
             if _so_file is not None:
                 break
 
@@ -28,46 +47,44 @@ try:
         # LD_LIBRARY_PATH
         # If the ctypes.util approach doesn't work,
         # try this (crude) approach
+        _libmkl = _try_load_mkl_rt("")
 
-        # Check each of these library names
-        # Also include derivatives because windows find_library implementation
-        # won't match partials
-        for so_file in [
-            "libmkl_rt.so",
-            "libmkl_rt.dylib",
-            "mkl_rt.dll"
-            ] + [f"mkl_rt.{i}.dll" for i in range(5, 0, -1)]:
-
-            try:
-                # If this finds anything, break out of the loop
-                _libmkl = _ctypes.cdll.LoadLibrary(so_file)
-                break
-
-            except (OSError, ImportError):
-                pass
-
-        if _libmkl is None:
-            raise ImportError("mkl_rt not found.")
     else:
         _libmkl = _ctypes.cdll.LoadLibrary(_so_file)
+
+    if _libmkl is None:
+        oneapi_root = os.getenv("ONEAPI_ROOT")
+
+        if oneapi_root is not None:
+            if sys.maxsize > 2**32:
+                mkl_arch = "intel64"
+            else:
+                mkl_arch = "ia32"
+
+            mkl_base_path = os.path.join(oneapi_root, "mkl", "latest", "redist", mkl_arch)
+            _libmkl = _try_load_mkl_rt(mkl_base_path)
+
+    if _libmkl is None:
+        raise ImportError("mkl_rt not found.")
 
 # Couldn't find anything to import
 # Raise the ImportError
 except (OSError, ImportError) as err:
     raise ImportError(
         "Unable to load the MKL libraries through "
-        "libmkl_rt. Try setting $LD_LIBRARY_PATH. " +
-        str(err)
+        "libmkl_rt. Try setting $LD_LIBRARY_PATH. " + str(err)
     )
 
 import numpy as _np
 from numpy.ctypeslib import ndpointer
 
+
 def mkl_library_name():
     return _libmkl._name
 
+
 class MKL:
-    """ This class holds shared object references to C functions with arg and returntypes that can be adjusted"""
+    """This class holds shared object references to C functions with arg and returntypes that can be adjusted"""
 
     MKL_INT = None
     MKL_INT_NUMPY = None
@@ -188,88 +205,150 @@ class MKL:
     @classmethod
     def _set_int_type_create(cls):
         """Set the correct argtypes for handle creation functions"""
-        cls._mkl_sparse_d_create_csr.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_create_csr.argtypes = cls._mkl_sparse_create_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_d_create_csr.restypes = _ctypes.c_int
-        cls._mkl_sparse_s_create_csr.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_create_csr.argtypes = cls._mkl_sparse_create_argtypes(
+            _ctypes.c_float
+        )
         cls._mkl_sparse_s_create_csr.restypes = _ctypes.c_int
-        cls._mkl_sparse_c_create_csr.argtypes = cls._mkl_sparse_create_argtypes(_np.csingle)
+        cls._mkl_sparse_c_create_csr.argtypes = cls._mkl_sparse_create_argtypes(
+            _np.csingle
+        )
         cls._mkl_sparse_c_create_csr.restypes = _ctypes.c_int
-        cls._mkl_sparse_z_create_csr.argtypes = cls._mkl_sparse_create_argtypes(_np.cdouble)
+        cls._mkl_sparse_z_create_csr.argtypes = cls._mkl_sparse_create_argtypes(
+            _np.cdouble
+        )
         cls._mkl_sparse_z_create_csr.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_d_create_csc.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_create_csc.argtypes = cls._mkl_sparse_create_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_d_create_csc.restypes = _ctypes.c_int
-        cls._mkl_sparse_s_create_csc.argtypes = cls._mkl_sparse_create_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_create_csc.argtypes = cls._mkl_sparse_create_argtypes(
+            _ctypes.c_float
+        )
         cls._mkl_sparse_s_create_csc.restypes = _ctypes.c_int
-        cls._mkl_sparse_c_create_csc.argtypes = cls._mkl_sparse_create_argtypes(_np.csingle)
+        cls._mkl_sparse_c_create_csc.argtypes = cls._mkl_sparse_create_argtypes(
+            _np.csingle
+        )
         cls._mkl_sparse_c_create_csc.restypes = _ctypes.c_int
-        cls._mkl_sparse_z_create_csc.argtypes = cls._mkl_sparse_create_argtypes(_np.cdouble)
+        cls._mkl_sparse_z_create_csc.argtypes = cls._mkl_sparse_create_argtypes(
+            _np.cdouble
+        )
         cls._mkl_sparse_z_create_csc.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_d_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_d_create_bsr.restypes = _ctypes.c_int
-        cls._mkl_sparse_s_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(
+            _ctypes.c_float
+        )
         cls._mkl_sparse_s_create_bsr.restypes = _ctypes.c_int
-        cls._mkl_sparse_c_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(_np.csingle)
+        cls._mkl_sparse_c_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(
+            _np.csingle
+        )
         cls._mkl_sparse_c_create_bsr.restypes = _ctypes.c_int
-        cls._mkl_sparse_z_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(_np.cdouble)
+        cls._mkl_sparse_z_create_bsr.argtypes = cls._mkl_sparse_create_bsr_argtypes(
+            _np.cdouble
+        )
         cls._mkl_sparse_z_create_bsr.restypes = _ctypes.c_int
 
     @classmethod
     def _set_int_type_export(cls):
         """Set the correct argtypes for handle export functions"""
-        cls._mkl_sparse_d_export_csr.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_export_csr.argtypes = cls._mkl_sparse_export_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_d_export_csr.restypes = _ctypes.c_int
-        cls._mkl_sparse_s_export_csr.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_export_csr.argtypes = cls._mkl_sparse_export_argtypes(
+            _ctypes.c_float
+        )
         cls._mkl_sparse_s_export_csr.restypes = _ctypes.c_int
-        cls._mkl_sparse_z_export_csr.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_z_export_csr.argtypes = cls._mkl_sparse_export_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_z_export_csr.restypes = _ctypes.c_int
-        cls._mkl_sparse_c_export_csr.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_c_export_csr.argtypes = cls._mkl_sparse_export_argtypes(
+            _ctypes.c_float
+        )
         cls._mkl_sparse_c_export_csr.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_export_csc.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_export_csc.argtypes = cls._mkl_sparse_export_argtypes(
+            _ctypes.c_float
+        )
         cls._mkl_sparse_s_export_csc.restypes = _ctypes.c_int
-        cls._mkl_sparse_d_export_csc.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_export_csc.argtypes = cls._mkl_sparse_export_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_d_export_csc.restypes = _ctypes.c_int
-        cls._mkl_sparse_c_export_csc.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_c_export_csc.argtypes = cls._mkl_sparse_export_argtypes(
+            _ctypes.c_float
+        )
         cls._mkl_sparse_c_export_csc.restypes = _ctypes.c_int
-        cls._mkl_sparse_z_export_csc.argtypes = cls._mkl_sparse_export_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_z_export_csc.argtypes = cls._mkl_sparse_export_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_z_export_csc.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_s_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(
+            _ctypes.c_float
+        )
         cls._mkl_sparse_s_export_bsr.restypes = _ctypes.c_int
-        cls._mkl_sparse_d_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_d_export_bsr.restypes = _ctypes.c_int
-        cls._mkl_sparse_c_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_float)
+        cls._mkl_sparse_c_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(
+            _ctypes.c_float
+        )
         cls._mkl_sparse_c_export_bsr.restypes = _ctypes.c_int
-        cls._mkl_sparse_z_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_z_export_bsr.argtypes = cls._mkl_sparse_export_bsr_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_z_export_bsr.restypes = _ctypes.c_int
 
     @classmethod
     def _set_int_type_sparse_matmul(cls):
         """Set the correct argtypes for sparse (*) sparse functions and sparse (*) dense functions"""
-        cls._mkl_sparse_spmm.argtypes = [_ctypes.c_int,
-                                         sparse_matrix_t,
-                                         sparse_matrix_t,
-                                         _ctypes.POINTER(sparse_matrix_t)]
+        cls._mkl_sparse_spmm.argtypes = [
+            _ctypes.c_int,
+            sparse_matrix_t,
+            sparse_matrix_t,
+            _ctypes.POINTER(sparse_matrix_t),
+        ]
         cls._mkl_sparse_spmm.restypes = _ctypes.c_int
 
         cls._mkl_sparse_s_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(_ctypes.c_float)
         cls._mkl_sparse_s_spmmd.restypes = _ctypes.c_int
-        cls._mkl_sparse_d_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_d_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_d_spmmd.restypes = _ctypes.c_int
         cls._mkl_sparse_c_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(_ctypes.c_float)
         cls._mkl_sparse_c_spmmd.restypes = _ctypes.c_int
-        cls._mkl_sparse_z_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(_ctypes.c_double)
+        cls._mkl_sparse_z_spmmd.argtypes = cls._mkl_sparse_spmmd_argtypes(
+            _ctypes.c_double
+        )
         cls._mkl_sparse_z_spmmd.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_mm.argtypes = cls._mkl_sparse_mm_argtypes(_ctypes.c_float, _ctypes.c_float, _ctypes.c_float)
+        cls._mkl_sparse_s_mm.argtypes = cls._mkl_sparse_mm_argtypes(
+            _ctypes.c_float, _ctypes.c_float, _ctypes.c_float
+        )
         cls._mkl_sparse_s_mm.restypes = _ctypes.c_int
-        cls._mkl_sparse_d_mm.argtypes = cls._mkl_sparse_mm_argtypes(_ctypes.c_double, _ctypes.c_double, _ctypes.c_double)
+        cls._mkl_sparse_d_mm.argtypes = cls._mkl_sparse_mm_argtypes(
+            _ctypes.c_double, _ctypes.c_double, _ctypes.c_double
+        )
         cls._mkl_sparse_d_mm.restypes = _ctypes.c_int
-        cls._mkl_sparse_c_mm.argtypes = cls._mkl_sparse_mm_argtypes(MKL_Complex8, _ctypes.c_float, _np.csingle)
+        cls._mkl_sparse_c_mm.argtypes = cls._mkl_sparse_mm_argtypes(
+            MKL_Complex8, _ctypes.c_float, _np.csingle
+        )
         cls._mkl_sparse_c_mm.restypes = _ctypes.c_int
-        cls._mkl_sparse_z_mm.argtypes = cls._mkl_sparse_mm_argtypes(MKL_Complex16, _ctypes.c_double, _np.cdouble)
+        cls._mkl_sparse_z_mm.argtypes = cls._mkl_sparse_mm_argtypes(
+            MKL_Complex16, _ctypes.c_double, _np.cdouble
+        )
         cls._mkl_sparse_z_mm.restypes = _ctypes.c_int
 
     @classmethod
@@ -287,13 +366,21 @@ class MKL:
     @classmethod
     def _set_int_type_vector_mul(cls):
         """Set the correct argtypes for sparse (*) vector functions"""
-        cls._mkl_sparse_s_mv.argtypes = cls._mkl_sparse_mv_argtypes(_ctypes.c_float, _np.float32)
+        cls._mkl_sparse_s_mv.argtypes = cls._mkl_sparse_mv_argtypes(
+            _ctypes.c_float, _np.float32
+        )
         cls._mkl_sparse_s_mv.restypes = _ctypes.c_int
-        cls._mkl_sparse_d_mv.argtypes = cls._mkl_sparse_mv_argtypes(_ctypes.c_double, _np.float64)
+        cls._mkl_sparse_d_mv.argtypes = cls._mkl_sparse_mv_argtypes(
+            _ctypes.c_double, _np.float64
+        )
         cls._mkl_sparse_d_mv.restypes = _ctypes.c_int
-        cls._mkl_sparse_c_mv.argtypes = cls._mkl_sparse_mv_argtypes(MKL_Complex8, _np.csingle)
+        cls._mkl_sparse_c_mv.argtypes = cls._mkl_sparse_mv_argtypes(
+            MKL_Complex8, _np.csingle
+        )
         cls._mkl_sparse_c_mv.restypes = _ctypes.c_int
-        cls._mkl_sparse_z_mv.argtypes = cls._mkl_sparse_mv_argtypes(MKL_Complex16, _np.cdouble)
+        cls._mkl_sparse_z_mv.argtypes = cls._mkl_sparse_mv_argtypes(
+            MKL_Complex16, _np.cdouble
+        )
         cls._mkl_sparse_z_mv.restypes = _ctypes.c_int
 
     @classmethod
@@ -306,38 +393,59 @@ class MKL:
 
     @classmethod
     def _set_int_type_syrk(cls):
-        cls._mkl_sparse_syrk.argtypes = [_ctypes.c_int,
-                                         sparse_matrix_t,
-                                         _ctypes.POINTER(sparse_matrix_t)]
+        cls._mkl_sparse_syrk.argtypes = [
+            _ctypes.c_int,
+            sparse_matrix_t,
+            _ctypes.POINTER(sparse_matrix_t),
+        ]
         cls._mkl_sparse_syrk.restypes = _ctypes.c_int
 
-        cls._mkl_sparse_s_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(_ctypes.c_float, _np.float32)
+        cls._mkl_sparse_s_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(
+            _ctypes.c_float, _np.float32
+        )
         cls._mkl_sparse_s_syrkd.restypes = _ctypes.c_int
-        cls._mkl_sparse_d_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(_ctypes.c_double, _np.float64)
+        cls._mkl_sparse_d_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(
+            _ctypes.c_double, _np.float64
+        )
         cls._mkl_sparse_d_syrkd.restypes = _ctypes.c_int
-        cls._mkl_sparse_c_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(MKL_Complex8, _np.csingle)
+        cls._mkl_sparse_c_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(
+            MKL_Complex8, _np.csingle
+        )
         cls._mkl_sparse_c_syrkd.restypes = _ctypes.c_int
-        cls._mkl_sparse_z_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(MKL_Complex16, _np.cdouble)
+        cls._mkl_sparse_z_syrkd.argtypes = cls._mkl_sparse_syrkd_argtypes(
+            MKL_Complex16, _np.cdouble
+        )
         cls._mkl_sparse_z_syrkd.restypes = _ctypes.c_int
 
         cls._cblas_ssyrk.argtypes = cls._cblas_syrk_argtypes(_ctypes.c_float, _np.float32)
         cls._cblas_ssyrk.restypes = None
-        cls._cblas_dsyrk.argtypes = cls._cblas_syrk_argtypes(_ctypes.c_double, _np.float64)
+        cls._cblas_dsyrk.argtypes = cls._cblas_syrk_argtypes(
+            _ctypes.c_double, _np.float64
+        )
         cls._cblas_dsyrk.restypes = None
-        cls._cblas_csyrk.argtypes = cls._cblas_syrk_argtypes(MKL_Complex8, _np.csingle, scalar_pointers=True)
+        cls._cblas_csyrk.argtypes = cls._cblas_syrk_argtypes(
+            MKL_Complex8, _np.csingle, scalar_pointers=True
+        )
         cls._cblas_csyrk.restypes = None
-        cls._cblas_zsyrk.argtypes = cls._cblas_syrk_argtypes(MKL_Complex16, _np.cdouble, scalar_pointers=True)
+        cls._cblas_zsyrk.argtypes = cls._cblas_syrk_argtypes(
+            MKL_Complex16, _np.cdouble, scalar_pointers=True
+        )
         cls._cblas_zsyrk.restypes = None
-
 
     @classmethod
     def _set_int_type_qr_solver(cls):
         """Set the correct argtypes for QR solver functions"""
         cls._mkl_sparse_qr_reorder.argtypes = [sparse_matrix_t, matrix_descr]
         cls._mkl_sparse_qr_reorder.restypes = _ctypes.c_int
-        cls._mkl_sparse_d_qr_factorize.argtypes = [sparse_matrix_t, _ctypes.POINTER(_ctypes.c_double)]
+        cls._mkl_sparse_d_qr_factorize.argtypes = [
+            sparse_matrix_t,
+            _ctypes.POINTER(_ctypes.c_double),
+        ]
         cls._mkl_sparse_d_qr_factorize.restypes = _ctypes.c_int
-        cls._mkl_sparse_s_qr_factorize.argtypes = [sparse_matrix_t, _ctypes.POINTER(_ctypes.c_float)]
+        cls._mkl_sparse_s_qr_factorize.argtypes = [
+            sparse_matrix_t,
+            _ctypes.POINTER(_ctypes.c_float),
+        ]
         cls._mkl_sparse_s_qr_factorize.restypes = _ctypes.c_int
         cls._mkl_sparse_d_qr_solve.argtypes = cls._mkl_sparse_qr_solve(_ctypes.c_double)
         cls._mkl_sparse_d_qr_solve.restypes = _ctypes.c_int
@@ -351,134 +459,156 @@ class MKL:
 
     @staticmethod
     def _mkl_sparse_create_argtypes(prec_type):
-        return [_ctypes.POINTER(sparse_matrix_t),
-                _ctypes.c_int,
-                MKL.MKL_INT,
-                MKL.MKL_INT,
-                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
-                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
-                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
-                ndpointer(dtype=prec_type, ndim=1, flags='C_CONTIGUOUS')]
+        return [
+            _ctypes.POINTER(sparse_matrix_t),
+            _ctypes.c_int,
+            MKL.MKL_INT,
+            MKL.MKL_INT,
+            ndpointer(dtype=MKL.MKL_INT, ndim=1, flags="C_CONTIGUOUS"),
+            ndpointer(dtype=MKL.MKL_INT, ndim=1, flags="C_CONTIGUOUS"),
+            ndpointer(dtype=MKL.MKL_INT, ndim=1, flags="C_CONTIGUOUS"),
+            ndpointer(dtype=prec_type, ndim=1, flags="C_CONTIGUOUS"),
+        ]
 
     @staticmethod
     def _mkl_sparse_create_bsr_argtypes(prec_type):
-        return [_ctypes.POINTER(sparse_matrix_t),
-                _ctypes.c_int,
-                _ctypes.c_int,
-                MKL.MKL_INT,
-                MKL.MKL_INT,
-                MKL.MKL_INT,
-                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
-                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
-                ndpointer(dtype=MKL.MKL_INT, ndim=1, flags='C_CONTIGUOUS'),
-                ndpointer(dtype=prec_type, ndim=3, flags='C_CONTIGUOUS')]
+        return [
+            _ctypes.POINTER(sparse_matrix_t),
+            _ctypes.c_int,
+            _ctypes.c_int,
+            MKL.MKL_INT,
+            MKL.MKL_INT,
+            MKL.MKL_INT,
+            ndpointer(dtype=MKL.MKL_INT, ndim=1, flags="C_CONTIGUOUS"),
+            ndpointer(dtype=MKL.MKL_INT, ndim=1, flags="C_CONTIGUOUS"),
+            ndpointer(dtype=MKL.MKL_INT, ndim=1, flags="C_CONTIGUOUS"),
+            ndpointer(dtype=prec_type, ndim=3, flags="C_CONTIGUOUS"),
+        ]
 
     @staticmethod
     def _mkl_sparse_export_argtypes(prec_type):
-        return [sparse_matrix_t,
-                _ctypes.POINTER(_ctypes.c_int),
-                _ctypes.POINTER(MKL.MKL_INT),
-                _ctypes.POINTER(MKL.MKL_INT),
-                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
-                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
-                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
-                _ctypes.POINTER(_ctypes.POINTER(prec_type))]
+        return [
+            sparse_matrix_t,
+            _ctypes.POINTER(_ctypes.c_int),
+            _ctypes.POINTER(MKL.MKL_INT),
+            _ctypes.POINTER(MKL.MKL_INT),
+            _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+            _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+            _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+            _ctypes.POINTER(_ctypes.POINTER(prec_type)),
+        ]
 
     @staticmethod
     def _mkl_sparse_export_bsr_argtypes(prec_type):
-        return [sparse_matrix_t,
-                _ctypes.POINTER(_ctypes.c_int),
-                _ctypes.POINTER(_ctypes.c_int),
-                _ctypes.POINTER(MKL.MKL_INT),
-                _ctypes.POINTER(MKL.MKL_INT),
-                _ctypes.POINTER(MKL.MKL_INT),
-                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
-                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
-                _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
-                _ctypes.POINTER(_ctypes.POINTER(prec_type))]
+        return [
+            sparse_matrix_t,
+            _ctypes.POINTER(_ctypes.c_int),
+            _ctypes.POINTER(_ctypes.c_int),
+            _ctypes.POINTER(MKL.MKL_INT),
+            _ctypes.POINTER(MKL.MKL_INT),
+            _ctypes.POINTER(MKL.MKL_INT),
+            _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+            _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+            _ctypes.POINTER(_ctypes.POINTER(MKL.MKL_INT)),
+            _ctypes.POINTER(_ctypes.POINTER(prec_type)),
+        ]
 
     @staticmethod
     def _cblas_gemm_argtypes(prec_type, scalar_pointers=False):
-        return [_ctypes.c_int,
-                _ctypes.c_int,
-                _ctypes.c_int,
-                MKL.MKL_INT,
-                MKL.MKL_INT,
-                MKL.MKL_INT,
-                _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
-                _ctypes.POINTER(prec_type),
-                MKL.MKL_INT,
-                _ctypes.POINTER(prec_type),
-                MKL.MKL_INT,
-                _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
-                _ctypes.POINTER(prec_type),
-                MKL.MKL_INT]
+        return [
+            _ctypes.c_int,
+            _ctypes.c_int,
+            _ctypes.c_int,
+            MKL.MKL_INT,
+            MKL.MKL_INT,
+            MKL.MKL_INT,
+            _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
+            _ctypes.POINTER(prec_type),
+            MKL.MKL_INT,
+            _ctypes.POINTER(prec_type),
+            MKL.MKL_INT,
+            _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
+            _ctypes.POINTER(prec_type),
+            MKL.MKL_INT,
+        ]
 
     @staticmethod
     def _mkl_sparse_spmmd_argtypes(prec_type):
-        return [_ctypes.c_int,
-                sparse_matrix_t,
-                sparse_matrix_t,
-                _ctypes.c_int,
-                _ctypes.POINTER(prec_type),
-                MKL.MKL_INT]
+        return [
+            _ctypes.c_int,
+            sparse_matrix_t,
+            sparse_matrix_t,
+            _ctypes.c_int,
+            _ctypes.POINTER(prec_type),
+            MKL.MKL_INT,
+        ]
 
     @staticmethod
     def _mkl_sparse_mm_argtypes(scalar_type, prec_type, _np_prec_type):
-        return [_ctypes.c_int,
-                scalar_type,
-                sparse_matrix_t,
-                matrix_descr,
-                _ctypes.c_int,
-                ndpointer(dtype=_np_prec_type, ndim=2),
-                MKL.MKL_INT,
-                MKL.MKL_INT,
-                scalar_type,
-                _ctypes.POINTER(prec_type),
-                MKL.MKL_INT]
+        return [
+            _ctypes.c_int,
+            scalar_type,
+            sparse_matrix_t,
+            matrix_descr,
+            _ctypes.c_int,
+            ndpointer(dtype=_np_prec_type, ndim=2),
+            MKL.MKL_INT,
+            MKL.MKL_INT,
+            scalar_type,
+            _ctypes.POINTER(prec_type),
+            MKL.MKL_INT,
+        ]
 
     @staticmethod
     def _mkl_sparse_mv_argtypes(prec_type, _np_type):
-        return [_ctypes.c_int,
-                prec_type,
-                sparse_matrix_t,
-                matrix_descr,
-                ndpointer(dtype=_np_type, ndim=1),
-                prec_type,
-                ndpointer(dtype=_np_type)]
+        return [
+            _ctypes.c_int,
+            prec_type,
+            sparse_matrix_t,
+            matrix_descr,
+            ndpointer(dtype=_np_type, ndim=1),
+            prec_type,
+            ndpointer(dtype=_np_type),
+        ]
 
     @staticmethod
     def _mkl_sparse_syrkd_argtypes(prec_type, _np_type):
-        return [_ctypes.c_int,
-                sparse_matrix_t,
-                prec_type,
-                prec_type,
-                ndpointer(dtype=_np_type),
-                _ctypes.c_int,
-                MKL.MKL_INT]
+        return [
+            _ctypes.c_int,
+            sparse_matrix_t,
+            prec_type,
+            prec_type,
+            ndpointer(dtype=_np_type),
+            _ctypes.c_int,
+            MKL.MKL_INT,
+        ]
 
     @staticmethod
     def _cblas_syrk_argtypes(prec_type, _np_type, scalar_pointers=False):
-        return [_ctypes.c_int,
-                _ctypes.c_int,
-                _ctypes.c_int,
-                MKL.MKL_INT,
-                MKL.MKL_INT,
-                _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
-                ndpointer(dtype=_np_type, ndim=2),
-                MKL.MKL_INT,
-                _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
-                ndpointer(dtype=_np_type, ndim=2),
-                MKL.MKL_INT]
+        return [
+            _ctypes.c_int,
+            _ctypes.c_int,
+            _ctypes.c_int,
+            MKL.MKL_INT,
+            MKL.MKL_INT,
+            _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
+            ndpointer(dtype=_np_type, ndim=2),
+            MKL.MKL_INT,
+            _ctypes.POINTER(prec_type) if scalar_pointers else prec_type,
+            ndpointer(dtype=_np_type, ndim=2),
+            MKL.MKL_INT,
+        ]
 
     @staticmethod
     def _mkl_sparse_qr_solve(prec_type):
-        return [_ctypes.c_int,
-                sparse_matrix_t,
-                _ctypes.POINTER(prec_type),
-                _ctypes.c_int,
-                MKL.MKL_INT,
-                _ctypes.POINTER(prec_type),
-                MKL.MKL_INT,
-                ndpointer(dtype=prec_type, ndim=2),
-                MKL.MKL_INT]
+        return [
+            _ctypes.c_int,
+            sparse_matrix_t,
+            _ctypes.POINTER(prec_type),
+            _ctypes.c_int,
+            MKL.MKL_INT,
+            _ctypes.POINTER(prec_type),
+            MKL.MKL_INT,
+            ndpointer(dtype=prec_type, ndim=2),
+            MKL.MKL_INT,
+        ]
