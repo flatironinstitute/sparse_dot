@@ -1,19 +1,26 @@
 import unittest
-from unittest.case import skip
 import numpy as np
-import numpy.testing as npt
 import scipy.sparse as _spsparse
 from sparse_dot_mkl import dot_product_mkl
-from sparse_dot_mkl._mkl_interface import _create_mkl_sparse, _export_mkl, sparse_matrix_t, set_debug_mode
+from sparse_dot_mkl._mkl_interface import (
+    _create_mkl_sparse,
+    _export_mkl,
+    sparse_matrix_t,
+    set_debug_mode,
+)
 from sparse_dot_mkl._sparse_sparse import _matmul_mkl
-from sparse_dot_mkl.tests.test_mkl import MATRIX_1, MATRIX_2, make_matrixes
+from sparse_dot_mkl.tests.test_mkl import (
+    MATRIX_1,
+    MATRIX_2,
+    make_matrixes,
+    np_almost_equal
+)
 
 
 class TestMultiplicationCSR(unittest.TestCase):
-
     sparse_func = _spsparse.csr_matrix
     sparse_args = {}
-    sparse_output = "csr"
+    sparse_output = "csr_matrix"
 
     double_dtype = np.float64
     single_dtype = np.float32
@@ -38,13 +45,18 @@ class TestMultiplicationCSR(unittest.TestCase):
         self.assertTrue(precision_2)
 
         ref_3 = _matmul_mkl(ref_1, ref_2)
-        mat3 = _export_mkl(ref_3, precision_1 or precision_2, complex_type=self.export_complex, output_type=self.sparse_output)
+        mat3 = _export_mkl(
+            ref_3,
+            precision_1 or precision_2,
+            complex_type=self.export_complex,
+            output_type=self.sparse_output,
+        )
 
         mat3_sp = self.mat1.dot(self.mat2)
-        mat3_np = np.dot(self.mat1.A, self.mat2.A)
+        mat3_np = np.dot(self.mat1.toarray(), self.mat2.toarray())
 
-        npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
-        npt.assert_array_almost_equal(mat3_np, mat3.A)
+        np_almost_equal(mat3, mat3_sp)
+        np_almost_equal(mat3_np, mat3)
 
         set_debug_mode(False)
 
@@ -59,13 +71,18 @@ class TestMultiplicationCSR(unittest.TestCase):
         self.assertFalse(precision_2)
 
         ref_3 = _matmul_mkl(ref_1, ref_2)
-        mat3 = _export_mkl(ref_3, precision_1 or precision_2, complex_type=self.export_complex, output_type=self.sparse_output)
+        mat3 = _export_mkl(
+            ref_3,
+            precision_1 or precision_2,
+            complex_type=self.export_complex,
+            output_type=self.sparse_output,
+        )
 
         mat3_sp = self.mat1.dot(self.mat2)
-        mat3_np = np.dot(self.mat1.A, self.mat2.A)
+        mat3_np = np.dot(self.mat1.toarray(), self.mat2.toarray())
 
-        npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
-        npt.assert_array_almost_equal(mat3_np, mat3.A)
+        np_almost_equal(mat3, mat3_sp)
+        np_almost_equal(mat3_np, mat3)
 
     def test_spmm_error_bad_dims(self):
         ref_1, prec_1, cplx_1 = _create_mkl_sparse(self.mat1.transpose())
@@ -82,14 +99,14 @@ class TestMultiplicationCSR(unittest.TestCase):
         mat3 = dot_product_mkl(self.mat1, self.mat2)
 
         mat3_sp = self.mat1.dot(self.mat2)
-        mat3_np = np.dot(self.mat1.A, self.mat2.A)
+        mat3_np = np.dot(self.mat1.toarray(), self.mat2.toarray())
 
-        npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
-        npt.assert_array_almost_equal(mat3_np, mat3.A)
+        np_almost_equal(mat3, mat3_sp)
+        np_almost_equal(mat3_np, mat3)
 
     def test_error_bad_dims(self):
         with self.assertRaises(ValueError):
-            mat3 = dot_product_mkl(self.mat1.transpose(), self.mat2)
+            _ = dot_product_mkl(self.mat1.transpose(), self.mat2)
 
     def test_all_zeros(self):
         zero_mat_1 = self.sparse_func((50, 100))
@@ -102,24 +119,28 @@ class TestMultiplicationCSR(unittest.TestCase):
         self.assertEqual(len(zm_mkl.data), 0)
 
     def test_highly_sparse(self):
-        hsp1, hsp2 = make_matrixes(2000, 1000, 3000, 0.0005, dtype=self.double_dtype)
+        hsp1, hsp2 = make_matrixes(
+            2000, 1000, 3000, 0.0005, dtype=self.double_dtype
+        )
         hsp1 = self.sparse_func(hsp1, **self.sparse_args)
         hsp2 = self.sparse_func(hsp2, **self.sparse_args)
 
         hsp3_sp = hsp1.dot(hsp2)
         hsp3 = dot_product_mkl(hsp1, hsp2)
 
-        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        np_almost_equal(hsp3, hsp3_sp)
 
     def test_highly_highly_sparse(self):
-        hsp1, hsp2 = make_matrixes(2000, 1000, 3000, 0.000005, dtype=self.double_dtype)
+        hsp1, hsp2 = make_matrixes(
+            2000, 1000, 3000, 0.000005, dtype=self.double_dtype
+        )
         hsp1 = self.sparse_func(hsp1, **self.sparse_args)
         hsp2 = self.sparse_func(hsp2, **self.sparse_args)
 
         hsp3_sp = hsp1.dot(hsp2)
         hsp3 = dot_product_mkl(hsp1, hsp2)
 
-        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        np_almost_equal(hsp3, hsp3_sp)
 
     def test_dense(self):
         d1, d2 = make_matrixes(10, 20, 50, 1, dtype=self.double_dtype)
@@ -129,7 +150,7 @@ class TestMultiplicationCSR(unittest.TestCase):
         hsp3_sp = d1.dot(d2)
         hsp3 = dot_product_mkl(d1, d2)
 
-        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        np_almost_equal(hsp3, hsp3_sp)
         self.assertTrue(hsp3.dtype == self.double_dtype)
 
     def test_CSC(self):
@@ -138,7 +159,7 @@ class TestMultiplicationCSR(unittest.TestCase):
         hsp3_sp = d1.dot(d2)
         hsp3 = dot_product_mkl(d1, d2)
 
-        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        np_almost_equal(hsp3, hsp3_sp)
         self.assertTrue(hsp3.dtype == self.double_dtype)
 
     def test_CSR(self):
@@ -147,7 +168,7 @@ class TestMultiplicationCSR(unittest.TestCase):
         hsp3_sp = d1.dot(d2)
         hsp3 = dot_product_mkl(d1, d2)
 
-        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        np_almost_equal(hsp3, hsp3_sp)
         self.assertTrue(hsp3.dtype == self.double_dtype)
 
     @unittest.skip
@@ -157,14 +178,14 @@ class TestMultiplicationCSR(unittest.TestCase):
         hsp3_sp = d1.dot(d2)
         hsp3 = dot_product_mkl(d1, d2, debug=True)
 
-        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        np_almost_equal(hsp3, hsp3_sp)
         self.assertTrue(hsp3.dtype == self.double_dtype)
 
     def test_COO(self):
         d1, d2 = self.mat1, _spsparse.coo_matrix(self.mat2)
 
         with self.assertRaises(ValueError):
-            hsp3 = dot_product_mkl(d1, d2)
+            _ = dot_product_mkl(d1, d2)
 
     def test_mixed(self):
         d1, d2 = self.mat1.astype(self.single_dtype), self.mat2
@@ -172,7 +193,7 @@ class TestMultiplicationCSR(unittest.TestCase):
         hsp3_sp = d1.dot(d2)
         hsp3 = dot_product_mkl(d1, d2, cast=True)
 
-        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        np_almost_equal(hsp3, hsp3_sp)
         self.assertTrue(hsp3.dtype == self.double_dtype)
 
     def test_mixed_2(self):
@@ -181,54 +202,55 @@ class TestMultiplicationCSR(unittest.TestCase):
         hsp3_sp = d1.dot(d2)
         hsp3 = dot_product_mkl(d1, d2, cast=True)
 
-        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        np_almost_equal(hsp3, hsp3_sp)
         self.assertTrue(hsp3.dtype == self.double_dtype)
 
     def test_mixed_nocast(self):
         d1, d2 = self.mat1, self.mat2.astype(self.single_dtype)
 
         with self.assertRaises(ValueError):
-            hsp3 = dot_product_mkl(d1, d2, cast=False)
+            _ = dot_product_mkl(d1, d2, cast=False)
 
     def test_float32(self):
-        d1, d2 = self.mat1.astype(self.single_dtype), self.mat2.astype(self.single_dtype)
+        d1, d2 = self.mat1.astype(self.single_dtype), self.mat2.astype(
+            self.single_dtype
+        )
 
         hsp3_sp = d1.dot(d2)
         hsp3 = dot_product_mkl(d1, d2)
 
-        npt.assert_array_almost_equal(hsp3.A, hsp3_sp.A)
+        np_almost_equal(hsp3, hsp3_sp)
         self.assertTrue(hsp3.dtype == self.single_dtype)
 
     def test_dot_product_mkl_copy(self):
         mat3 = dot_product_mkl(self.mat1, self.mat2, copy=True)
 
         mat3_sp = self.mat1.dot(self.mat2)
-        mat3_np = np.dot(self.mat1.A, self.mat2.A)
+        mat3_np = np.dot(self.mat1.toarray(), self.mat2.toarray())
 
-        npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
-        npt.assert_array_almost_equal(mat3_np, mat3.A)
+        np_almost_equal(mat3, mat3_sp)
+        np_almost_equal(mat3_np, mat3)
 
     def test_dot_product_mkl_order(self):
         mat3 = dot_product_mkl(self.mat1, self.mat2, reorder_output=True)
 
         mat3_sp = self.mat1.dot(self.mat2)
-        mat3_np = np.dot(self.mat1.A, self.mat2.A)
+        mat3_np = np.dot(self.mat1.toarray(), self.mat2.toarray())
 
-        npt.assert_array_almost_equal(mat3.A, mat3_sp.A)
-        npt.assert_array_almost_equal(mat3_np, mat3.A)
+        np_almost_equal(mat3, mat3_sp)
+        np_almost_equal(mat3_np, mat3)
 
 
 class TestMultiplicationCSC(TestMultiplicationCSR):
     sparse_func = _spsparse.csc_matrix
     sparse_args = {}
-    sparse_output = "csc"
+    sparse_output = "csc_matrix"
 
 
 class TestMultiplicationBSR(TestMultiplicationCSR):
-
     sparse_func = _spsparse.bsr_matrix
     sparse_args = {"blocksize": (10, 10)}
-    sparse_output = "bsr"
+    sparse_output = "bsr_matrix"
 
     @unittest.skip
     def test_CSC(self):
@@ -240,10 +262,9 @@ class TestMultiplicationBSR(TestMultiplicationCSR):
 
 
 class TestSparseToDenseMultiplication(unittest.TestCase):
-
     double_dtype = np.float64
     single_dtype = np.float32
-    
+
     @classmethod
     def setUpClass(cls):
         cls.MATRIX_1, cls.MATRIX_2 = MATRIX_1.copy(), MATRIX_2.copy()
@@ -253,83 +274,149 @@ class TestSparseToDenseMultiplication(unittest.TestCase):
         self.mat2 = self.MATRIX_2.copy()
 
     def test_float32_CSR(self):
-        d1, d2 = self.mat1.astype(self.single_dtype), self.mat2.astype(self.single_dtype)
-        mat3_np = np.dot(d1.A, d2.A)
+        d1, d2 = self.mat1.astype(self.single_dtype), self.mat2.astype(
+            self.single_dtype
+        )
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
 
         mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
 
-        npt.assert_array_almost_equal(mat3_np, mat3)
+        np_almost_equal(mat3_np, mat3)
 
     def test_float32_CSC(self):
-        d1, d2 = self.mat1.astype(self.single_dtype).tocsc(), self.mat2.astype(self.single_dtype).tocsc()
-        mat3_np = np.dot(d1.A, d2.A)
+        d1, d2 = (
+            self.mat1.astype(self.single_dtype).tocsc(),
+            self.mat2.astype(self.single_dtype).tocsc(),
+        )
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
 
         mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
 
-        npt.assert_array_almost_equal(mat3_np, mat3)
+        np_almost_equal(mat3_np, mat3)
 
     def test_float64_CSR(self):
         d1, d2 = self.mat1, self.mat2
-        mat3_np = np.dot(d1.A, d2.A)
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
 
         mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
 
-        npt.assert_array_almost_equal(mat3_np, mat3)
+        np_almost_equal(mat3_np, mat3)
 
     def test_float64_CSC(self):
         d1, d2 = self.mat1.tocsc(), self.mat2.tocsc()
-        mat3_np = np.dot(d1.A, d2.A)
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
 
         mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
 
-        npt.assert_array_almost_equal(mat3_np, mat3)
+        np_almost_equal(mat3_np, mat3)
 
     def test_float64_BSR(self):
-        d1, d2 = self.mat1.tobsr(blocksize=(10, 10)), self.mat2.tobsr(blocksize=(10, 10))
-        mat3_np = np.dot(d1.A, d2.A)
+        d1, d2 = self.mat1.tobsr(blocksize=(10, 10)), self.mat2.tobsr(
+            blocksize=(10, 10)
+        )
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
 
         mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
 
-        npt.assert_array_almost_equal(mat3_np, mat3)
+        np_almost_equal(mat3_np, mat3)
 
     def test_float32_BSR(self):
         d1 = self.mat1.astype(self.single_dtype).tobsr(blocksize=(10, 10))
         d2 = self.mat2.astype(self.single_dtype).tobsr(blocksize=(10, 10))
-        mat3_np = np.dot(d1.A, d2.A)
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
 
         mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
 
-        npt.assert_array_almost_equal(mat3_np, mat3)
+        np_almost_equal(mat3_np, mat3)
 
 
 class _ComplexMixin:
-
     double_dtype = np.cdouble
     single_dtype = np.csingle
     export_complex = True
 
     @classmethod
     def setUpClass(cls):
-        cls.MATRIX_1, cls.MATRIX_2 = make_matrixes(200, 100, 300, 0.05, dtype=np.cdouble)
-
+        cls.MATRIX_1, cls.MATRIX_2 = make_matrixes(
+            200, 100, 300, 0.05, dtype=np.cdouble
+        )
 
 
 class TestMultiplicationCSRComplex(_ComplexMixin, TestMultiplicationCSR):
-
     pass
 
 
 class TestMultiplicationCSCComplex(_ComplexMixin, TestMultiplicationCSC):
-
     pass
 
 
 class TestMultiplicationBSRComplex(_ComplexMixin, TestMultiplicationBSR):
-
     pass
 
 
-class TestSparseToDenseMultiplicationComplex(_ComplexMixin, TestSparseToDenseMultiplication):
-
+class TestSparseToDenseMultiplicationComplex(
+    _ComplexMixin, TestSparseToDenseMultiplication
+):
     pass
-    
+
+
+try:
+    from scipy.sparse import (
+        csr_array,
+        csc_array,
+        bsr_array
+    )
+
+    class TestMultiplicationCSRArray(TestMultiplicationCSR):
+
+        sparse_func = csr_array
+        sparse_args = {}
+        sparse_output = "csr_array"
+
+    class TestMultiplicationCSCArray(TestMultiplicationCSC):
+
+        sparse_func = csc_array
+        sparse_args = {}
+        sparse_output = "csc_array"
+
+    class TestMultiplicationBSRArray(TestMultiplicationBSR):
+
+        sparse_func = bsr_array
+        sparse_args = {}
+        sparse_output = "bsr_array"
+
+    class TestSparseToDenseMultiplicationArray(
+        TestSparseToDenseMultiplication
+    ):
+
+        def setUp(self):
+            self.mat1 = csr_array(self.MATRIX_1.copy())
+            self.mat2 = csr_array(self.MATRIX_2.copy())
+
+    class TestMultiplicationCSRArrayComplex(
+        _ComplexMixin,
+        TestMultiplicationCSRArray
+    ):
+        pass
+
+    class TestMultiplicationCSCArrayComplex(
+        _ComplexMixin,
+        TestMultiplicationCSCArray
+    ):
+        pass
+
+    class TestMultiplicationBSRArrayComplex(
+        _ComplexMixin,
+        TestMultiplicationBSRArray
+    ):
+        pass
+
+    class TestSparseToDenseMultiplicationArrayComplex(
+        _ComplexMixin,
+        TestSparseToDenseMultiplicationArray
+    ):
+        pass
+
+
+except ImportError:
+    pass

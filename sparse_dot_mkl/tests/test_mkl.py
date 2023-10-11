@@ -13,15 +13,29 @@ import numpy as np
 import numpy.testing as npt
 import scipy.sparse as _spsparse
 from sparse_dot_mkl import dot_product_mkl
-from sparse_dot_mkl._mkl_interface import (_create_mkl_sparse, _export_mkl, sparse_matrix_t, _destroy_mkl_handle,
-                                           _convert_to_csr, _order_mkl_handle, MKL, _type_check)
+from sparse_dot_mkl._mkl_interface import (
+    _create_mkl_sparse,
+    _export_mkl,
+    sparse_matrix_t,
+    _destroy_mkl_handle,
+    _convert_to_csr,
+    _order_mkl_handle,
+    MKL,
+    _type_check
+)
 
 SEED = 86
 
+
 def make_matrixes(a, b, n, density, dtype=np.float64):
-    m1 = _spsparse.random(a, n, density=density, format="csr", dtype=dtype, random_state=SEED)
-    m2 = _spsparse.random(n, b, density=density, format="csr", dtype=dtype, random_state=SEED + 1)
+    m1 = _spsparse.random(
+        a, n, density=density, format="csr", dtype=dtype, random_state=SEED
+    )
+    m2 = _spsparse.random(
+        n, b, density=density, format="csr", dtype=dtype, random_state=SEED + 1
+    )
     return m1, m2
+
 
 def make_vector(n, complex=False):
     rng = np.random.default_rng(SEED + 2)
@@ -30,9 +44,27 @@ def make_vector(n, complex=False):
     else:
         return rng.random(n) + rng.random(n) * 1j
 
+
 MATRIX_1, MATRIX_2 = make_matrixes(200, 100, 300, 0.05)
 MATRIX_1_EMPTY = _spsparse.csr_matrix((200, 300), dtype=np.float64)
 VECTOR = make_vector(300)
+
+
+def np_almost_equal(a, b, **kwargs):
+
+    if _spsparse.issparse(a):
+        a = a.toarray()
+
+    if isinstance(a, np.matrix):
+        a = a.A
+
+    if _spsparse.issparse(b):
+        b = b.toarray()
+
+    if isinstance(b, np.matrix):
+        b = b.A
+
+    return npt.assert_array_almost_equal(a, b, **kwargs)
 
 
 class TestEmptyConditions(unittest.TestCase):
@@ -109,7 +141,8 @@ class TestFailureConditions(unittest.TestCase):
             _destroy_mkl_handle(mkl_handle_empty)
 
     def test_3d_matrixes(self):
-        d1, d2 = self.mat1.A.reshape(200, 300, 1), self.mat2.A.reshape(300, 100, 1)
+        d1 = self.mat1.A.reshape(200, 300, 1)
+        d2 = self.mat2.A.reshape(300, 100, 1)
 
         with self.assertRaises(ValueError):
             dot_product_mkl(d1, d2)
@@ -147,9 +180,17 @@ class TestFailureConditions(unittest.TestCase):
 
 class TestHandles(unittest.TestCase):
 
+    csr_constructor = _spsparse.csr_matrix
+    csc_constructor = _spsparse.csc_matrix
+    bsr_constructor = _spsparse.bsr_matrix
+
+    csr_output = "csr_matrix"
+    csc_output = "csc_matrix"
+    bsr_output = "bsr_matrix"
+
     def setUp(self):
-        self.mat1 = MATRIX_1.copy()
-        self.mat2 = MATRIX_2.copy()
+        self.mat1 = self.csr_constructor(MATRIX_1.copy())
+        self.mat2 = self.csr_constructor(MATRIX_2.copy())
 
     @staticmethod
     def is_sparse_identical_internal(sparse_1, sparse_2):
@@ -161,7 +202,7 @@ class TestHandles(unittest.TestCase):
         npt.assert_array_almost_equal(sparse_1.A, sparse_2.A)
 
     def test_create_export(self):
-        mat1 = _spsparse.csc_matrix(self.mat1).copy()
+        mat1 = self.csc_constructor(self.mat1).copy()
         mat2 = self.mat2.copy()
         mat3 = mat1.astype(np.float32).copy()
         mat4 = self.mat2.astype(np.float32).copy()
@@ -176,9 +217,9 @@ class TestHandles(unittest.TestCase):
         self.assertFalse(precision_3)
         self.assertFalse(precision_4)
 
-        cycle_1 = _export_mkl(ref_1, precision_1, output_type="csc")
+        cycle_1 = _export_mkl(ref_1, precision_1, output_type=self.csc_output)
         cycle_2 = _export_mkl(ref_2, precision_2)
-        cycle_3 = _export_mkl(ref_3, precision_3, output_type="csc")
+        cycle_3 = _export_mkl(ref_3, precision_3, output_type=self.csc_output)
         cycle_4 = _export_mkl(ref_4, precision_4)
 
         self.is_sparse_identical_A(self.mat1, cycle_1)
@@ -187,7 +228,7 @@ class TestHandles(unittest.TestCase):
         self.is_sparse_identical_internal(self.mat2.astype(np.float32), cycle_4)
 
     def test_create_bsr(self):
-        mat1 = _spsparse.bsr_matrix(self.mat1, blocksize=(2, 2))
+        mat1 = self.bsr_constructor(self.mat1, blocksize=(2, 2))
         mat3 = mat1.astype(np.float32).copy()
 
         ref_1, precision_1, cplx_1 = _create_mkl_sparse(mat1)
@@ -196,8 +237,8 @@ class TestHandles(unittest.TestCase):
         self.assertTrue(precision_1)
         self.assertFalse(precision_3)
 
-        cycle_1 = _export_mkl(ref_1, precision_1, complex_type=cplx_1, output_type="bsr")
-        cycle_3 = _export_mkl(ref_3, precision_3, complex_type=cplx_3, output_type="bsr")
+        cycle_1 = _export_mkl(ref_1, precision_1, complex_type=cplx_1, output_type=self.bsr_output)
+        cycle_3 = _export_mkl(ref_3, precision_3, complex_type=cplx_3, output_type=self.bsr_output)
 
         self.is_sparse_identical_A(self.mat1, cycle_1)
         self.is_sparse_identical_internal(mat1, cycle_1)
@@ -208,7 +249,7 @@ class TestHandles(unittest.TestCase):
         npt.assert_array_equal(mat3.data, cycle_3.data)
 
     def test_create_convert_bsr(self):
-        mat1 = _spsparse.bsr_matrix(self.mat1, blocksize=(2, 2))
+        mat1 = self.bsr_constructor(self.mat1, blocksize=(2, 2))
         mat3 = mat1.astype(np.float32).copy()
 
         ref_1, precision_1, cplx_1 = _create_mkl_sparse(mat1)
@@ -220,8 +261,8 @@ class TestHandles(unittest.TestCase):
         self.assertTrue(precision_1)
         self.assertFalse(precision_3)
 
-        cycle_1 = _export_mkl(cref_1, precision_1, complex_type=cplx_1, output_type="csr")
-        cycle_3 = _export_mkl(cref_3, precision_3, complex_type=cplx_3, output_type="csr")
+        cycle_1 = _export_mkl(cref_1, precision_1, complex_type=cplx_1, output_type=self.csr_output)
+        cycle_3 = _export_mkl(cref_3, precision_3, complex_type=cplx_3, output_type=self.csr_output)
 
         self.is_sparse_identical_A(self.mat1, cycle_1)
         self.is_sparse_identical_A(self.mat1.astype(np.float32), cycle_3)
@@ -232,8 +273,8 @@ class TestTypeConversions(unittest.TestCase):
     dtype = np.float32
     cast_dtype = np.float64
 
-    final_dtype=None
-    always_cast=False
+    final_dtype = None
+    always_cast = False
 
     def setUp(self):
         self.mat1 = MATRIX_1.copy()
@@ -290,7 +331,7 @@ class TestTypeConversions(unittest.TestCase):
             self.assertNotEqual(id(a), id(c))
         else:
             self.assertEqual(id(a), id(c))
-    
+
         self.assertNotEqual(id(b), id(d))
 
         fd = self.final_dtype if self.final_dtype is not None else self.cast_dtype

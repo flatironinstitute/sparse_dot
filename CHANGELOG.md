@@ -1,5 +1,10 @@
 ### Version 0.8.3
 
+* Support for scipy sparse arrays (introduced in scipy 1.11)
+* Additional fallback support for finding mkl DLLs with OneAPI
+
+### Version 0.8.3
+
 * Explicit error message when complex data is put into the QR solver
 * Fix edge condition memory leak in the QR solver
 

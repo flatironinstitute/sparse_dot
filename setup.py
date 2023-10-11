@@ -2,7 +2,7 @@ import os
 from setuptools import setup, find_packages
 
 DISTNAME = 'sparse_dot_mkl'
-VERSION = '0.8.3'
+VERSION = '0.9.0'
 DESCRIPTION = "Intel MKL wrapper for sparse matrix multiplication"
 MAINTAINER = 'Chris Jackson'
 MAINTAINER_EMAIL = 'cj59@nyu.edu'
@@ -11,9 +11,12 @@ LICENSE = 'MIT'
 
 # Description from README.md
 base_dir = os.path.dirname(os.path.abspath(__file__))
-long_description = "\n\n".join([open(os.path.join(base_dir, "README.md"), "r").read()])
+long_description = "\n\n".join(
+    [open(os.path.join(base_dir, "README.md"), "r").read()]
+)
 
-setup(name=DISTNAME,
+setup(
+      name=DISTNAME,
       version=VERSION,
       description=DESCRIPTION,
       long_description=long_description,
