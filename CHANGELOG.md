@@ -1,4 +1,4 @@
-### Version 0.8.3
+### Version 0.9.0
 
 * Support for scipy sparse arrays (introduced in scipy 1.11)
 * Additional fallback support for finding mkl DLLs with OneAPI
