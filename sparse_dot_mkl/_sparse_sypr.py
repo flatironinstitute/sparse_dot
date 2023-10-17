@@ -14,23 +14,16 @@ from sparse_dot_mkl._mkl_interface import (
     SPARSE_FILL_MODE_UPPER,
     SPARSE_DIAG_NON_UNIT,
     SPARSE_STAGE_FULL_MULT,
-    _get_numpy_layout,
-    _check_return_value,
     LAYOUT_CODE_C,
     _out_matrix,
     SPARSE_OPERATION_NON_TRANSPOSE,
     SPARSE_OPERATION_TRANSPOSE,
-
+    is_csr,
+    is_bsr
 )
 import ctypes as _ctypes
 import numpy as np
-import scipy.sparse as _spsparse
-from scipy.sparse import (
-    isspmatrix_csr as is_csr,
-    isspmatrix_csc as is_csc,
-    isspmatrix_bsr as is_bsr,
-    isspmatrix as is_sparse,
-)
+from scipy.sparse import issparse
 
 
 def _sypr_sparse_A_dense_B(
@@ -60,7 +53,10 @@ def _sypr_sparse_A_dense_B(
         out_t=False,
     )
 
-    output_layout, output_ld = _get_numpy_layout(output_arr, second_arr=matrix_b)
+    output_layout, output_ld = _get_numpy_layout(
+        output_arr,
+        second_arr=matrix_b
+    )
 
     if transpose_a:
         t_flag = SPARSE_OPERATION_TRANSPOSE
@@ -149,31 +145,29 @@ def _sparse_sypr(
     # Check dtypes
     matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast)
 
-    default_output, output_type = sparse_output_type(matrix_a)
-
-    if is_csr(matrix_b):
-        default_output, output_type = _spsparse.csr_matrix, "csr"
-    elif is_bsr(matrix_b):
-        default_output, output_type = _spsparse.bsr_matrix, "bsr"
-    elif not is_sparse(matrix_b):
-        default_output, output_type = np.zeros, "dense"
-
-    if not (is_csr(matrix_a) or is_bsr(matrix_a)) or not (
-        is_csr(matrix_b) or is_bsr(matrix_b) or not is_sparse(matrix_b)
+    if (
+        not (is_csr(matrix_a) or is_bsr(matrix_a)) or
+        not (is_csr(matrix_b) or is_bsr(matrix_b) or not issparse(matrix_b))
     ):
         raise ValueError(
-            "Input matrices to spyr must be CSR or BSR; CSC and COO is not supported"
+            "Input matrices to spyr must be CSR or BSR; "
+            "CSC and COO are not supported"
         )
 
     # Call sypr if B is sparse
-    if is_sparse(matrix_b):
+    if issparse(matrix_b):
         if out is not None or out_scalar is not None or scalar is not None:
-            _msg = (
-                "out, out_scalar, and scalar have no effect if matrix B is not sparse"
+            warnings.warn(
+                "out, out_scalar, and scalar have no effect if matrix B "
+                "is not sparse",
+                RuntimeWarning
             )
-            warnings.warn(_msg, RuntimeWarning)
 
-        return _sypr_sparse_A_sparse_B(matrix_a, matrix_b, transpose_a=transpose_a)
+        return _sypr_sparse_A_sparse_B(
+            matrix_a,
+            matrix_b,
+            transpose_a=transpose_a
+        )
 
     # Call syprd if B is dense
     else:
