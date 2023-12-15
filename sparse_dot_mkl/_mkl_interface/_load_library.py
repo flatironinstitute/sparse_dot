@@ -88,7 +88,9 @@ def mkl_library():
     except IMPORT_ERRORS as err:
         raise ImportError(
             "Unable to load the MKL libraries through "
-            "libmkl_rt. Try setting $LD_LIBRARY_PATH. " + str(err)
+            "libmkl_rt. Try setting $LD_LIBRARY_PATH to the "
+            "LD library path or $MKL_RT to the libmkl_rt.so library "
+            " file directly. " + str(err)
         )
 
     return _libmkl
