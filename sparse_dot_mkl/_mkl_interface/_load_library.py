@@ -2,19 +2,27 @@ import ctypes as _ctypes
 import ctypes.util as _ctypes_util
 import os
 
+IMPORT_ERRORS = (OSError, ImportError)
+
 
 def _try_load_mkl_rt(path=None):
     # Check each of these library names
     # Also include derivatives because windows find_library implementation
     # won't match partials
-    for so_file in ["libmkl_rt.so", "libmkl_rt.dylib", "mkl_rt.dll"] + [
+    for so_file in [
+        "libmkl_rt.so",
+        "libmkl_rt.dylib",
+        "mkl_rt.dll"
+    ] + [
         f"mkl_rt.{i}.dll" for i in range(5, 0, -1)
+    ] + [
+        f"libmkl_rt.so.{i}" for i in range(5, 0, -1)
     ]:
         try:
             # If this finds anything, break out of the loop
             return _ctypes.cdll.LoadLibrary(os.path.join(path, so_file))
 
-        except (OSError, ImportError):
+        except IMPORT_ERRORS:
             pass
 
     return None
@@ -24,6 +32,15 @@ def mkl_library():
 
     # Load mkl_spblas through the libmkl_rt common interface
     _libmkl = None
+
+    # Use MKL_RT env (useful if there are multiple MKL binaries in path)
+    if 'MKL_RT' in os.environ:
+        try:
+            _libmkl = _ctypes.cdll.LoadLibrary(os.environ['MKL_RT'])
+            return _libmkl
+        except IMPORT_ERRORS:
+            pass
+
     try:
         _so_file = _ctypes_util.find_library("mkl_rt")
 
@@ -68,7 +85,7 @@ def mkl_library():
 
     # Couldn't find anything to import
     # Raise the ImportError
-    except (OSError, ImportError) as err:
+    except IMPORT_ERRORS as err:
         raise ImportError(
             "Unable to load the MKL libraries through "
             "libmkl_rt. Try setting $LD_LIBRARY_PATH. " + str(err)
