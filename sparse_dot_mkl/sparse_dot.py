@@ -82,19 +82,14 @@ def dot_product_mkl(
     ))
 
     # SPARSE (DOT) SPARSE #
-    if num_sparse == 2 and out is not None:
-        raise ValueError(
-            "out argument cannot be used with sparse (dot) sparse "
-            "matrix multiplication"
-        )
-
-    elif num_sparse == 2:
+    if num_sparse == 2:
         return _sds(
             matrix_a,
             matrix_b,
             cast=cast,
             reorder_output=reorder_output,
-            dense=dense
+            dense=dense,
+            out=out
         )
 
     # SPARSE (DOT) VECTOR #

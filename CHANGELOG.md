@@ -1,3 +1,7 @@
+### Version 0.9.1
+
+* Support for `out` parameter with sparse-sparse multiplication when `dense=True`
+
 ### Version 0.9.0
 
 * Support for scipy sparse arrays (introduced in scipy 1.11)

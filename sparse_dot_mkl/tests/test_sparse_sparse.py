@@ -279,9 +279,22 @@ class TestSparseToDenseMultiplication(unittest.TestCase):
         )
         mat3_np = np.dot(d1.toarray(), d2.toarray())
 
-        mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
+        mat3 = dot_product_mkl(d1, d2, dense=True)
 
         np_almost_equal(mat3_np, mat3)
+
+    def test_float32_CSR_out(self):
+        d1, d2 = self.mat1.astype(self.single_dtype), self.mat2.astype(
+            self.single_dtype
+        )
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
+        out_arr = np.empty_like(mat3_np)
+        mat3 = dot_product_mkl(d1, d2, dense=True, out=out_arr)
+
+        np_almost_equal(mat3_np, out_arr)
+        self.assertEqual(
+            id(mat3), id(out_arr)
+        )
 
     def test_float32_CSC(self):
         d1, d2 = (
@@ -290,25 +303,61 @@ class TestSparseToDenseMultiplication(unittest.TestCase):
         )
         mat3_np = np.dot(d1.toarray(), d2.toarray())
 
-        mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
+        mat3 = dot_product_mkl(d1, d2, dense=True)
 
         np_almost_equal(mat3_np, mat3)
+
+    def test_float32_CSC_out(self):
+        d1, d2 = (
+            self.mat1.astype(self.single_dtype).tocsc(),
+            self.mat2.astype(self.single_dtype).tocsc(),
+        )
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
+        out_arr = np.empty_like(mat3_np)
+        mat3 = dot_product_mkl(d1, d2, dense=True, out=out_arr)
+
+        np_almost_equal(mat3_np, out_arr)
+        self.assertEqual(
+            id(mat3), id(out_arr)
+        )
 
     def test_float64_CSR(self):
         d1, d2 = self.mat1, self.mat2
         mat3_np = np.dot(d1.toarray(), d2.toarray())
 
-        mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
+        mat3 = dot_product_mkl(d1, d2, dense=True)
 
         np_almost_equal(mat3_np, mat3)
+
+    def test_float64_CSR_out(self):
+        d1, d2 = self.mat1, self.mat2
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
+        out_arr = np.empty_like(mat3_np)
+        mat3 = dot_product_mkl(d1, d2, dense=True, out=out_arr)
+
+        np_almost_equal(mat3_np, out_arr)
+        self.assertEqual(
+            id(mat3), id(out_arr)
+        )
 
     def test_float64_CSC(self):
         d1, d2 = self.mat1.tocsc(), self.mat2.tocsc()
         mat3_np = np.dot(d1.toarray(), d2.toarray())
 
-        mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
+        mat3 = dot_product_mkl(d1, d2, dense=True)
 
         np_almost_equal(mat3_np, mat3)
+
+    def test_float64_CSC_out(self):
+        d1, d2 = self.mat1.tocsc(), self.mat2.tocsc()
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
+        out_arr = np.empty_like(mat3_np)
+        mat3 = dot_product_mkl(d1, d2, dense=True, out=out_arr)
+
+        np_almost_equal(mat3_np, out_arr)
+        self.assertEqual(
+            id(mat3), id(out_arr)
+        )
 
     def test_float64_BSR(self):
         d1, d2 = self.mat1.tobsr(blocksize=(10, 10)), self.mat2.tobsr(
@@ -316,18 +365,60 @@ class TestSparseToDenseMultiplication(unittest.TestCase):
         )
         mat3_np = np.dot(d1.toarray(), d2.toarray())
 
-        mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
+        mat3 = dot_product_mkl(d1, d2, dense=True)
 
         np_almost_equal(mat3_np, mat3)
+
+    def test_float64_BSR_out(self):
+        d1, d2 = self.mat1.tobsr(blocksize=(10, 10)), self.mat2.tobsr(
+            blocksize=(10, 10)
+        )
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
+        out_arr = np.empty_like(mat3_np)
+        mat3 = dot_product_mkl(d1, d2, dense=True, out=out_arr)
+
+        np_almost_equal(mat3_np, out_arr)
+        self.assertEqual(
+            id(mat3), id(out_arr)
+        )
 
     def test_float32_BSR(self):
         d1 = self.mat1.astype(self.single_dtype).tobsr(blocksize=(10, 10))
         d2 = self.mat2.astype(self.single_dtype).tobsr(blocksize=(10, 10))
         mat3_np = np.dot(d1.toarray(), d2.toarray())
 
-        mat3 = dot_product_mkl(d1, d2, copy=True, dense=True)
+        mat3 = dot_product_mkl(d1, d2, dense=True)
 
         np_almost_equal(mat3_np, mat3)
+
+    def test_float32_BSR_out(self):
+        d1 = self.mat1.astype(self.single_dtype).tobsr(blocksize=(10, 10))
+        d2 = self.mat2.astype(self.single_dtype).tobsr(blocksize=(10, 10))
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
+        out_arr = np.empty_like(mat3_np)
+        mat3 = dot_product_mkl(d1, d2, dense=True, out=out_arr)
+
+        np_almost_equal(mat3_np, out_arr)
+        self.assertEqual(
+            id(mat3), id(out_arr)
+        )
+
+    def test_CSR_bad_outs(self):
+        d1, d2 = self.mat1, self.mat2
+        mat3_np = np.dot(d1.toarray(), d2.toarray())
+
+        out_arr = np.empty_like(mat3_np, dtype=np.float32)
+
+        with self.assertRaises(ValueError):
+            _ = dot_product_mkl(d1, d2, dense=True, out=out_arr)
+
+        out_arr = np.empty_like(mat3_np, order='F')
+        with self.assertRaises(ValueError):
+            _ = dot_product_mkl(d1, d2, dense=True, out=out_arr)
+
+        out_arr = np.empty((1, 1), dtype=np.float64)
+        with self.assertRaises(ValueError):
+            _ = dot_product_mkl(d1, d2, dense=True, out=out_arr)
 
 
 class _ComplexMixin:

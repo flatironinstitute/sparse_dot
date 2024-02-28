@@ -2,7 +2,6 @@ from sparse_dot_mkl._mkl_interface import (
     MKL,
     sparse_matrix_t,
     _create_mkl_sparse,
-    debug_print,
     debug_timer,
     _export_mkl,
     _order_mkl_handle,
@@ -13,10 +12,10 @@ from sparse_dot_mkl._mkl_interface import (
     _is_allowed_sparse_format,
     _check_return_value,
     _output_dtypes,
-    sparse_output_type
+    sparse_output_type,
+    _out_matrix
 )
 import ctypes as _ctypes
-import numpy as np
 
 
 def _matmul_mkl(sp_ref_a, sp_ref_b):
@@ -59,6 +58,7 @@ def _matmul_mkl_dense(
     sp_ref_b,
     output_shape,
     double_precision,
+    out=None,
     complex_type=False
 ):
     """
@@ -81,9 +81,10 @@ def _matmul_mkl_dense(
     """
 
     # Allocate an array for outputs
-    output_arr = np.empty(
+    output_arr = _out_matrix(
         output_shape,
-        dtype=_output_dtypes[(double_precision, complex_type)]
+        _output_dtypes[(double_precision, complex_type)],
+        out_arr=out
     )
 
     # Set types
@@ -110,7 +111,8 @@ def _sparse_dot_sparse(
     matrix_b,
     cast=False,
     reorder_output=False,
-    dense=False
+    dense=False,
+    out=None
 ):
     """
     Multiply together two scipy sparse matrixes using the intel
@@ -153,30 +155,31 @@ def _sparse_dot_sparse(
             "COO is not supported"
         )
 
-    default_output, output_type = sparse_output_type(matrix_a)
+    if out is not None and not dense:
+        raise ValueError(
+            "out argument cannot be used with sparse (dot) sparse "
+            "matrix multiplication unless dense=True"
+        )
 
-    # Override output if dense flag is set
-    default_output = default_output if not dense else np.zeros
+    default_output, output_type = sparse_output_type(matrix_a)
 
     # Check to make sure that this multiplication can work and check dtypes
     _sanity_check(matrix_a, matrix_b)
 
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix_a, matrix_b):
-        debug_print(
-            "Skipping multiplication because A (dot) B must yield an "
-            "empty matrix"
-        )
 
-        if matrix_a.dtype != matrix_b.dtype or matrix_a.dtype != np.float32:
-            final_dtype = np.float64
+        if dense:
+            return _out_matrix(
+                (matrix_a.shape[0], matrix_b.shape[1]),
+                matrix_a.dtype,
+                out_arr=out
+            )
         else:
-            final_dtype = np.float32
-
-        return default_output(
-            (matrix_a.shape[0], matrix_b.shape[1]),
-            dtype=final_dtype
-        )
+            return default_output(
+                (matrix_a.shape[0], matrix_b.shape[1]),
+                dtype=matrix_a.dtype
+            )
 
     # Check dtypes
     matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast)
@@ -191,18 +194,21 @@ def _sparse_dot_sparse(
 
     # Call spmmd for dense output directly if the dense flag is set
     if dense:
-        dense_arr = _matmul_mkl_dense(
-            mkl_a,
-            mkl_b,
-            (matrix_a.shape[0], matrix_b.shape[1]),
-            a_dbl or b_dbl,
-            complex_type=a_cplx,
-        )
+
+        try:
+            dense_arr = _matmul_mkl_dense(
+                mkl_a,
+                mkl_b,
+                (matrix_a.shape[0], matrix_b.shape[1]),
+                a_dbl or b_dbl,
+                complex_type=a_cplx,
+                out=out
+            )
+        finally:
+            _destroy_mkl_handle(mkl_a)
+            _destroy_mkl_handle(mkl_b)
 
         debug_timer("Multiplied matrices", t)
-
-        _destroy_mkl_handle(mkl_a)
-        _destroy_mkl_handle(mkl_b)
 
         return dense_arr
 
