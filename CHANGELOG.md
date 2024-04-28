@@ -1,6 +1,8 @@
 ### Version 0.9.2
 
 * Explicit check for interface env MKL_INTERFACE_LAYER and interface selection in python.
+  Will raise a RuntimeWarning if ILP64 is requested but the 64-bit interface layer is unavailable.
+  Note that the MKL_INTERFACE_LAYER env must be set before this package is imported.
 
 ### Version 0.9.1
 

@@ -108,22 +108,24 @@ _mkl_interface_env = os.getenv('MKL_INTERFACE_LAYER')
 
 # Check to make sure that the MKL_Set_Interface_Layer call was correct
 # And fail back to 32bit if it wasn't
-if MKL.MKL_INT is None and _mkl_interface_env == 'ILP64':
+if _mkl_interface_env == 'ILP64':
     try:
         _validate_dtype()
     except (ValueError, RuntimeError):
         _warnings.warn(
             "MKL_INTERFACE_LAYER=ILP64 failed to set MKL interface; "
-            "64-bit integer support unavailable"
+            "64-bit integer support unavailable",
+            RuntimeWarning
         )
         MKL._set_int_type(_ctypes.c_int, _np.int32)
         _validate_dtype()
-elif MKL.MKL_INT is None and _mkl_interface_env == 'LP64':
+elif _mkl_interface_env == 'LP64':
     _validate_dtype()
 elif MKL.MKL_INT is None and _mkl_interface_env is not None:
     _warnings.warn(
         f"MKL_INTERFACE_LAYER value {_mkl_interface_env} invalid; "
-        "set 'ILP64' or 'LP64'"
+        "set 'ILP64' or 'LP64'",
+        RuntimeWarning
     )
     _empirical_set_dtype()
 elif MKL.MKL_INT is None:
