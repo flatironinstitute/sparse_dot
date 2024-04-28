@@ -1,3 +1,4 @@
+import os
 import ctypes as _ctypes
 
 from sparse_dot_mkl._mkl_interface._structs import (
@@ -13,6 +14,12 @@ from sparse_dot_mkl._mkl_interface._load_library import (
 
 import numpy as _np
 from numpy.ctypeslib import ndpointer
+
+# MKL_SET_INTERFACE_LAYER flags
+MKL_INTERFACE_LP64  = 0
+MKL_INTERFACE_ILP64 = 1
+MKL_INTERFACE_GNU   = 2
+
 
 _libmkl = mkl_library()
 
@@ -128,6 +135,9 @@ class MKL:
     # Import function for QR solver - solve
     _mkl_sparse_d_qr_solve = _libmkl.mkl_sparse_d_qr_solve
     _mkl_sparse_s_qr_solve = _libmkl.mkl_sparse_s_qr_solve
+
+    # Set interface function
+    _mkl_set_interface_layer = _libmkl.MKL_Set_Interface_Layer
 
     @classmethod
     def _set_int_type(cls, c_type, _np_type):
@@ -561,3 +571,22 @@ class MKL:
             ndpointer(dtype=prec_type, ndim=2),
             MKL.MKL_INT,
         ]
+
+
+MKL._mkl_set_interface_layer.argtypes = [_ctypes.c_int]
+MKL._mkl_set_interface_layer.restypes = [_ctypes.c_int]
+
+
+def mkl_set_interface_layer(layer_code):
+    return MKL._mkl_set_interface_layer(layer_code)
+
+
+_mkl_interface_env = os.getenv('MKL_INTERFACE_LAYER')
+
+
+if MKL.MKL_INT is None and _mkl_interface_env == 'ILP64':
+    mkl_set_interface_layer(MKL_INTERFACE_ILP64)
+    MKL._set_int_type(_ctypes.c_longlong, _np.int64)
+elif MKL.MKL_INT is None and _mkl_interface_env == 'LP64':
+    mkl_set_interface_layer(MKL_INTERFACE_LP64)
+    MKL._set_int_type(_ctypes.c_int, _np.int32)

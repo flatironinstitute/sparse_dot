@@ -1,3 +1,7 @@
+### Version 0.9.2
+
+* Explicit check for interface env MKL_INTERFACE_LAYER and interface selection in python.
+
 ### Version 0.9.1
 
 * Support for `out` parameter with sparse-sparse multiplication when `dense=True`

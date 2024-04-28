@@ -58,3 +58,8 @@ MKL_LOWER = 122
 
 # ILP64 message
 ILP64_MSG = " Try changing MKL to int64 with the environment variable MKL_INTERFACE_LAYER=ILP64"
+
+# MKL_SET_INTERFACE_LAYER flags
+MKL_INTERFACE_LP64  = 0
+MKL_INTERFACE_ILP64 = 1
+MKL_INTERFACE_GNU   = 2

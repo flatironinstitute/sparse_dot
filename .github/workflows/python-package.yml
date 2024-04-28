@@ -15,6 +15,7 @@ jobs:
         python-version: ["3.9", "3.10"]
         scipy-version: ['1.8.1', '1.11.3']
         os: [macos-latest, ubuntu-latest]
+        interface: ['LP64', 'ILP64']
 
     steps:
     - uses: actions/checkout@v3
@@ -22,7 +23,8 @@ jobs:
       run: |
         sudo chown -R $(whoami) $CONDA
         echo $CONDA/bin >> $GITHUB_PATH
-        $CONDA/bin/conda install mkl python=${{ matrix.python-version }} 
+        $CONDA/bin/conda install mkl python=${{ matrix.python-version }}
+        export MKL_INTERFACE_LAYER=${{ matrix.interface }}
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel

@@ -1,3 +1,6 @@
+__version__ = '0.9.2'
+
+
 from sparse_dot_mkl.sparse_dot import (
     dot_product_mkl,
     dot_product_transpose_mkl,

@@ -10,6 +10,7 @@ else:
 from scipy import sparse as _spsparse
 import numpy as _np
 import ctypes as _ctypes
+import warnings as _warnings
 from ._constants import *
 from ._structs import (
     MKL_Complex8,
@@ -17,7 +18,10 @@ from ._structs import (
     matrix_descr,
     sparse_matrix_t
 )
-from ._cfunctions import MKL
+from ._cfunctions import (
+    MKL,
+    mkl_set_interface_layer
+)
 from ._common import (
     _create_mkl_sparse,
     _export_mkl,
@@ -63,11 +67,15 @@ def _validate_dtype():
 
     try:
         csr_ref = _convert_to_csr(csc_ref)
-        final_array = _export_mkl(
-            csr_ref,
-            precision_flag,
-            output_type='csr_matrix'
-        )
+
+        with _warnings.catch_warnings():
+            _warnings.filterwarnings("ignore", category=RuntimeWarning)
+            final_array = _export_mkl(
+                csr_ref,
+                precision_flag,
+                output_type='csr_matrix'
+            )
+
         if not _np.allclose(test_comparison, final_array.A):
             raise ValueError("Match failed after matrix conversion")
         _destroy_mkl_handle(csr_ref)
@@ -95,8 +103,32 @@ def _empirical_set_dtype():
             raise ImportError("Unable to set MKL numeric type")
 
 
-if MKL.MKL_INT is None:
+_mkl_interface_env = os.getenv('MKL_INTERFACE_LAYER')
+
+
+# Check to make sure that the MKL_Set_Interface_Layer call was correct
+# And fail back to 32bit if it wasn't
+if MKL.MKL_INT is None and _mkl_interface_env == 'ILP64':
+    try:
+        _validate_dtype()
+    except (ValueError, RuntimeError):
+        _warnings.warn(
+            "MKL_INTERFACE_LAYER=ILP64 failed to set MKL interface; "
+            "64-bit integer support unavailable"
+        )
+        MKL._set_int_type(_ctypes.c_int, _np.int32)
+        _validate_dtype()
+elif MKL.MKL_INT is None and _mkl_interface_env == 'LP64':
+    _validate_dtype()
+elif MKL.MKL_INT is None and _mkl_interface_env is not None:
+    _warnings.warn(
+        f"MKL_INTERFACE_LAYER value {_mkl_interface_env} invalid; "
+        "set 'ILP64' or 'LP64'"
+    )
     _empirical_set_dtype()
+elif MKL.MKL_INT is None:
+    _empirical_set_dtype()
+
 
 if _sklearn_env is not None:
     os.environ["KMP_INIT_AT_FORK"] = _sklearn_env
