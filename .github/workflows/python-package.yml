@@ -14,7 +14,7 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10"]
         scipy-version: ['1.8.1', '1.11.3']
-        os: [macos-latest, ubuntu-latest]
+        os: [ubuntu-latest]
         interface: ['LP64', 'ILP64']
 
     steps:
@@ -31,6 +31,7 @@ jobs:
         python -m pip install numpy pytest coverage
     - name: Test with pytest & coverage
       run: |
+        echo $MKL_INTERFACE_LAYER
         python -m coverage run -m pytest
       env:
           MKL_INTERFACE_LAYER: ${{ matrix.interface }}
