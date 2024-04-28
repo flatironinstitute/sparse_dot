@@ -24,7 +24,6 @@ jobs:
         sudo chown -R $(whoami) $CONDA
         echo $CONDA/bin >> $GITHUB_PATH
         $CONDA/bin/conda install mkl python=${{ matrix.python-version }}
-        export MKL_INTERFACE_LAYER=${{ matrix.interface }}
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
@@ -33,5 +32,7 @@ jobs:
     - name: Test with pytest & coverage
       run: |
         python -m coverage run -m pytest
+      env:
+          MKL_INTERFACE_LAYER: ${{ matrix.interface }}
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v3
