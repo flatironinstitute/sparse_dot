@@ -6,6 +6,7 @@ from sparse_dot_mkl._mkl_interface._structs import (
     matrix_descr,
     MKL_Complex8,
     MKL_Complex16,
+    MKLVersion
 )
 
 from sparse_dot_mkl._mkl_interface._load_library import (
@@ -138,6 +139,11 @@ class MKL:
 
     # Set interface function
     _mkl_set_interface_layer = _libmkl.MKL_Set_Interface_Layer
+    _mkl_get_max_threads = _libmkl.MKL_Get_Max_Threads
+    _mkl_set_num_threads = _libmkl.MKL_Set_Num_Threads
+    _mkl_set_num_threads_local = _libmkl.MKL_Set_Num_Threads_Local
+    _mkl_get_version = _libmkl.MKL_Get_Version
+    _mkl_get_version_string = _libmkl.MKL_Get_Version_String
 
     @classmethod
     def _set_int_type(cls, c_type, _np_type):
@@ -573,12 +579,64 @@ class MKL:
         ]
 
 
+# Set argtypes and return types for service functions
+# not interface dependent
 MKL._mkl_set_interface_layer.argtypes = [_ctypes.c_int]
 MKL._mkl_set_interface_layer.restypes = [_ctypes.c_int]
+MKL._mkl_get_max_threads.argtypes = None
+MKL._mkl_get_max_threads.restypes = [_ctypes.c_int]
+MKL._mkl_set_num_threads.argtypes = [_ctypes.c_int]
+MKL._mkl_set_num_threads.restypes = None
+MKL._mkl_set_num_threads_local.argtypes = [_ctypes.c_int]
+MKL._mkl_set_num_threads_local.restypes = [_ctypes.c_int]
+MKL._mkl_get_version.argtypes = [_ctypes.POINTER(MKLVersion)]
+MKL._mkl_get_version.restypes = None
+MKL._mkl_get_version_string.argtypes = [
+    _ctypes.POINTER(_ctypes.c_char * 256),
+    _ctypes.c_int
+]
+MKL._mkl_get_version_string.restypes = None
 
 
 def mkl_set_interface_layer(layer_code):
+    if layer_code not in [0, 1, 2]:
+        raise ValueError(
+            f'{layer_code} invalid argument to mkl_set_interface_layer'
+        )
+
     return MKL._mkl_set_interface_layer(layer_code)
+
+
+def mkl_get_max_threads():
+    return MKL._mkl_get_max_threads()
+
+
+def mkl_set_num_threads(n_threads):
+    MKL._mkl_set_num_threads(n_threads)
+
+
+def mkl_set_num_threads_local(n_threads):
+    return MKL._mkl_set_num_threads_local(n_threads)
+
+
+def mkl_get_version():
+    mkl_version = MKLVersion()
+    MKL._mkl_get_version(mkl_version)
+    return (
+        mkl_version.MajorVersion,
+        mkl_version.MinorVersion,
+        mkl_version.UpdateVersion,
+        mkl_version.ProductStatus.contents.value.decode(),
+        mkl_version.Build.contents.value.decode(),
+        mkl_version.Processor.contents.value.decode(),
+        mkl_version.Platform.contents.value.decode()
+    )
+
+
+def mkl_get_version_string():
+    c_str = (_ctypes.c_char * 256)()
+    MKL._mkl_get_version_string(_ctypes.byref(c_str), 256)
+    return c_str.value.decode()
 
 
 _mkl_interface_env = os.getenv('MKL_INTERFACE_LAYER')

@@ -20,7 +20,12 @@ from ._structs import (
 )
 from ._cfunctions import (
     MKL,
-    mkl_set_interface_layer
+    mkl_set_interface_layer,
+    mkl_get_max_threads,
+    mkl_set_num_threads,
+    mkl_set_num_threads_local,
+    mkl_get_version,
+    mkl_get_version_string
 )
 from ._common import (
     _create_mkl_sparse,
@@ -43,12 +48,15 @@ from ._common import (
     _is_dense_vector,
     print_mkl_debug,
     set_debug_mode,
-    get_version_string,
     is_csr,
     is_csc,
     is_bsr,
     sparse_output_type
 )
+
+
+def mkl_interface_integer_dtype():
+    return MKL.MKL_INT_NUMPY
 
 
 def _validate_dtype():
@@ -134,3 +142,8 @@ elif MKL.MKL_INT is None:
 
 if _sklearn_env is not None:
     os.environ["KMP_INIT_AT_FORK"] = _sklearn_env
+
+if mkl_get_version()[0] < 2020:
+    _warnings.warn(
+        f"Loaded version of MKL is out of date: {mkl_get_version_string()}"
+    )

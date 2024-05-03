@@ -15,33 +15,9 @@ from ._structs import (
 import numpy as _np
 import ctypes as _ctypes
 from scipy import sparse as _spsparse
-import warnings
 import time
 
 from numpy.ctypeslib import as_array
-
-# Use mkl-service to check version if it's installed
-# Since it's not on PyPi I don't want to make this an actual package dependency
-# So without it just create mock functions and don't do version checking
-try:
-    from mkl import get_version, get_version_string, get_max_threads
-except ImportError:
-
-    def get_version():
-        return None
-
-    def get_version_string():
-        return None
-
-    def get_max_threads():
-        return None
-
-
-if get_version() is not None and get_version()["MajorVersion"] < 2020:
-    warnings.warn(
-        f"Loaded version of MKL is out of date: {get_version_string()}"
-    )
-
 
 # Dict keyed by ('sparse_type_str', 'double_precision_bool', 'complex_bool')
 _create_functions = {

@@ -58,3 +58,19 @@ class MKL_Complex16(_ctypes.Structure):
             cplx.real,
             cplx.imag
         )
+
+
+# MKLVersion Struct
+# For mkl_get_version
+
+class MKLVersion(_ctypes.Structure):
+
+    _fields_ = [
+        ('MajorVersion', _ctypes.c_int),
+        ('MinorVersion', _ctypes.c_int),
+        ('UpdateVersion', _ctypes.c_int),
+        ('ProductStatus', _ctypes.POINTER(_ctypes.c_char*128)),
+        ('Build', _ctypes.POINTER(_ctypes.c_char*128)),
+        ('Processor', _ctypes.POINTER(_ctypes.c_char*128)),
+        ('Platform', _ctypes.POINTER(_ctypes.c_char*128))
+    ]

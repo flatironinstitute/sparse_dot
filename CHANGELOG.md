@@ -1,3 +1,8 @@
+### Version 0.9.3
+
+* Directly expose service functions `mkl_get_max_threads`, `mkl_set_num_threads`,
+  `mkl_set_num_threads_local`, `mkl_get_version`, and `mkl_get_version_string`.
+
 ### Version 0.9.2
 
 * Explicit check for interface env MKL_INTERFACE_LAYER and interface selection in python.

@@ -8,7 +8,7 @@ from sparse_dot_mkl._mkl_interface import (
     print_mkl_debug,
     _is_dense_vector,
     set_debug_mode,
-    get_version_string,
+    mkl_get_version_string,
 )
 import scipy.sparse as _spsparse
 import numpy as _np
@@ -250,3 +250,4 @@ def sparse_qr_solve_mkl(
 
 # Alias for backwards compatibility
 dot_product_transpose_mkl = gram_matrix_mkl
+get_version_string = mkl_get_version_string
