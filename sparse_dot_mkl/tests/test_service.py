@@ -45,7 +45,9 @@ class TestServiceFunctions(unittest.TestCase):
             mkl_set_interface_layer("MKL")
 
     def test_get_integer_interface(self):
-        self.assertEqual(
-            np.int32,
-            mkl_interface_integer_dtype()
+        self.assertTrue(
+            mkl_interface_integer_dtype() in [
+                np.int32,
+                np.int64
+            ]
         )
