@@ -78,6 +78,21 @@ If A is sparse, it will return a sparse matrix unless `dense=True` is set.
 `cast=True` will convert data to compatible floats by making an internal copy if necessary.
 It will also convert a CSC matrix to a CSR matrix if necessary.
 
+#### Service Functions
+`mkl_get_max_threads()` returns the maximum number of threads used by MKL as an integer
+
+`mkl_set_num_threads(n_threads)` will set a maximum number of threads hint for MKL 
+
+`mkl_set_num_threads_local(n_threads)` will set a maximum thread hint for the current MKL thread only
+
+`mkl_get_version()` returns a tuple of MKL version information
+(MajorVersion, MinorVersion, UpdateVersion, ProductStatus, Build, Processor, Platform)
+
+`mkl_get_version_string()` returns a descriptive string of the current MKL version
+
+`mkl_interface_integer_dtype()` returns the numpy dtype for sparse matrix index arrays
+
+
 #### Requirements
 
 This package requires the MKL runtime linking library `libmkl_rt.so` 
@@ -87,5 +102,3 @@ MKL is distributed with the full version of conda,
 and can be installed into Miniconda with `conda install -c intel mkl`.
 Alternatively, you may add need to add the path to MKL shared objects to `LD_LIBRARY_PATH`
 (e.g. `export LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64:$LD_LIBRARY_PATH`).
-There are some known bugs in MKL v2019 which may cause intermittent segfaults.
-Updating to MKL v2020 is highly recommended if you encounter any problems.
