@@ -56,13 +56,13 @@ def np_almost_equal(a, b, **kwargs):
         a = a.toarray()
 
     if isinstance(a, np.matrix):
-        a = a.A
+        a = a.todense()
 
     if _spsparse.issparse(b):
         b = b.toarray()
 
     if isinstance(b, np.matrix):
-        b = b.A
+        b = b.todense()
 
     return npt.assert_array_almost_equal(a, b, **kwargs)
 
@@ -73,8 +73,8 @@ class TestEmptyConditions(unittest.TestCase):
         self.mat1 = MATRIX_1_EMPTY.copy()
         self.mat2 = MATRIX_2.copy()
 
-        self.mat1_d = np.asarray(MATRIX_1_EMPTY.A, order="C")
-        self.mat2_d = np.asarray(MATRIX_2.A, order="C")
+        self.mat1_d = np.asarray(MATRIX_1_EMPTY.todense(), order="C")
+        self.mat2_d = np.asarray(MATRIX_2.todense(), order="C")
 
         self.mat1_zero = np.zeros((0, 300))
 
@@ -82,7 +82,7 @@ class TestEmptyConditions(unittest.TestCase):
         mat3 = dot_product_mkl(self.mat1, self.mat2)
         mat3_np = np.dot(self.mat1_d, self.mat2_d)
 
-        npt.assert_array_almost_equal(mat3_np, mat3.A)
+        npt.assert_array_almost_equal(mat3_np, mat3.todense())
 
     def test_sparse_dense(self):
         mat3 = dot_product_mkl(self.mat1, self.mat2_d)
@@ -141,8 +141,8 @@ class TestFailureConditions(unittest.TestCase):
             _destroy_mkl_handle(mkl_handle_empty)
 
     def test_3d_matrixes(self):
-        d1 = self.mat1.A.reshape(200, 300, 1)
-        d2 = self.mat2.A.reshape(300, 100, 1)
+        d1 = self.mat1.todense().A.reshape(200, 300, 1)
+        d2 = self.mat2.todense().A.reshape(300, 100, 1)
 
         with self.assertRaises(ValueError):
             dot_product_mkl(d1, d2)
@@ -199,7 +199,7 @@ class TestHandles(unittest.TestCase):
         npt.assert_array_equal(sparse_1.indices, sparse_2.indices)
 
     def is_sparse_identical_A(self, sparse_1, sparse_2):
-        npt.assert_array_almost_equal(sparse_1.A, sparse_2.A)
+        npt.assert_array_almost_equal(sparse_1.todense(), sparse_2.todense())
 
     def test_create_export(self):
         mat1 = self.csc_constructor(self.mat1).copy()

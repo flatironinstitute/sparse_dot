@@ -69,7 +69,13 @@ def _validate_dtype():
     test_array = _spsparse.random(
         5, 5, density=0.5, format="csc", dtype=_np.float32, random_state=50
     )
-    test_comparison = test_array.A
+    test_comparison = test_array.todense()
+
+    # Make sure this is an array and not np.matrix
+    try:
+        test_comparison = test_comparison.A
+    except AttributeError:
+        pass
 
     csc_ref, precision_flag, _ = _create_mkl_sparse(test_array)
 
@@ -84,7 +90,7 @@ def _validate_dtype():
                 output_type='csr_matrix'
             )
 
-        if not _np.allclose(test_comparison, final_array.A):
+        if not _np.allclose(test_comparison, final_array.todense()):
             raise ValueError("Match failed after matrix conversion")
         _destroy_mkl_handle(csr_ref)
     finally:

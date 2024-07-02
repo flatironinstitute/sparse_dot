@@ -12,7 +12,7 @@ class TestSparseSolver(unittest.TestCase):
     def setUpClass(cls):
         cls.A = _spsparse.diags((MATRIX_1.data[0:100].copy()), format="csr")
         cls.B = MATRIX_1.data[0:100].copy().reshape(-1, 1)
-        cls.X = np.linalg.lstsq(cls.A.A, cls.B, rcond=None)[0]
+        cls.X = np.linalg.lstsq(cls.A.todense(), cls.B, rcond=None)[0]
 
     def setUp(self):
         self.mat1 = self.A.copy()
@@ -25,15 +25,26 @@ class TestSparseSolver(unittest.TestCase):
             npt.assert_array_almost_equal(self.mat3, mat3)
 
     def test_sparse_solver_single(self):
-        mat3 = sparse_qr_solve_mkl(self.mat1.astype(np.float32), self.mat2.astype(np.float32))
+        mat3 = sparse_qr_solve_mkl(
+            self.mat1.astype(np.float32),
+            self.mat2.astype(np.float32)
+        )
         npt.assert_array_almost_equal(self.mat3, mat3)
 
     def test_sparse_solver_cast_B(self):
-        mat3 = sparse_qr_solve_mkl(self.mat1, self.mat2.astype(np.float32), cast=True)
+        mat3 = sparse_qr_solve_mkl(
+            self.mat1,
+            self.mat2.astype(np.float32),
+            cast=True
+        )
         npt.assert_array_almost_equal(self.mat3, mat3)
 
     def test_sparse_solver_cast_A(self):
-        mat3 = sparse_qr_solve_mkl(self.mat1.astype(np.float32), self.mat2, cast=True)
+        mat3 = sparse_qr_solve_mkl(
+            self.mat1.astype(np.float32),
+            self.mat2,
+            cast=True
+        )
         npt.assert_array_almost_equal(self.mat3, mat3)
 
     def test_sparse_solver_cast_CSC(self):

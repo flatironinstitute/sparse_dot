@@ -14,7 +14,7 @@ class TestDenseDenseMultiplication(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.MATRIX_1, cls.MATRIX_2 = MATRIX_1.copy().A, MATRIX_2.copy().A
+        cls.MATRIX_1, cls.MATRIX_2 = MATRIX_1.copy().todense(), MATRIX_2.copy().todense()
 
     def setUp(self):
         self.mat1 = self.MATRIX_1.copy()
@@ -123,8 +123,8 @@ class _ComplexMixin:
     @classmethod
     def setUpClass(cls):
         cls.MATRIX_1, cls.MATRIX_2 = make_matrixes(200, 100, 300, 0.05, dtype=np.cdouble)
-        cls.MATRIX_1 = cls.MATRIX_1.A
-        cls.MATRIX_2 = cls.MATRIX_2.A
+        cls.MATRIX_1 = cls.MATRIX_1.todense()
+        cls.MATRIX_2 = cls.MATRIX_2.todense()
 
     def test_inherits(self):
 

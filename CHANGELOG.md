@@ -1,3 +1,7 @@
+### Version 0.9.4
+
+* Replace deprecated scipy `spmatrix.A` calls with `spmatrix.todense()`
+
 ### Version 0.9.3
 
 * Directly expose service functions `mkl_get_max_threads`, `mkl_set_num_threads`,

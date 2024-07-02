@@ -79,6 +79,8 @@ If A is sparse, it will return a sparse matrix unless `dense=True` is set.
 It will also convert a CSC matrix to a CSR matrix if necessary.
 
 #### Service Functions
+Several service functions are available and can be imported from the base `sparse_dot_mkl` package.
+
 `mkl_get_max_threads()` returns the maximum number of threads used by MKL as an integer
 
 `mkl_set_num_threads(n_threads)` will set a maximum number of threads hint for MKL 
