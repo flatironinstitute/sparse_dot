@@ -90,7 +90,15 @@ def _validate_dtype():
                 output_type='csr_matrix'
             )
 
-        if not _np.allclose(test_comparison, final_array.todense()):
+            final_array = final_array.todense()
+
+            # Make sure this is an array and not np.matrix
+            try:
+                final_array = final_array.A
+            except AttributeError:
+                pass
+
+        if not _np.allclose(test_comparison, final_array):
             raise ValueError("Match failed after matrix conversion")
         _destroy_mkl_handle(csr_ref)
     finally:
