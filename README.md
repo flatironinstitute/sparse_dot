@@ -66,6 +66,7 @@ It will also convert a CSC matrix to a CSR matrix if necessary.
 
 #### PARDISO
 `pardisoinit(mtype, pt=None, iparm=None, single_precision=None,zero_indexing=True)`
+
 `pardiso(A, B, pt, mtype, iparm, phase=13, maxfct=1, mnum=1, perm=None, msglvl=0, X=None, quiet=False)`
 
 Wrapper for MKL pardiso solver and the pardisoinit function which initializes `pt` and `iparm`.
