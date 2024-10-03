@@ -1,3 +1,7 @@
+### Version 0.9.5
+
+* Add wrapper for MKL pardiso solver in `sparse_dot.solvers`
+
 ### Version 0.9.4
 
 * Replace deprecated scipy `spmatrix.A` calls with `spmatrix.todense()`

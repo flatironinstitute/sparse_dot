@@ -1,4 +1,4 @@
-__version__ = '0.9.4'
+__version__ = '0.9.5'
 
 
 from sparse_dot_mkl.sparse_dot import (
