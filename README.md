@@ -64,6 +64,18 @@ It will return a dense array X.
 `cast=True` will convert data to compatible floats by making an internal copy if necessary.
 It will also convert a CSC matrix to a CSR matrix if necessary.
 
+#### PARDISO
+`pardisoinit(mtype, pt=None, iparm=None, single_precision=None,zero_indexing=True)`
+`pardiso(A, B, pt, mtype, iparm, phase=13, maxfct=1, mnum=1, perm=None, msglvl=0, X=None, quiet=False)`
+
+Wrapper for MKL pardiso solver and the pardisoinit function which initializes `pt` and `iparm`.
+This is a direct solver for real or complex systems of linear equations (AX = B) where `A`
+is a sparse CSR matrix and `B` is a dense matrix with one or more right-hand sides.
+It will return a dense array X.
+
+Refer to the pardiso documentation for detailed description of options.
+Consider this wrapper to be experimental.
+
 #### gram_matrix_mkl
 `gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=False, reorder_output=False)`
 

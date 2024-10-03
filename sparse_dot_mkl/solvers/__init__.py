@@ -35,7 +35,7 @@ def pardiso(
     pt,
     mtype,
     iparm,
-    phase,
+    phase=13,
     maxfct=1,
     mnum=1,
     perm=None,
@@ -65,7 +65,8 @@ def pardiso(
     :type mtype: int
     :param iparm: Solver parameters array, shape=(64,)
     :type iparm: np.ndarray
-    :param phase: Solver phase
+    :param phase: Solver phase, defaults to 13
+        (Analysis, numerical factorization, solve, iterative refinement)
     :type phase: int
     :param maxfct: Pardiso maxfct, defaults to 1
     :type maxfct: int, optional
