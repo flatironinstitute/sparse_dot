@@ -7,12 +7,13 @@ from sparse_dot_mkl._mkl_interface import (
     matrix_descr,
     _convert_to_csr,
     _check_return_value,
-    LAYOUT_CODE_C
+    LAYOUT_CODE_C,
+    is_csc,
+    is_csr
 )
 
 import numpy as np
 import ctypes as _ctypes
-import scipy.sparse as _spsparse
 
 # Keyed by bool for double-precision
 SOLVE_FUNCS = {
@@ -52,7 +53,7 @@ def _sparse_qr(
         output_shape = matrix_a.shape[1], matrix_b.shape[1]
 
         # Convert a CSC matrix to CSR
-        if _spsparse.isspmatrix_csc(matrix_a):
+        if is_csc(matrix_a):
             mkl_a = _convert_to_csr(mkl_a)
             _mkl_handles.append(mkl_a)
 
@@ -127,14 +128,14 @@ def sparse_qr_solver(
     :rtype: numpy.ndarray
     """
 
-    if _spsparse.isspmatrix_csc(matrix_a) and not cast:
+    if is_csc(matrix_a) and not cast:
         raise ValueError(
             "sparse_qr_solver only accepts CSR matrices if cast=False"
         )
 
     elif (
-        not _spsparse.isspmatrix_csr(matrix_a) and
-        not _spsparse.isspmatrix_csc(matrix_a)
+        not is_csc(matrix_a) and
+        not is_csr(matrix_a)
     ):
         raise ValueError(
             "sparse_qr_solver requires matrix A to be CSR or CSC sparse matrix"

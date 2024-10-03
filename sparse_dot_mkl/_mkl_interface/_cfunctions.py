@@ -145,6 +145,10 @@ class MKL:
     _mkl_get_version = _libmkl.MKL_Get_Version
     _mkl_get_version_string = _libmkl.MKL_Get_Version_String
 
+    # PARDISO
+    _pardisoinit = _libmkl.pardisoinit
+    _pardiso = _libmkl.pardiso
+
     @classmethod
     def _set_int_type(cls, c_type, _np_type):
         cls.MKL_INT = c_type
@@ -158,6 +162,36 @@ class MKL:
         cls._set_int_type_qr_solver()
         cls._set_int_type_syrk()
         cls._set_int_type_misc()
+        cls._set_int_type_pardiso()
+
+    @classmethod
+    def _set_int_type_pardiso(cls):
+        cls._pardiso.argtypes = [
+            ndpointer(shape=(64,), dtype=_np.int64),    #pt
+            _ctypes.POINTER(MKL.MKL_INT),               #maxfct
+            _ctypes.POINTER(MKL.MKL_INT),               #mnum
+            _ctypes.POINTER(MKL.MKL_INT),               #mtype
+            _ctypes.POINTER(MKL.MKL_INT),               #phase
+            _ctypes.POINTER(MKL.MKL_INT),               #n
+            ndpointer(ndim=1),                          #a
+            ndpointer(dtype=MKL.MKL_INT, ndim=1),       #ia
+            ndpointer(dtype=MKL.MKL_INT, ndim=1),       #ja
+            ndpointer(dtype=MKL.MKL_INT, ndim=1),       #perm
+            _ctypes.POINTER(MKL.MKL_INT),               #nrhs
+            ndpointer(shape=(64,), dtype=MKL.MKL_INT),  #iparm
+            _ctypes.POINTER(MKL.MKL_INT),               #msglvl
+            ndpointer(),                                #b
+            ndpointer(flags="C_CONTIGUOUS"),            #x
+            _ctypes.POINTER(MKL.MKL_INT)                #error
+        ]
+        cls._pardiso.restype = None
+
+        cls._pardisoinit.argtypes = [
+            ndpointer(shape=(64,), dtype=_np.int64),
+            _ctypes.POINTER(MKL.MKL_INT),
+            ndpointer(shape=(64,), dtype=MKL.MKL_INT_NUMPY)
+        ]
+        cls._pardisoinit.restype = None
 
     @classmethod
     def _set_int_type_create(cls):

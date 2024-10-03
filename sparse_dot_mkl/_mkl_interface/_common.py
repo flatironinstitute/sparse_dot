@@ -1,4 +1,10 @@
-from ._cfunctions import MKL, mkl_library_name
+from ._cfunctions import (
+    MKL,
+    mkl_library_name,
+    mkl_get_version_string,
+    mkl_get_max_threads
+)
+
 from ._constants import (
     LAYOUT_CODE_C,
     LAYOUT_CODE_F,
@@ -107,11 +113,8 @@ def print_mkl_debug():
     if not MKL.MKL_DEBUG:
         return
 
-    if get_version_string() is None:
-        print("mkl-service must be installed to get full debug messaging")
-    else:
-        print(get_version_string())
-        print(f"MKL Number of Threads: {get_max_threads()}")
+    print(mkl_get_version_string())
+    print(f"MKL Number of Threads: {mkl_get_max_threads()}")
 
     print(f"MKL linked: {mkl_library_name()}")
     print(f"MKL interface {MKL.MKL_INT_NUMPY} | {MKL.MKL_INT}")
