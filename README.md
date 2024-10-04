@@ -11,9 +11,11 @@ The scipy sparse implementation is single-threaded at the time of writing (2020-
 A secondary advantage is the direct multiplication of a sparse and a dense matrix without requiring any
 intermediate conversion (also multithreaded). 
 
-Three functions are explicitly available - `dot_product_mkl`, `gram_matrix_mkl`, and `sparse_qr_solve_mkl`: 
+Three python functions are explicitly available (`dot_product_mkl`, `gram_matrix_mkl`, and `sparse_qr_solve_mkl`),
+and several wrapped MKL functions (e.g. `mkl_get_version_string`, `pardiso`) are accessible:
 
 #### dot_product_mkl
+
 `dot_product_mkl(matrix_a, matrix_b, cast=False, copy=True, reorder_output=False, dense=False, debug=False, out=None, out_scalar=None)`
 
 `matrix_a` and `matrix_b` are either numpy arrays (1d or 2d) or scipy sparse matrices (CSR, CSC, or BSR).
@@ -55,6 +57,7 @@ It will multiply `out` prior to adding the matrix multiplication such that
 `out := matrix_a * matrix_b + out_scalar * out`
 
 #### sparse_qr_solve_mkl
+
 `sparse_qr_solve_mkl(matrix_a, matrix_b, cast=False, debug=False)`
 
 This is a QR solver for systems of linear equations (AX = B) where `matrix_a` is a sparse CSR matrix 
@@ -64,20 +67,8 @@ It will return a dense array X.
 `cast=True` will convert data to compatible floats by making an internal copy if necessary.
 It will also convert a CSC matrix to a CSR matrix if necessary.
 
-#### PARDISO
-`pardisoinit(mtype, pt=None, iparm=None, single_precision=None,zero_indexing=True)`
-
-`pardiso(A, B, pt, mtype, iparm, phase=13, maxfct=1, mnum=1, perm=None, msglvl=0, X=None, quiet=False)`
-
-Wrapper for MKL pardiso solver and the pardisoinit function which initializes `pt` and `iparm`.
-This is a direct solver for real or complex systems of linear equations (AX = B) where `A`
-is a sparse CSR matrix and `B` is a dense matrix with one or more right-hand sides.
-It will return a dense array X.
-
-Refer to the pardiso documentation for detailed description of options.
-Consider this wrapper to be experimental.
-
 #### gram_matrix_mkl
+
 `gram_matrix_mkl(matrix, transpose=False, cast=False, dense=False, debug=False, reorder_output=False)`
 
 This will calculate the gram matrix A<sup>T</sup>A for matrix A, where matrix A is dense or a sparse CSR matrix.
@@ -91,7 +82,22 @@ If A is sparse, it will return a sparse matrix unless `dense=True` is set.
 `cast=True` will convert data to compatible floats by making an internal copy if necessary.
 It will also convert a CSC matrix to a CSR matrix if necessary.
 
+#### PARDISO
+
+`pardisoinit(mtype, pt=None, iparm=None, single_precision=None, zero_indexing=True)`
+
+`pardiso(A, B, pt, mtype, iparm, phase=13, maxfct=1, mnum=1, perm=None, msglvl=0, X=None, quiet=False)`
+
+Wrapper for MKL pardiso solver and the pardisoinit function which initializes `pt` and `iparm`.
+This is a direct solver for real or complex systems of linear equations (AX = B) where `A`
+is a sparse CSR matrix and `B` is a dense matrix with one or more right-hand sides.
+It will return a dense array X.
+
+Refer to the pardiso documentation for detailed description of options.
+Consider this wrapper to be experimental.
+
 #### Service Functions
+
 Several service functions are available and can be imported from the base `sparse_dot_mkl` package.
 
 `mkl_get_max_threads()` returns the maximum number of threads used by MKL as an integer
@@ -106,7 +112,6 @@ Several service functions are available and can be imported from the base `spars
 `mkl_get_version_string()` returns a descriptive string of the current MKL version
 
 `mkl_interface_integer_dtype()` returns the numpy dtype for sparse matrix index arrays
-
 
 #### Requirements
 
