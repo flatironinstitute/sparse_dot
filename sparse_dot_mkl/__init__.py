@@ -1,4 +1,4 @@
-__version__ = '0.9.5'
+__version__ = '0.9.6'
 
 
 from sparse_dot_mkl.sparse_dot import (
@@ -17,6 +17,13 @@ from ._mkl_interface import (
     mkl_get_version_string,
     mkl_set_num_threads_local,
     mkl_interface_integer_dtype
+)
+
+from .solvers import (
+    pardiso,
+    pardisoinit,
+    fgmres,
+    cg
 )
 
 get_version_string = mkl_get_version_string

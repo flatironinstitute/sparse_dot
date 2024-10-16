@@ -246,7 +246,7 @@ def _create_mkl_sparse(matrix):
     """
     Create MKL internal representation
 
-    :param matrix: Sparse data in CSR or CSC format
+    :param matrix: Sparse data in CSR or CSC or BSR format
     :type matrix: scipy.sparse.spmatrix
 
     :return ref, double_precision: Handle for the MKL internal representation

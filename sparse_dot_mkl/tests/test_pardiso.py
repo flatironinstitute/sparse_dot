@@ -83,17 +83,30 @@ class TestPARDISO(unittest.TestCase):
         with self.assertRaises(AssertionError):
             npt.assert_equal(pt, np.zeros_like(pt))
 
+        # Test the real solver
         if self.mtype == 11:
             QR_X = sparse_qr_solve_mkl(
                 A.astype(self.dtype),
                 B[:, 0].astype(self.dtype)
             )
-
-            npt.assert_array_almost_equal(
-                X,
-                QR_X,
-                decimal=3
+        
+        # Test the complex solver; because the img components are
+        # all zero, it's the same result as the real solver
+        else:
+            _real_B = np.ascontiguousarray(
+                B[:, 0].astype(self.dtype).real
             )
+            QR_X = np.zeros_like(X)
+            QR_X.real = sparse_qr_solve_mkl(
+                A.astype(_real_B.dtype),
+                _real_B
+            )
+
+        npt.assert_array_almost_equal(
+            X,
+            QR_X,
+            decimal=3
+        )
 
     def test_pardiso_solve_mrhs(self):
 

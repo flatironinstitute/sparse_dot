@@ -1,3 +1,7 @@
+### Version 0.9.6
+
+* Add wrapper for MKL iterative CG and FGMRES solvers in `sparse_dot.solvers`
+
 ### Version 0.9.5
 
 * Add wrapper for MKL pardiso solver in `sparse_dot.solvers`

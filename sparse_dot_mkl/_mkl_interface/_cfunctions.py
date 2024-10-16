@@ -144,10 +144,28 @@ class MKL:
     _mkl_set_num_threads_local = _libmkl.MKL_Set_Num_Threads_Local
     _mkl_get_version = _libmkl.MKL_Get_Version
     _mkl_get_version_string = _libmkl.MKL_Get_Version_String
+    _mkl_free_buffers = _libmkl.mkl_free_buffers
 
     # PARDISO
     _pardisoinit = _libmkl.pardisoinit
     _pardiso = _libmkl.pardiso
+
+    # CG Solver
+    _dcg_init = _libmkl.dcg_init
+    _dcg_check = _libmkl.dcg_check
+    _dcg = _libmkl.dcg
+    _dcg_get = _libmkl.dcg_get
+
+    _dcgmrhs_init = _libmkl.dcgmrhs_init
+    _dcgmrhs_check = _libmkl.dcgmrhs_check
+    _dcgmrhs = _libmkl.dcgmrhs
+    _dcgmrhs_get = _libmkl.dcgmrhs_get
+
+    # FGMRES Solver
+    _dfgmres_init = _libmkl.dfgmres_init
+    _dfgmres_check = _libmkl.dfgmres_check
+    _dfgmres = _libmkl.dfgmres
+    _dfgmres_get = _libmkl.dfgmres_get
 
     @classmethod
     def _set_int_type(cls, c_type, _np_type):
@@ -163,6 +181,54 @@ class MKL:
         cls._set_int_type_syrk()
         cls._set_int_type_misc()
         cls._set_int_type_pardiso()
+        cls._set_int_type_iss()
+
+    @classmethod
+    def _set_int_type_iss(cls):
+        cls._dcg_init.argtypes = cls._create_iss_argtypes()
+        cls._dcg_init.restype = None
+
+        cls._dcg_check.argtypes = cls._create_iss_argtypes()
+        cls._dcg_check.restype = None
+
+        cls._dcg.argtypes = cls._create_iss_argtypes()
+        cls._dcg.restype = None
+
+        cls._dcg_get.argtypes = cls._create_iss_argtypes() + [
+            _ctypes.POINTER(MKL.MKL_INT)
+        ]
+        cls._dcg_get.restype = None
+
+        cls._dcgmrhs_init.argtypes = cls._create_iss_mrhs_argtypes(
+            add_method=True
+        )
+        cls._dcgmrhs_init.restype = None
+
+        cls._dcgmrhs_check.argtypes = cls._create_iss_mrhs_argtypes()
+        cls._dcgmrhs_check.restype = None
+
+        cls._dfgmres.argtypes = cls._create_iss_mrhs_argtypes()
+        cls._dfgmres.restype = None
+
+        cls._dfgmres_get.argtypes = cls._create_iss_mrhs_argtypes() + [
+            _ctypes.POINTER(MKL.MKL_INT)
+        ]
+        cls._dfgmres_get.restype = None
+
+        cls._dfgmres_init.argtypes = cls._create_iss_argtypes()
+        cls._dfgmres_init.restype = None
+
+        cls._dfgmres_check.argtypes = cls._create_iss_argtypes()
+        cls._dfgmres_check.restype = None
+
+        cls._dfgmres.argtypes = cls._create_iss_argtypes()
+        cls._dfgmres.restype = None
+
+        cls._dfgmres_get.argtypes = cls._create_iss_argtypes() + [
+            _ctypes.POINTER(MKL.MKL_INT)
+        ]
+        cls._dfgmres_get.restype = None
+
 
     @classmethod
     def _set_int_type_pardiso(cls):
@@ -612,6 +678,32 @@ class MKL:
             MKL.MKL_INT,
         ]
 
+    @staticmethod
+    def _create_iss_argtypes():
+        return [
+            _ctypes.POINTER(MKL.MKL_INT),
+            ndpointer(dtype=_ctypes.c_double, ndim=1, flags='C_CONTIGUOUS'),
+            ndpointer(dtype=_ctypes.c_double, ndim=1, flags='C_CONTIGUOUS'),
+            _ctypes.POINTER(MKL.MKL_INT),
+            ndpointer(dtype=MKL.MKL_INT, shape=(128,), flags='C_CONTIGUOUS'),
+            ndpointer(dtype=_ctypes.c_double, shape=(128,), flags='C_CONTIGUOUS'),
+            ndpointer(dtype=_ctypes.c_double, flags='C_CONTIGUOUS')
+        ]
+
+    @staticmethod
+    def _create_iss_mrhs_argtypes(add_method=False):
+        _arg = MKL._create_iss_argtypes()[0:2] + [
+            _ctypes.POINTER(MKL.MKL_INT)
+        ]
+        if add_method:
+            _arg = _arg + MKL._create_iss_argtypes()[2:3] + [
+                _ctypes.POINTER(MKL.MKL_INT)
+            ] + MKL._create_iss_argtypes()[3:]
+        else:
+            _arg = _arg + MKL._create_iss_argtypes()[2:]
+        
+        return _arg
+
 
 # Set argtypes and return types for service functions
 # not interface dependent
@@ -630,6 +722,8 @@ MKL._mkl_get_version_string.argtypes = [
     _ctypes.c_int
 ]
 MKL._mkl_get_version_string.restypes = None
+MKL._mkl_free_buffers.argtypes = None
+MKL._mkl_free_buffers.restype = None
 
 
 def mkl_set_interface_layer(layer_code):
@@ -671,6 +765,10 @@ def mkl_get_version_string():
     c_str = (_ctypes.c_char * 256)()
     MKL._mkl_get_version_string(_ctypes.byref(c_str), 256)
     return c_str.value.decode()
+
+
+def mkl_free_buffers():
+    MKL._mkl_free_buffers()
 
 
 _mkl_interface_env = os.getenv('MKL_INTERFACE_LAYER')
