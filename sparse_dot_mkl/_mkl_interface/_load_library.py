@@ -14,9 +14,9 @@ def _try_load_mkl_rt(path=None):
         "libmkl_rt.dylib",
         "mkl_rt.dll"
     ] + [
-        f"mkl_rt.{i}.dll" for i in range(5, 0, -1)
+        f"mkl_rt.{i}.dll" for i in range(8, 0, -1)
     ] + [
-        f"libmkl_rt.so.{i}" for i in range(5, 0, -1)
+        f"libmkl_rt.so.{i}" for i in range(8, 0, -1)
     ]:
         try:
             # If this finds anything, break out of the loop
