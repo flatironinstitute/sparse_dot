@@ -169,16 +169,19 @@ def _sparse_dot_sparse(
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix_a, matrix_b):
 
+        final_dtype = _type_check(matrix_a, matrix_b, cast=cast, convert=False)
         if dense:
-            return _out_matrix(
+            output_arr = _out_matrix(
                 (matrix_a.shape[0], matrix_b.shape[1]),
-                matrix_a.dtype,
+                final_dtype,
                 out_arr=out
             )
+            output_arr.fill(0)
+            return output_arr
         else:
             return default_output(
                 (matrix_a.shape[0], matrix_b.shape[1]),
-                dtype=matrix_a.dtype
+                dtype=final_dtype
             )
 
     # Check dtypes

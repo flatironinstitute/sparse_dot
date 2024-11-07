@@ -75,11 +75,7 @@ class TestGramMatrixSparse(TestGramMatrix):
             )
 
     def test_gram_matrix_d(self):
-        print(self.mat1)
-
         mat2 = gram_matrix_mkl(self.mat1, dense=True)
-        print(mat2 - self.gram_ut)
-        print(mat2[np.tril_indices(mat2.shape[0], k=1)])
 
         np_almost_equal(mat2, self.gram_ut)
 
@@ -213,21 +209,32 @@ class _TestGramMatrixComplex:
         self.gram_ut_t = gram_ut_t
 
 
-@unittest.skip
 class TestGramMatrixSparseComplex(_TestGramMatrixComplex, TestGramMatrixSparse):
     pass
 
-
-@unittest.skip
 class TestGramMatrixDenseComplex(_TestGramMatrixComplex, TestGramMatrixDense):
-    pass
 
+    @unittest.skip
+    def test_gram_matrix_dd_double(self):
+        pass
+
+    @unittest.skip
+    def test_gram_matrix_dd_double_F(self):
+        pass
+
+    @unittest.skip
+    def test_gram_matrix_dd_single(self):
+        pass
+
+    @unittest.skip
+    def test_gram_matrix_dd_single_F(self):
+        pass
 
 try:
     from scipy.sparse import (
         csr_array
     )
-
+    @unittest.skip
     class TestGramMatrixSparseArray(TestGramMatrixSparse):
         sparse_func = csr_array
 

@@ -106,7 +106,7 @@ def _sparse_dense_matmul(
 
         # Create a C struct if necessary to be passed
         scalar = _mkl_scalar(scalar, cplx, dbl)
-        out_scalar = _mkl_scalar(out_scalar, cplx, dbl)
+        out_scalar = _mkl_scalar(0 if out is None else out_scalar, cplx, dbl)
 
         ret_val = func(
             11 if transpose else 10,
@@ -165,14 +165,15 @@ def _sparse_dot_dense(
         debug_print(
             "Skipping multiplication because A (dot) B must yield empty matrix"
         )
-        final_dtype = (
-            np.float64
-            if matrix_a.dtype != matrix_b.dtype or matrix_a.dtype != np.float32
-            else np.float32
+        output_arr = _out_matrix(
+            (matrix_a.shape[0], matrix_b.shape[1]),
+            _type_check(matrix_a, matrix_b, cast=cast, convert=False), out_arr=out
         )
-        return _out_matrix(
-            (matrix_a.shape[0], matrix_b.shape[1]), final_dtype, out_arr=out
-        )
+        if out is None or (out_scalar is not None and not out_scalar):
+            output_arr.fill(0)
+        elif out_scalar is not None:
+            output_arr *= out_scalar
+        return output_arr
 
     matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast)
 

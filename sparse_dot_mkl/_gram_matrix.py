@@ -93,7 +93,7 @@ def _gram_matrix_sparse(
 
 
 # Dict keyed by ('double_precision_bool', 'complex_bool')
-_mkl_skryd_funcs = {
+_mkl_syrkd_funcs = {
     (False, False): MKL._mkl_sparse_s_syrkd,
     (True, False): MKL._mkl_sparse_d_syrkd,
     (False, True): MKL._mkl_sparse_c_syrkd,
@@ -129,19 +129,29 @@ def _gram_matrix_sparse_to_dense(
     _order_mkl_handle(sp_ref_a)
 
     out_dtype = _output_dtypes[(double_prec, complex_type)]
-    func = _mkl_skryd_funcs[(double_prec, complex_type)]
+    func = _mkl_syrkd_funcs[(double_prec, complex_type)]
 
     out_dim = matrix_a.shape[0 if aat else 1]
 
     output_arr = _out_matrix(
         (out_dim, out_dim),
         out_dtype,
-        order="C", out_arr=out)
+        order="C",
+        out_arr=out,
+        initialize_zeros=True
+    )
     _, output_ld = _get_numpy_layout(output_arr)
 
     if _empty_output_check(matrix_a, matrix_a):
         _destroy_mkl_handle(sp_ref_a)
+        if out is None or (out_scalar is not None and not out_scalar):
+            output_arr.fill(0)
+        elif out_scalar is not None:
+            output_arr *= out_scalar
         return output_arr
+    
+    if out is None:
+        out_scalar = 0.
 
     scalar = _mkl_scalar(scalar, complex_type, double_prec)
     out_scalar = _mkl_scalar(out_scalar, complex_type, double_prec)
@@ -165,7 +175,7 @@ def _gram_matrix_sparse_to_dense(
     # matrix. This stupid thing only happens with specific flags
     # I could probably leave it but it's pretty annoying
 
-    if not aat and out is None and not complex_type:
+    if not aat and out is None:
         output_arr[np.tril_indices(output_arr.shape[0], k=-1)] = 0.0
 
     return output_arr
@@ -208,6 +218,13 @@ def _gram_matrix_dense_to_dense(
     :rtype: numpy.ndarray
     """
 
+    if aat and np.iscomplexobj(matrix_a):
+        raise ValueError(
+            "transpose=True with dense complex data currently "
+            "fails with an Intel oneMKL ERROR: "
+            "Parameter 3 was incorrect on entry to cblas_csyrk"
+        )
+
     # Get dimensions
     n, k = matrix_a.shape if aat else matrix_a.shape[::-1]
 
@@ -223,7 +240,8 @@ def _gram_matrix_dense_to_dense(
         (n, n),
         out_dtype,
         order="C" if layout_a == LAYOUT_CODE_C else "F",
-        out_arr=out
+        out_arr=out,
+        initialize_zeros=True
     )
 
     # The complex versions of these functions take void pointers instead of
@@ -231,7 +249,7 @@ def _gram_matrix_dense_to_dense(
     # reference
     scalar = _mkl_scalar(scalar, complex_type, double_precision)
     out_scalar = _mkl_scalar(out_scalar, complex_type, double_precision)
-
+    
     func(
         layout_a,
         MKL_UPPER,
@@ -243,7 +261,7 @@ def _gram_matrix_dense_to_dense(
         ld_a,
         out_scalar if not complex_type else _ctypes.byref(scalar),
         output_arr,
-        n,
+        n
     )
 
     return output_arr
@@ -279,6 +297,22 @@ def _gram_matrix(
     :rtype: scipy.sparse.csr_matrix, np.ndarray
     """
 
+    if _sps.issparse(matrix) and not (is_csr(matrix) or is_csc(matrix)):
+        raise ValueError(
+            "gram_matrix requires sparse matrix to be CSR or CSC format"
+        )
+    elif is_csc(matrix) and not cast:
+        raise ValueError(
+            "gram_matrix cannot use a CSC matrix unless cast=True"
+        )
+    elif out is not None and not dense:
+        raise ValueError(
+            "out argument cannot be used with sparse (dot) sparse "
+            "matrix multiplication"
+        )
+    elif out is not None and not isinstance(out, np.ndarray):
+        raise ValueError("out argument must be dense")
+
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix, matrix):
         debug_print(
@@ -290,25 +324,18 @@ def _gram_matrix(
             if transpose
             else (matrix.shape[0], matrix.shape[0])
         )
-        output_func = _sps.csr_matrix if _sps.isspmatrix(matrix) else np.zeros
-        return output_func(output_shape, dtype=matrix.dtype)
-
-    if np.iscomplexobj(matrix):
-        raise ValueError(
-            "gram_matrix_mkl does not support complex datatypes"
-        )
+        if out is None:
+            output_func = np.zeros if dense else _sps.csr_matrix
+            return output_func(output_shape, dtype=matrix.dtype)
+        elif out_scalar is not None and not out_scalar:
+            out.fill(0)
+        elif out_scalar is not None:
+            out *= out_scalar
+        return out
 
     matrix = _type_check(matrix, cast=cast)
 
-    if _sps.issparse(matrix) and not (is_csr(matrix) or is_csc(matrix)):
-        raise ValueError(
-            "gram_matrix requires sparse matrix to be CSR or CSC format"
-        )
-    elif is_csc(matrix) and not cast:
-        raise ValueError(
-            "gram_matrix cannot use a CSC matrix unless cast=True"
-        )
-    elif not _sps.issparse(matrix):
+    if not _sps.issparse(matrix):
         return _gram_matrix_dense_to_dense(
             matrix,
             aat=transpose,
@@ -321,11 +348,6 @@ def _gram_matrix(
             aat=transpose,
             out=out,
             out_scalar=out_scalar
-        )
-    elif out is not None:
-        raise ValueError(
-            "out argument cannot be used with sparse (dot) sparse "
-            "matrix multiplication"
         )
     else:
         return _gram_matrix_sparse(

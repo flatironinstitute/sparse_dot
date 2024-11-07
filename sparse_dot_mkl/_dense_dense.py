@@ -48,7 +48,7 @@ def _dense_matmul(matrix_a, matrix_b, scalar=1., out=None, out_scalar=None):
     # The complex versions of these functions take void pointers instead of passed structs
     # So create a C struct if necessary to be passed by reference
     scalar = _mkl_scalar(scalar, complex_type, double_precision)
-    out_scalar = _mkl_scalar(out_scalar, complex_type, double_precision)
+    out_scalar = _mkl_scalar(0 if out is None else out_scalar, complex_type, double_precision)
 
     func(layout_a,
          111,
@@ -75,8 +75,13 @@ def _dense_dot_dense(matrix_a, matrix_b, cast=False, scalar=1., out=None, out_sc
     # Check for edge condition inputs which result in empty outputs
     if _empty_output_check(matrix_a, matrix_b):
         debug_print("Skipping multiplication because A (dot) B must yield an empty matrix")
-        final_dtype = np.float64 if matrix_a.dtype != matrix_b.dtype or matrix_a.dtype != np.float32 else np.float32
-        return _out_matrix((matrix_a.shape[0], matrix_b.shape[1]), final_dtype, out_arr=out)
+        output_arr = _out_matrix((matrix_a.shape[0], matrix_b.shape[1]),
+                                 _type_check(matrix_a, matrix_b, cast=cast, convert=False), out_arr=out)
+        if out is None or (out_scalar is not None and not out_scalar):
+            output_arr.fill(0)
+        elif out_scalar is not None:
+            output_arr *= out_scalar
+        return output_arr
 
     matrix_a, matrix_b = _type_check(matrix_a, matrix_b, cast=cast)
 

@@ -56,14 +56,6 @@ def _sparse_dense_vector_mult(
     output_shape = matrix_a.shape[1] if transpose else matrix_a.shape[0]
     output_shape = (output_shape,) if vector_b.ndim == 1 else (output_shape, 1)
 
-    if _empty_output_check(matrix_a, vector_b):
-        final_dtype = (
-            np.float64
-            if matrix_a.dtype != vector_b.dtype or matrix_a.dtype != np.float32
-            else np.float32
-        )
-        return _out_matrix(output_shape, final_dtype, out_arr=out)
-
     mkl_a, dbl, cplx = _create_mkl_sparse(matrix_a)
     vector_b = vector_b.ravel()
 
@@ -75,7 +67,7 @@ def _sparse_dense_vector_mult(
 
     # Create a C struct if necessary to be passed
     scalar = _mkl_scalar(scalar, cplx, dbl)
-    out_scalar = _mkl_scalar(out_scalar, cplx, dbl)
+    out_scalar = _mkl_scalar(0 if out is None else out_scalar, cplx, dbl)
 
     output_arr = _out_matrix(
         output_shape,
@@ -134,9 +126,6 @@ def _sparse_dot_vector(
     :rtype: np.ndarray
     """
 
-    _sanity_check(mv_a, mv_b, allow_vector=True)
-    mv_a, mv_b = _type_check(mv_a, mv_b, cast=cast)
-
     if (
         not _is_allowed_sparse_format(mv_a) or
         not _is_allowed_sparse_format(mv_b)
@@ -144,7 +133,23 @@ def _sparse_dot_vector(
         raise ValueError(
             "Only CSR, CSC, and BSR-type sparse matrices are supported"
         )
-    elif _is_dense_vector(mv_b):
+
+    _sanity_check(mv_a, mv_b, allow_vector=True)
+
+    if _empty_output_check(mv_a, mv_b):
+        output_arr = _out_matrix(
+            (mv_a.shape[0],) if mv_b.ndim == 1 else (mv_a.shape[0], 1),
+            _type_check(mv_a, mv_b, cast=cast, convert=False), out_arr=out
+        )
+        if out is None or (out_scalar is not None and not out_scalar):
+            output_arr.fill(0)
+        elif out_scalar is not None:
+            output_arr *= out_scalar
+        return output_arr
+
+    mv_a, mv_b = _type_check(mv_a, mv_b, cast=cast)
+
+    if _is_dense_vector(mv_b):
         return _sparse_dense_vector_mult(
             mv_a,
             mv_b,

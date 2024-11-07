@@ -770,12 +770,14 @@ def _is_valid_dtype(matrix, complex_dtype=False, all_dtype=False):
         return matrix.dtype in NUMPY_FLOAT_DTYPES
 
 
-def _type_check(matrix_a, matrix_b=None, cast=False, allow_complex=True):
+def _type_check(matrix_a, matrix_b=None, cast=False, allow_complex=True, convert=True):
     """
     Make sure that both matrices are single precision floats or both are
     double precision floats.
     If not, convert to double precision floats if cast is True,
     or raise an error if cast is False
+    If convert is set to False, the resulting data type is returned without
+    any conversion happening.
     """
 
     _n_complex = _np.iscomplexobj(matrix_a) + _np.iscomplexobj(matrix_b)
@@ -785,17 +787,17 @@ def _type_check(matrix_a, matrix_b=None, cast=False, allow_complex=True):
 
     # If there's no matrix B and matrix A is valid dtype, return it
     if matrix_b is None and _is_valid_dtype(matrix_a, all_dtype=True):
-        return matrix_a
+        return matrix_a if convert else matrix_a.dtype
 
     # If matrix A is complex but not csingle or cdouble, and cast is True,
     # convert it to a cdouble
     elif matrix_b is None and cast and _n_complex == 1:
-        return _cast_to(matrix_a, _np.cdouble)
+        return _cast_to(matrix_a, _np.cdouble) if convert else _np.cdouble
 
     # If matrix A is real but not float32 or float64, and cast is True,
     # convert it to a float64
     elif matrix_b is None and cast:
-        return _cast_to(matrix_a, _np.float64)
+        return _cast_to(matrix_a, _np.float64) if convert else _np.float64
 
     # Raise an error - the dtype is invalid and cast is False
     elif matrix_b is None:
@@ -809,7 +811,7 @@ def _type_check(matrix_a, matrix_b=None, cast=False, allow_complex=True):
         _is_valid_dtype(matrix_a, all_dtype=True) and
         matrix_a.dtype == matrix_b.dtype
     ):
-        return matrix_a, matrix_b
+        return (matrix_a, matrix_b) if convert else matrix_a.dtype
 
     # If neither matrix is complex and cast is True, convert to float64s
     # and return them
@@ -818,7 +820,7 @@ def _type_check(matrix_a, matrix_b=None, cast=False, allow_complex=True):
             f"Recasting matrix data types {matrix_a.dtype} and "
             f"{matrix_b.dtype} to np.float64"
         )
-        return _cast_to(matrix_a, _np.float64), _cast_to(matrix_b, _np.float64)
+        return (_cast_to(matrix_a, _np.float64), _cast_to(matrix_b, _np.float64)) if convert else _np.float64
 
     # If both matrices are complex and cast is True, convert to cdoubles
     # and return them
@@ -827,7 +829,7 @@ def _type_check(matrix_a, matrix_b=None, cast=False, allow_complex=True):
             f"Recasting matrix data types {matrix_a.dtype} and "
             f"{matrix_b.dtype} to _np.cdouble"
         )
-        return _cast_to(matrix_a, _np.cdouble), _cast_to(matrix_b, _np.cdouble)
+        return (_cast_to(matrix_a, _np.cdouble), _cast_to(matrix_b, _np.cdouble)) if convert else _np.cdouble
 
     # Cast reals and complex matrices together
     elif (
@@ -838,7 +840,7 @@ def _type_check(matrix_a, matrix_b=None, cast=False, allow_complex=True):
         debug_print(
             f"Recasting matrix data type {matrix_b.dtype} to {matrix_a.dtype}"
         )
-        return matrix_a, _cast_to(matrix_b, matrix_a.dtype)
+        return (matrix_a, _cast_to(matrix_b, matrix_a.dtype)) if convert else matrix_a.dtype
 
     elif (
         cast and
@@ -848,14 +850,14 @@ def _type_check(matrix_a, matrix_b=None, cast=False, allow_complex=True):
         debug_print(
             f"Recasting matrix data type {matrix_a.dtype} to {matrix_b.dtype}"
         )
-        return _cast_to(matrix_a, matrix_b.dtype), matrix_b
+        return (_cast_to(matrix_a, matrix_b.dtype), matrix_b) if convert else matrix_b.dtype
 
     elif cast and _n_complex == 1:
         debug_print(
             f"Recasting matrix data type {matrix_a.dtype} and {matrix_b.dtype}"
             f" to np.cdouble"
         )
-        return _cast_to(matrix_a, _np.cdouble), _cast_to(matrix_b, _np.cdouble)
+        return (_cast_to(matrix_a, _np.cdouble), _cast_to(matrix_b, _np.cdouble)) if convert else _np.cdouble
 
     # If cast is False, can't cast anything together
     elif not cast:
@@ -882,9 +884,16 @@ def _mkl_scalar(scalar, complex_type, double_precision):
         return float(scalar)
 
 
-def _out_matrix(shape, dtype, order="C", out_arr=None, out_t=False):
+def _out_matrix(
+    shape,
+    dtype,
+    order="C",
+    out_arr=None,
+    out_t=False,
+    initialize_zeros=False
+):
     """
-    Create an all-zero matrix or check to make sure that
+    Create an undefined matrix or check to make sure that
     the provided output array matches
 
     :param shape: Required output shape
@@ -904,8 +913,10 @@ def _out_matrix(shape, dtype, order="C", out_arr=None, out_t=False):
     out_t = False if out_t is None else out_t
 
     # If there's no output array allocate a new array and return it
-    if out_arr is None:
+    if out_arr is None and initialize_zeros:
         return _np.zeros(shape, dtype=dtype, order=order)
+    elif out_arr is None:
+        return _np.ndarray(shape, dtype=dtype, order=order)
 
     # Check and make sure the order is correct
     # Note 1d arrays have both flags set
