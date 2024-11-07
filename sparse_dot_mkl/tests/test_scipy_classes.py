@@ -80,7 +80,7 @@ class TestCSR(unittest.TestCase):
         
         # Following tests dont work with old scipy
         if (
-            (int(sp.__version__.split('.')[1]) > 1) or
+            (int(sp.__version__.split('.')[0]) > 1) or
             (int(sp.__version__.split('.')[1]) > 13)
         ):
             
