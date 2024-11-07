@@ -17,8 +17,11 @@ from sparse_dot_mkl.tests.test_mkl import MATRIX_1, MATRIX_2, make_matrixes
 MATMUL = MATRIX_1 @ MATRIX_2
 MATMUL = MATMUL.toarray()
 
+class TripError(RuntimeError):
+    pass
+
 def _tripwire(self, other):
-    raise RuntimeError("Shouldn't be here")
+    raise TripError("Shouldn't be here")
 
 def install_wire(x):
     x._matmul_dispatch = MethodType(_tripwire, x)
@@ -68,18 +71,34 @@ class TestCSR(unittest.TestCase):
 
     def test_matmul_fail(self):
 
-        a = self.arr(MATRIX_1)
-        b = self.arr(MATRIX_2)
+        a = self.arr(MATRIX_1.copy())
+        b = self.arr(MATRIX_2.copy())
 
         with self.assertRaises(ValueError):
             b @ a
         
         m1 = MATRIX_1.copy()
+        m2 = MATRIX_2.copy()
+
         install_wire(m1)
+        install_wire(m2)
+        install_wire(a)
+        install_wire(b)
 
-        with self.assertRaises(RuntimeError):
-            m1 @ MATRIX_2
+        # SCIPY
+        with self.assertRaises(TripError):
+            m1 @ m2
 
+        # SCIPY CSR_MATRIX USES RMATMUL DUNNO WHY
+        if self.arr != csr_matrix:
+            with self.assertRaises(TripError):
+                m1 @ b
+
+        # MKL
+        a @ m2 
+
+        # MKL
+        a @ b 
 
 class TestCSRMat(TestCSR):
     arr = csr_matrix
@@ -97,6 +116,6 @@ class TestBSRMat(TestCSR):
     arr = bsr_matrix
 
 
-class TestBSC(TestCSR):
+class TestBSR(TestCSR):
     arr = bsr_array
 

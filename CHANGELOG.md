@@ -1,3 +1,8 @@
+### Version 0.9.7
+
+* Fix #28: incorrect output when `out` is provided but the matrix multiplication is trivially all zeros
+* Added scipy sparse classes where MKL is used for matrix multiplication
+
 ### Version 0.9.6
 
 * Add wrapper for MKL iterative CG and FGMRES solvers in `sparse_dot.solvers`
