@@ -96,6 +96,13 @@ It will return a dense array X.
 Refer to the pardiso documentation for detailed description of options.
 Consider this wrapper to be experimental.
 
+#### SciPy Classes
+
+`csr_array`, `csr_matrix`, `csc_array`, `csc_matrix`, `bsr_array`, `bsr_matrix`
+
+Scipy sparse classes where `__matmul__` and `__rmatmul__` have been replaced to use MKL
+for matrix math
+
 #### Service Functions
 
 Several service functions are available and can be imported from the base `sparse_dot_mkl` package.

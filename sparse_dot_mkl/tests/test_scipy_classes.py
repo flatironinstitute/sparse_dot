@@ -1,5 +1,6 @@
 import unittest
 import numpy.testing as npt
+import scipy as sp
 import scipy.sparse as sps
 from types import MethodType
 
@@ -77,28 +78,34 @@ class TestCSR(unittest.TestCase):
         with self.assertRaises(ValueError):
             b @ a
         
-        m1 = MATRIX_1.copy()
-        m2 = MATRIX_2.copy()
+        # Following tests dont work with old scipy
+        if (
+            (int(sp.__version__.split('.')[1]) > 1) or
+            (int(sp.__version__.split('.')[1]) > 13)
+        ):
+            
+            m1 = MATRIX_1.copy()
+            m2 = MATRIX_2.copy()
 
-        install_wire(m1)
-        install_wire(m2)
-        install_wire(a)
-        install_wire(b)
-
-        # SCIPY
-        with self.assertRaises(TripError):
-            m1 @ m2
-
-        # SCIPY CSR_MATRIX USES RMATMUL DUNNO WHY
-        if self.arr != csr_matrix:
+            install_wire(m1)
+            install_wire(m2)
+            install_wire(a)
+            install_wire(b)
+            # SCIPY
             with self.assertRaises(TripError):
-                m1 @ b
+                m1 @ m2
 
-        # MKL
-        a @ m2 
+            # SCIPY CSR_MATRIX USES RMATMUL DUNNO WHY
+            if self.arr != csr_matrix:
+                with self.assertRaises(TripError):
+                    m1 @ b
 
-        # MKL
-        a @ b 
+            # MKL
+            a @ m2 
+
+            # MKL
+            a @ b 
+
 
 class TestCSRMat(TestCSR):
     arr = csr_matrix
