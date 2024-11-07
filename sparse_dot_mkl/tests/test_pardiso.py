@@ -37,7 +37,13 @@ class TestPARDISO(unittest.TestCase):
         if self.single_precision:
             _iparm_init[27] = 1
 
-        npt.assert_equal(self.iparm, _iparm_init)
+        # Default value changed from 0 (2 iterations implicit)
+        # to 2 
+        try:
+            npt.assert_equal(self.iparm, _iparm_init)
+        except AssertionError:
+            _iparm_init[7] = 2
+            npt.assert_equal(self.iparm, _iparm_init)
 
     def test_pardiso_analysis(self):
 
