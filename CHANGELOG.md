@@ -1,3 +1,7 @@
+### Version 0.9.8
+
+* Fix #31: Remove ndim check from sparse vector ctypes wrapper to accommodate np.matrix arrays that can't be flattened
+
 ### Version 0.9.7
 
 * Fix #28: incorrect output when `out` is provided but the matrix multiplication is trivially all zeros

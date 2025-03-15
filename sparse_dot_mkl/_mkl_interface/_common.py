@@ -914,8 +914,14 @@ def _out_matrix(
 
     # If there's no output array allocate a new array and return it
     if out_arr is None and initialize_zeros:
+        debug_print(
+            f"Allocating array {shape} ({order}) ({dtype})"
+        )
         return _np.zeros(shape, dtype=dtype, order=order)
     elif out_arr is None:
+        debug_print(
+            f"Allocating array {shape} ({order}) ({dtype})"
+        )
         return _np.ndarray(shape, dtype=dtype, order=order)
 
     # Check and make sure the order is correct
@@ -963,6 +969,9 @@ def _out_matrix(
         )
 
     else:
+        debug_print(
+            f"Using output array {shape} ({order}) ({dtype})"
+        )
         return out_arr
 
 

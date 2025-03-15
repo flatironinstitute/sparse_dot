@@ -1,6 +1,7 @@
 import unittest
 import numpy.testing as npt
 import scipy as sp
+import numpy as np
 import scipy.sparse as sps
 from types import MethodType
 
@@ -46,6 +47,24 @@ class TestCSR(unittest.TestCase):
         npt.assert_almost_equal(
             c.toarray(),
             MATMUL
+        )
+
+    def test_sum_0(self):
+        
+        a = self.arr(MATRIX_1)
+        
+        npt.assert_almost_equal(
+            a.sum(axis=0),
+            np.sum(a, axis=0)
+        )
+
+    def test_sum_1(self):
+        
+        a = self.arr(MATRIX_1)
+
+        npt.assert_almost_equal(
+            a.sum(axis=1),
+            np.sum(a, axis=1)
         )
 
     def test_matmul_dense(self):

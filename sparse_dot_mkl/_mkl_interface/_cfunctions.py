@@ -631,7 +631,7 @@ class MKL:
             prec_type,
             sparse_matrix_t,
             matrix_descr,
-            ndpointer(dtype=_np_type, ndim=1),
+            ndpointer(dtype=_np_type),
             prec_type,
             ndpointer(dtype=_np_type),
         ]
