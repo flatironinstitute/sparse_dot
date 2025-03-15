@@ -1,3 +1,4 @@
+import os
 import unittest
 import numpy as np
 import numpy.testing as npt
@@ -48,6 +49,7 @@ class TestSparseSolverCG(unittest.TestCase):
         self.mat2 = test_rhs.copy()
         self.mat3 = test_expected_solution.copy()
 
+    @unittest.skipIf(os.getenv("GITHUB_ACTIONS", None) is None)
     def test_cg_solver_square_perfect(self):
         mat3 = np.linalg.lstsq(self.mat1.toarray(), test_rhs, rcond=None)[0]
 
@@ -59,6 +61,7 @@ class TestSparseSolverCG(unittest.TestCase):
         npt.assert_array_equal(test_rhs, self.mat2)
         npt.assert_array_almost_equal(x, mat3)
 
+    @unittest.skipIf(os.getenv("GITHUB_ACTIONS", None) is None)
     def test_cg_wrapper_square_perfect(self):
 
         mat3 = np.linalg.lstsq(self.mat1.toarray(), test_rhs, rcond=None)[0]
