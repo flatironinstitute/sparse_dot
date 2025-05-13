@@ -5,6 +5,8 @@ import scipy.sparse as _spsparse
 from sparse_dot_mkl import dot_product_mkl
 from sparse_dot_mkl.tests.test_mkl import (
     MATRIX_1,
+    MATRIX_1_EMPTY,
+    MATRIX_2_EMPTY,
     MATRIX_2,
     VECTOR,
     make_matrixes,
@@ -67,6 +69,7 @@ class TestSparseVectorMultiplication(unittest.TestCase):
         mat3_np = np.dot(self.mat1_d, self.mat2_d)
 
         np_almost_equal(mat3_np, mat3)
+   
 
     def test_mult_1d_float32_out(self):
         mat3_np = np.dot(self.mat1_d, self.mat2_d)
@@ -193,6 +196,17 @@ class TestSparseVectorMultiplicationBSR(TestSparseVectorMultiplication):
     sparse_args = {"blocksize": (10, 10)}
 
 
+class TestSparseVectorMultiplicationCSREmpty(TestSparseVectorMultiplication):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.MATRIX_1, cls.MATRIX_2, cls.VECTOR = (
+            MATRIX_1_EMPTY,
+            MATRIX_2_EMPTY,
+            np.zeros_like(VECTOR),
+        )
+
+
 class TestSparseVectorMultiplicationCOO(unittest.TestCase):
     def setUp(self):
         self.mat1 = _spsparse.coo_matrix(MATRIX_1).copy()
@@ -267,6 +281,25 @@ class TestVectorSparseMultiplicationCSC(TestVectorSparseMultiplication):
 
 
 class TestVectorSparseMultiplicationBSR(TestVectorSparseMultiplication):
+    sparse_func = _spsparse.bsr_matrix
+
+
+class TestVectorSparseMultiplicationCSREmpty(TestVectorSparseMultiplication):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.MATRIX_1, cls.MATRIX_2, cls.VECTOR = (
+            MATRIX_1_EMPTY,
+            MATRIX_2_EMPTY,
+            np.zeros_like(VECTOR),
+        )
+
+
+class TestVectorSparseMultiplicationCSCEmpty(TestVectorSparseMultiplicationCSREmpty):
+    sparse_func = _spsparse.csc_matrix
+
+
+class TestVectorSparseMultiplicationBSREmpty(TestVectorSparseMultiplicationCSREmpty):
     sparse_func = _spsparse.bsr_matrix
 
 
@@ -378,6 +411,19 @@ try:
 
     class TestVectorSparseMultiplicationArrayBSR(TestVectorSparseMultiplication):
         sparse_func = bsr_array
+
+    class TestVectorSparseMultiplicationCSREmptyArray(TestVectorSparseMultiplicationCSREmpty):
+        sparse_func = csr_array
+        sparse_args = {}
+
+    class TestVectorSparseMultiplicationCSCEmptyArray(TestVectorSparseMultiplicationCSREmpty):
+        sparse_func = csc_array
+        sparse_args = {}
+
+    class TestVectorSparseMultiplicationBSREmptyArray(TestVectorSparseMultiplicationCSREmpty):
+        sparse_func = bsr_array
+        sparse_args = {"blocksize": (10, 10)}
+
 
     class TestSparseVectorMultiplicationArrayComplex(
         _ComplexMixin,

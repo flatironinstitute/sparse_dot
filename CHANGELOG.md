@@ -1,3 +1,7 @@
+### Version 0.9.9
+
+* Fix #34: Empty vector/matrix multiplication returns correct shape for result
+
 ### Version 0.9.8
 
 * Fix #31: Remove ndim check from sparse vector ctypes wrapper to accommodate np.matrix arrays that can't be flattened

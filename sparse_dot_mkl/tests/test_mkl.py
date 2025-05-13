@@ -47,6 +47,8 @@ def make_vector(n, complex=False):
 
 MATRIX_1, MATRIX_2 = make_matrixes(200, 100, 300, 0.05)
 MATRIX_1_EMPTY = _spsparse.csr_matrix((200, 300), dtype=np.float64)
+MATRIX_2_EMPTY = _spsparse.csr_matrix((300, 100), dtype=np.float64)
+
 VECTOR = make_vector(300)
 
 

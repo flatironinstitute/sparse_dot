@@ -137,10 +137,21 @@ def _sparse_dot_vector(
     _sanity_check(mv_a, mv_b, allow_vector=True)
 
     if _empty_output_check(mv_a, mv_b):
-        output_arr = _out_matrix(
-            (mv_a.shape[0],) if mv_b.ndim == 1 else (mv_a.shape[0], 1),
-            _type_check(mv_a, mv_b, cast=cast, convert=False), out_arr=out
-        )
+
+        if _is_dense_vector(mv_b):
+            output_arr = _out_matrix(
+                (mv_a.shape[0],) if mv_b.ndim == 1 else (mv_a.shape[0], 1),
+                _type_check(mv_a, mv_b, cast=cast, convert=False),
+                out_arr=out
+            )
+
+        elif _is_dense_vector(mv_a):
+            output_arr = _out_matrix(
+                (mv_b.shape[1],) if mv_a.ndim == 1 else (1, mv_b.shape[1]),
+                _type_check(mv_a, mv_b, cast=cast, convert=False),
+                out_arr=out
+            )
+
         if out is None or (out_scalar is not None and not out_scalar):
             output_arr.fill(0)
         elif out_scalar is not None:
