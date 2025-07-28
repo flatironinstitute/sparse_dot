@@ -1,3 +1,7 @@
+### Version 0.9.10
+
+* Scipy sparse classes will copy a noncontiguous numpy array into a contiguous array for multiplication if `cast=True`
+
 ### Version 0.9.9
 
 * Fix #34: Empty vector/matrix multiplication returns correct shape for result

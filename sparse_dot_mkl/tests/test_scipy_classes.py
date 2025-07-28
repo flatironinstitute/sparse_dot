@@ -19,6 +19,9 @@ from sparse_dot_mkl.tests.test_mkl import MATRIX_1, MATRIX_2, make_matrixes
 MATMUL = MATRIX_1 @ MATRIX_2
 MATMUL = MATMUL.toarray()
 
+MATMUL_NONCONTIG = MATRIX_1[1:-1, :][:, 1:-1] @ MATRIX_2[1:-1, :][:, 1:-1]
+MATMUL_NONCONTIG = MATMUL_NONCONTIG.toarray()
+
 class TripError(RuntimeError):
     pass
 
@@ -47,6 +50,21 @@ class TestCSR(unittest.TestCase):
         npt.assert_almost_equal(
             c.toarray(),
             MATMUL
+        )
+
+    def test_matmul_noncontig(self):
+
+        a = self.arr(MATRIX_1)[1:-1, :][:, 1:-1]
+        b = self.arr(MATRIX_2)[1:-1, :][:, 1:-1]
+
+        install_wire(a)
+        install_wire(b)
+
+        c = a @ b
+
+        npt.assert_almost_equal(
+            c.toarray(),
+            MATMUL_NONCONTIG
         )
 
     def test_sum_0(self):
@@ -141,7 +159,14 @@ class TestCSCMat(TestCSR):
 class TestBSRMat(TestCSR):
     arr = bsr_matrix
 
+    @unittest.skip
+    def test_matmul_noncontig(self):
+        pass
+
 
 class TestBSR(TestCSR):
     arr = bsr_array
 
+    @unittest.skip
+    def test_matmul_noncontig(self):
+        pass

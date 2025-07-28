@@ -38,7 +38,7 @@ def _sparse_dense_matmul(
     transpose=False,
     out=None,
     out_scalar=None,
-    out_t=None,
+    out_t=None
 ):
     """
     Multiply together a sparse and a dense matrix
@@ -70,6 +70,7 @@ def _sparse_dense_matmul(
         matrix_a.shape[1] if transpose else matrix_a.shape[0],
         matrix_b.shape[1],
     )
+
     layout_b, ld_b = _get_numpy_layout(matrix_b, second_arr=out)
 
     try:
@@ -133,7 +134,12 @@ def _sparse_dense_matmul(
 
 
 def _sparse_dot_dense(
-    matrix_a, matrix_b, cast=False, scalar=1.0, out=None, out_scalar=None
+    matrix_a,
+    matrix_b,
+    cast=False,
+    scalar=1.0,
+    out=None,
+    out_scalar=None
 ):
     """
     Multiply together a dense and a sparse matrix.
@@ -197,7 +203,7 @@ def _sparse_dot_dense(
             transpose=True,
             out=out.T,
             out_scalar=out_scalar,
-            out_t=True,
+            out_t=True
         )
         return out
     elif _spsparse.issparse(matrix_b) and out is None:

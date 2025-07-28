@@ -4,10 +4,12 @@ from scipy.sparse import (
     csc_array as _sps_csc_array,
     csc_matrix as _sps_csc_matrix,
     bsr_array as _sps_bsr_array,
-    bsr_matrix as _sps_bsr_matrix
+    bsr_matrix as _sps_bsr_matrix,
+    issparse as _issparse
 )
 
 from sparse_dot_mkl import dot_product_mkl
+from sparse_dot_mkl._mkl_interface import _numpy_contiguous
 
 class _mkl_matmul_mixin:
 
@@ -15,6 +17,13 @@ class _mkl_matmul_mixin:
     cast_matmul = True
 
     def __matmul__(self, other):
+
+        if not _issparse(other):
+            other = _numpy_contiguous(
+                other,
+                cast=self.cast_matmul
+            )
+
         return dot_product_mkl(
             self,
             other,
@@ -23,6 +32,13 @@ class _mkl_matmul_mixin:
         )
     
     def __rmatmul__(self, other):
+
+        if not _issparse(other):
+            other = _numpy_contiguous(
+                other,
+                cast=self.cast_matmul
+            )
+
         return dot_product_mkl(
             other,
             self,

@@ -178,6 +178,37 @@ def _check_scipy_index_typing(sparse_matrix):
         sparse_matrix.indices = sparse_matrix.indices.astype(MKL.MKL_INT_NUMPY)
 
 
+def _numpy_contiguous(numpy_arr, second_arr=None, cast=False):
+    """
+    Make a copy of a non-contigous array if cast is True
+
+    :param numpy_arr: Numpy dense array
+    :type numpy_arr: _np.ndarray
+    :param second_arr: Numpy dense array; use this order if copying
+    :type second_arr: _np.ndarray, None
+    :param cast: Copy array if necessary
+    :type cast: bool, defaults to False
+    :return: Copy if necessary and cast is True; otherwise passthrough
+    :rtype: _np.ndarray
+    """
+
+    if cast and not numpy_arr.flags.forc:
+
+        if (
+            second_arr is not None and
+            not second_arr.flags.c_contiguous and
+            second_arr.flags.f_contiguous
+        ):
+            output_func = _np.asfortranarray
+        else:
+            output_func = _np.ascontiguousarray
+
+        return output_func(numpy_arr)
+    
+    else:
+        return numpy_arr
+
+
 def _get_numpy_layout(numpy_arr, second_arr=None):
     """
     Get the array layout code for a dense array in C or F order.

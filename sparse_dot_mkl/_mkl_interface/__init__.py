@@ -43,6 +43,7 @@ from ._common import (
     _sanity_check,
     _output_dtypes,
     _get_numpy_layout,
+    _numpy_contiguous,
     _out_matrix,
     _mkl_scalar,
     _is_dense_vector,
