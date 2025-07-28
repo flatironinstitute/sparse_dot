@@ -55,17 +55,38 @@ class TestCSR(unittest.TestCase):
     def test_matmul_noncontig(self):
 
         a = self.arr(MATRIX_1)[1:-1, :][:, 1:-1]
-        b = self.arr(MATRIX_2)[1:-1, :][:, 1:-1]
+        b = self.arr(MATRIX_2).toarray()[1:-1, :][:, 1:-1]
 
         install_wire(a)
-        install_wire(b)
 
         c = a @ b
 
         npt.assert_almost_equal(
-            c.toarray(),
+            c,
             MATMUL_NONCONTIG
         )
+
+    def test_matmul_noncontig_nocast(self):
+
+        a = self.arr(MATRIX_1)[1:-1, :][:, 1:-1]
+        b = self.arr(MATRIX_2).toarray()[1:-1, :][:, 1:-1]
+
+        install_wire(a)
+        a.cast_matmul = False
+
+        with self.assertRaises(ValueError):
+            c = a @ b
+
+    def test_rmatmul_noncontig_nocast(self):
+
+        a = self.arr(MATRIX_1).toarray()[1:-1, :][:, 1:-1]
+        b = self.arr(MATRIX_2)[1:-1, :][:, 1:-1]
+
+        install_wire(b)
+        b.cast_matmul = False
+
+        with self.assertRaises(ValueError):
+            c = a @ b
 
     def test_sum_0(self):
         
@@ -163,10 +184,35 @@ class TestBSRMat(TestCSR):
     def test_matmul_noncontig(self):
         pass
 
+    @unittest.skip
+    def test_rmatmul_noncontig(self):
+        pass
+
+    @unittest.skip
+    def test_matmul_noncontig_nocast(self):
+        pass
+
+    @unittest.skip
+    def test_rmatmul_noncontig_nocast(self):
+        pass
+
+
 
 class TestBSR(TestCSR):
     arr = bsr_array
 
     @unittest.skip
     def test_matmul_noncontig(self):
+        pass
+
+    @unittest.skip
+    def test_rmatmul_noncontig(self):
+        pass
+
+    @unittest.skip
+    def test_matmul_noncontig_nocast(self):
+        pass
+
+    @unittest.skip
+    def test_rmatmul_noncontig_nocast(self):
         pass
