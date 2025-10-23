@@ -12,14 +12,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
-        scipy-version: ['1.8.1', '1.11.3', '1.14.1']
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        scipy-version: ['1.8.1', '1.11.3', '1.14.1', '1.16.2']
         os: [ubuntu-latest]
         interface: ['LP64', 'ILP64']
         exclude:
         - python-version: "3.9"
           scipy-version: '1.14.1'
+        - python-version: "3.9"
+          scipy-version: '1.16.2'
         - python-version: "3.11"
+          scipy-version: '1.8.1'
+        - python-version: "3.12"
+          scipy-version: '1.8.1'
+        - python-version: "3.13"
           scipy-version: '1.8.1'
       
     runs-on: ${{ matrix.os }}
